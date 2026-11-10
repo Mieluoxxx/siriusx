@@ -113,3 +113,10 @@
 - `DockerSandboxProvider.reapOrphans(maxAgeMs)` 按 `siriusx.managed=true` 标签清理过期容器。
 - 实测创建 sandbox 后 `reapOrphans(0)` 删除 1 个容器，随后 exec 失败。
 - 证据：`11-sandbox-reap/test.txt`。
+
+## Sandbox 周期巡检
+
+- control-plane CLI 新增 `reap-sandboxes [--max-age-ms]`；
+- native installer 生成 `siriusx-reap.service` + `siriusx-reap.timer`（每 5 分钟）；
+- 实测手工创建 labeled orphan 后 CLI 返回 `removed: 1`。
+- 证据：`12-reap-scheduler/cli.txt`、`install.txt`、`siriusx-reap.timer`。

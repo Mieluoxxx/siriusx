@@ -6,6 +6,7 @@ import { ControlPlane } from './index.ts'
 import { startControlPlaneServer } from './server.ts'
 import { startModelGateway } from './model-gateway.ts'
 import { startDeviceGateway } from './device-gateway.ts'
+import { DockerSandboxProvider } from '@siriusx/cloud-executor'
 
 function usage(): never {
   console.error(`usage:
@@ -13,6 +14,7 @@ function usage(): never {
   control-plane tenant list
   control-plane user add --tenant <id> --email <email> [--role admin|member]
   control-plane token issue --tenant <id> --user <id> --role admin|member
+  control-plane reap-sandboxes [--max-age-ms 300000]
   control-plane serve [--port 4320] [--host 127.0.0.1] [--db <file>] [--data-dir <dir>]`)
   process.exit(2)
 }
@@ -30,7 +32,7 @@ function parseFlags(args: readonly string[]): Map<string, string> {
 }
 
 const [command, subcommand, ...tail] = process.argv.slice(2)
-const rest = command === 'serve' ? [subcommand, ...tail].filter((value): value is string => value !== undefined) : tail
+const rest = (command === 'serve' || command === 'reap-sandboxes') ? [subcommand, ...tail].filter((value): value is string => value !== undefined) : tail
 const flags = parseFlags(rest)
 const dbPath = flags.get('db') ?? process.env.SIRIUSX_DB ?? '/tmp/siriusx-control.sqlite'
 const dataDir = flags.get('data-dir') ?? process.env.SIRIUSX_DATA_DIR ?? '/tmp/siriusx-data'
@@ -67,6 +69,11 @@ try {
     const role = flags.get('role') === 'admin' ? 'admin' : 'member'
     if (tenantId === undefined || userId === undefined) usage()
     console.log(control.issueSession({ tenantId, userId, role }))
+  } else if (command === 'reap-sandboxes') {
+    const maxAge = flags.get('max-age-ms')
+    const provider = new DockerSandboxProvider({ image: process.env.SIRIUSX_SANDBOX_IMAGE ?? 'teams-bridge:0.2.0' })
+    const removed = await provider.reapOrphans(maxAge === undefined ? 300_000 : Number(maxAge))
+    console.log(JSON.stringify({ removed }, undefined, 2))
   } else if (command === 'serve') {
     control.close()
     const bindHost = flags.get('host') ?? process.env.SIRIUSX_BIND_HOST

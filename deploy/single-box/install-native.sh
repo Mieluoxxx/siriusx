@@ -49,6 +49,13 @@ set -a; . "$ENV_FILE"; set +a
 cd "$PREFIX"
 exec node --import tsx apps/control-plane/src/cli.ts serve --db "\${SIRIUSX_DB}" --data-dir "\${SIRIUSX_DATA_DIR}" --port "\${SIRIUSX_CONTROL_PORT}" --device-port "\${SIRIUSX_DEVICE_PORT}"
 SH
+cat > "$PREFIX/reap-sandboxes.sh" <<SH
+#!/usr/bin/env bash
+set -a; . "$ENV_FILE"; set +a
+cd "$PREFIX"
+exec node --import tsx apps/control-plane/src/cli.ts reap-sandboxes --max-age-ms 300000
+SH
+chmod 755 "$PREFIX/reap-sandboxes.sh"
 cat > "$PREFIX/run-tool-gateway.sh" <<SH
 #!/usr/bin/env bash
 set -a; . "$ENV_FILE"; set +a
@@ -68,6 +75,24 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 UNIT
+cat > "$PREFIX/systemd/siriusx-reap.service" <<UNIT
+[Unit]
+Description=SiriusX orphan sandbox reaper
+After=network.target
+[Service]
+Type=oneshot
+EnvironmentFile=$ENV_FILE
+ExecStart=$PREFIX/reap-sandboxes.sh
+UNIT
+cat > "$PREFIX/systemd/siriusx-reap.timer" <<UNIT
+[Unit]
+Description=Run SiriusX sandbox reaper every 5 minutes
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+[Install]
+WantedBy=timers.target
+UNIT
 cat > "$PREFIX/systemd/siriusx-tool-gateway.service" <<UNIT
 [Unit]
 Description=SiriusX tool gateway
@@ -83,9 +108,9 @@ Restart=on-failure
 WantedBy=multi-user.target
 UNIT
 if [[ "$SYSTEMD" == "1" && "$(id -u)" == "0" && -d /run/systemd/system ]]; then
-  cp "$PREFIX/systemd/"*.service /etc/systemd/system/
+  cp "$PREFIX/systemd/"*.service "$PREFIX/systemd/"*.timer /etc/systemd/system/
   systemctl daemon-reload
-  systemctl enable --now siriusx-control-plane siriusx-tool-gateway
+  systemctl enable --now siriusx-control-plane siriusx-tool-gateway siriusx-reap.timer
   echo "systemd services enabled"
 elif [[ "$START" == "1" ]]; then
   cd "$PREFIX"
