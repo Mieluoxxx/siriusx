@@ -24,6 +24,8 @@
   审计无 token。证据：`05-github-gateway/test.txt`。
 - 真实 Pi CLI backend：`packages/kernel-pi` 通过 `pi --mode json` 跑两轮会话，
   映射 text delta / turn_end / assistant.message；模型使用本地 mock。证据：`06-pi-backend/test.txt`。
+- 同一 `local_dir` 工单分别交给真实 DSH ACP 与真实 Pi CLI，BotService 侧得到相同的
+  stage/report/事件类型序列（`idle`、`ready`、`state,state,report,state`）。证据：`07-kernel-parity/run.txt`。
 
 ## 验收对照
 

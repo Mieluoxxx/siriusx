@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "name": "dsh",
+      "stage": "idle",
+      "report": {
+        "kind": "ready",
+        "summary": "kernel parity",
+        "diffStats": {
+          "filesChanged": 0,
+          "insertions": 0,
+          "deletions": 0
+        },
+        "diffBasis": "ticketStart"
+      },
+      "events": [
+        "state",
+        "state",
+        "report",
+        "state"
+      ]
+    },
+    {
+      "name": "pi",
+      "stage": "idle",
+      "report": {
+        "kind": "ready",
+        "summary": "kernel parity",
+        "diffStats": {
+          "filesChanged": 0,
+          "insertions": 0,
+          "deletions": 0
+        },
+        "diffBasis": "ticketStart"
+      },
+      "events": [
+        "state",
+        "state",
+        "report",
+        "state"
+      ]
+    }
+  ],
+  "parity": true
+}
