@@ -92,3 +92,13 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 证据：`06-oidc/run.txt`。
 
 仍缺：真实企业 IdP 配置与 RS256/JWKS 凭证。
+
+## 浏览器 SSO 登录并看工单
+
+- `/login` 提供 “Sign in with organization SSO”；
+- 本地 OIDC IdP 完成授权码 + PKCE + state/nonce；
+- web-gateway 写 HttpOnly session，浏览器进入 DSH Web；
+- Team panel 显示 `1 ticket`，控制台无错误。
+- 证据：`07-browser-oidc/run.txt`、`oidc-login.png`。
+
+仍缺：真实企业 IdP、RS256/JWKS、真实客户身份映射。

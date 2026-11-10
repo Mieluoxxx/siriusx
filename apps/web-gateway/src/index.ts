@@ -186,6 +186,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
       if (request.method === 'GET' && url.pathname === '/login') {
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
         response.end(`<!doctype html><meta charset="utf-8"><title>SiriusX Login</title>
+<script>try { localStorage.setItem('siriusx.gatewayAuth','1') } catch {}</script>
 <form id="f"><input id="t" type="password" placeholder="control-plane session token" style="width:360px"><button>Sign in</button></form>
 ${oidcEnabled ? '<p><a href="/auth/oidc/start">Sign in with organization SSO</a></p>' : ''}
 <script>
