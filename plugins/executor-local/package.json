@@ -7,10 +7,16 @@
   "license": "MIT",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
-  "files": ["dist/index.js", "cordis.patch.yml", "README.md"],
+  "files": [
+    "dist/index.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
   "dsh": {
     "bundle": {
-      "patch": ["./cordis.patch.yml"]
+      "patch": [
+        "./cordis.patch.yml"
+      ]
     }
   },
   "scripts": {
@@ -25,7 +31,8 @@
     "@siriusx/contracts": "workspace:*",
     "@siriusx/executor-local": "workspace:*",
     "@siriusx/kernel-api": "workspace:*",
-    "@siriusx/kernel-dsh": "workspace:*"
+    "@siriusx/kernel-dsh": "workspace:*",
+    "@siriusx/autobot": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

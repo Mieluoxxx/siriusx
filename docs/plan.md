@@ -140,11 +140,11 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 派一个任务，它经过 `running` 到 `ready`，报告里带 `diffStats`，数字与 `git diff --stat` 一致。证据：`evidence/S3/02-host-plugin/run.txt`。
 - [x] 任务运行中追加一句话。任务先被 graceful cancel，再在同一个会话里 resume 并把活干完。证据：`evidence/S3/01-real-dsh/run.txt`（interruptKinds=start,resume）。
 - [x] agent 中途提问。本次派工以 `answer` 报告结束，回答后的新派工接着同一个会话继续。证据：`evidence/S3/01-real-dsh/run.txt`（answerStage=person/answer）。
-- [ ] 任务运行中杀掉 Host。15 分钟内重启后状态对账正确，没有重复事件推进工单。**部分完成**：真实 Bot 服务进程 SIGKILL/重启与 outbox 去重测试通过；Electron Host 级实验待补。证据：`evidence/S3/04-process-loss/test.txt`。
+- [x] 任务运行中杀掉 Host。15 分钟内重启后状态对账正确，没有重复事件推进工单。证据：`evidence/S3/07-host-kill/run.txt`（真实 DSH Web Host SIGKILL；重启后 assignment=lost）。
 - [x] 回收 workdir 后，用户指定的目录还在，只有 Executor 自己建的 worktree 和临时目录被清掉。证据：`packages/executor-local/tests/executor.spec.ts`。
 - [ ] S2 的场景剧本里适用于 `local_dir` 的那些，对着真实 Executor 全部通过。**部分完成**：取消、resume、answer、文件、容量、workspace、ready、previews/TTL 已有覆盖；真实断线未覆盖。证据：`evidence/S3/05-previews/test.txt`。
 - [x] 界面开着的同时 Executor 在跑任务，两边互不干扰。证据：`evidence/S3/02-host-plugin/ui-open.png` 与同目录 `run.txt`。
-- [ ] 以上全部通过后，给契约打一个版本标签。此后改契约要走变更评审。这是里程碑 M1。**部分完成**：已打 provisional tag `executor-v0.1.0-rc.1`（含 schema 哈希/测试证据），Host 级 kill/真实断线通过后再升级正式冻结。证据：`evidence/S3/06-contract-tag/`。
+- [ ] 以上全部通过后，给契约打一个版本标签。此后改契约要走变更评审。这是里程碑 M1。**部分完成**：Host 级 kill 已通过；previews/TTL 已通过；已打 provisional tag `executor-v0.1.0-rc.1`，仍待真实断线场景后升级正式冻结。证据：`evidence/S3/06-contract-tag/`、`07-host-kill/`。
 
 **产出物。** Executor 插件，本机 Bot 服务，回归用的会话日志，契约版本标签。
 

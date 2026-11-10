@@ -84,3 +84,11 @@
 - 契约单测 25 个通过；
 - 正式冻结仍等 Electron Host 级 kill/restart 与真实断线。
 - 证据：`06-contract-tag/tag.txt`、`contracts-test.txt`、`schema-sha256.txt`。
+
+## DSH Web Host SIGKILL / 重启对账
+
+- 真实 DSH Web Host 加载 `plugins/executor-local`，Host 内维护 SQLite Bot store；
+- 用延迟 60s 的本地 mock 模型让 assignment 停在 `preparing/running`；
+- SIGKILL Host 进程后，用同一 profile 与同一 `SIRIUSX_BOT_DB` 重启；
+- 重启后的 BotService `reconcile()` 把 assignment 标为 `lost`，GET ticket 返回 200 且不重复推进。
+- 证据：`07-host-kill/run.txt`、`before-kill.txt`、`after-restart.txt`、`host-first.txt`、`host-second.txt`。

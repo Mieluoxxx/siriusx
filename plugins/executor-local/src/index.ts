@@ -1,5 +1,7 @@
 /** DSH Host plugin exposing the SiriusX local Executor on a loopback test route. */
 import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
+import { BotService } from '@siriusx/autobot/bot-service'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-agent'
@@ -64,6 +66,48 @@ export async function apply(ctx: Context): Promise<void> {
     },
   })
   const executor = new LocalExecutor({ tenantId: 'tenant-local', backend, capacity: 2 })
+  const botDb = process.env.SIRIUSX_BOT_DB ?? join(process.env.DSH_HOME ?? '/tmp', 'siriusx-host-bot.sqlite')
+  const bot = new BotService({ dbPath: botDb, executor })
+  ctx.effect(() => () => bot.close(), 'siriusx-executor-local: bot store')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/__siriusx/bot/run-ticket',
+    handler: async (request, response) => {
+      if (!isLoopback(request.socket.remoteAddress)) { send(response, 403, { error: 'loopback only' }); return }
+      if (request.method !== 'POST') { send(response, 405, { error: 'POST required' }); return }
+      try {
+        const body = await readJson(request)
+        if (typeof body.path !== 'string' || !body.path.startsWith('/')) throw new Error('path must be absolute')
+        if (typeof body.prompt !== 'string' || body.prompt.trim() === '') throw new Error('prompt is required')
+        const ticketId = bot.createTicket({
+          tenantId: 'tenant-local',
+          workspace: { kind: 'local_dir', deviceId: 'local-device', path: body.path },
+          prompt: body.prompt,
+        })
+        send(response, 200, await bot.dispatch(ticketId))
+      } catch (error) {
+        send(response, 500, { error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  }), 'siriusx-executor-local: bot ticket route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/__siriusx/bot/ticket',
+    handler: async (request, response) => {
+      if (!isLoopback(request.socket.remoteAddress)) { send(response, 403, { error: 'loopback only' }); return }
+      if (request.method !== 'GET') { send(response, 405, { error: 'GET required' }); return }
+      const ticketId = new URL(request.url ?? '/', 'http://127.0.0.1').searchParams.get('ticketId')
+      if (ticketId === null || ticketId === '') { send(response, 400, { error: 'ticketId is required' }); return }
+      try {
+        const result = { ...bot.getTicket(ticketId), events: bot.eventsForTicket(ticketId) }
+        send(response, 200, result)
+      } catch (error) {
+        send(response, 404, { error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  }), 'siriusx-executor-local: bot ticket detail route')
 
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',

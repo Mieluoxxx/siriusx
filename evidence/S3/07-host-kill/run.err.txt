@@ -1,0 +1,1 @@
+./evidence/S3/07-host-kill/run.sh: line 62: 3191276 Killed                     PATH=/opt/node24/bin:$PATH DSH_HOME="$H" SIRIUSX_BOT_DB="$DBDIR/bot.sqlite" SIRIUSX_MOCK_KEY=local-test DSH_TELEMETRY_DISABLED=1 setsid node apps/cli/lib/bin.js --profile s3killweb --no-open --host 127.0.0.1 --port 0 > /tmp/s3-host-kill.log 2> /tmp/s3-host-kill.err
