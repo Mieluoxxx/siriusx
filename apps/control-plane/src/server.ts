@@ -13,6 +13,7 @@ export interface ControlPlaneServerOptions {
   readonly toolGatewayUrl?: string
   readonly analyticsPath?: string
   readonly ssoServiceToken?: string
+  readonly botScenario?: 'ready' | 'waiting'
 }
 
 export interface ControlPlaneServer {
@@ -53,7 +54,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 }
 
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
-  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }) })
+  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }) })
   let deviceGateway: DeviceGateway | undefined
   const toolGatewayUrl = options.toolGatewayUrl
   const analyticsPath = options.analyticsPath
@@ -68,6 +69,13 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       const parts = url.pathname.split('/').filter(Boolean)
       if (request.method === 'GET' && url.pathname === '/health') {
         write(response, 200, { ok: true, service: 'siriusx-control-plane' })
+        return
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/approvals/callback') {
+        if (ssoServiceToken === undefined || request.headers['x-siriusx-service-token'] !== ssoServiceToken) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'service token required')
+        const body = await readJson(request)
+        if (typeof body.ticketId !== 'string' || typeof body.tenantId !== 'string' || typeof body.approvalId !== 'string' || (body.status !== 'approved' && body.status !== 'rejected')) throw new Error('invalid approval callback')
+        write(response, 200, { resumed: await control.resumeTicketFromApproval(body.tenantId, body.ticketId, body.approvalId, body.status) })
         return
       }
       if (request.method === 'POST' && url.pathname === '/v1/sso/session') {

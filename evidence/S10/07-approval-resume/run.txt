@@ -1,0 +1,82 @@
+{
+  "proposed": {
+    "status": "pending",
+    "approvalId": "d59a4197-033e-4e58-976d-d17bfc57b2ff"
+  },
+  "decided": {
+    "status": "approved",
+    "result": {
+      "result": {
+        "action": "open_pull_request",
+        "ok": true
+      }
+    }
+  },
+  "assignments": [
+    {
+      "kind": "start",
+      "state": "reported"
+    },
+    {
+      "kind": "resume",
+      "state": "reported"
+    }
+  ],
+  "pendingRows": [
+    {
+      "id": "77fde09d-0904-424d-95a5-8f15899d3d3b",
+      "consumed_by": "426b82e3-845a-4896-89be-d56f787d4952"
+    }
+  ],
+  "detail": {
+    "ticketId": "51969196-e1d1-41a9-b7a5-c6b424b0f87b",
+    "title": "approval resume task",
+    "stage": "idle",
+    "closed": false,
+    "latestAssignment": {
+      "tenantId": "tenant-approval",
+      "assignmentId": "426b82e3-845a-4896-89be-d56f787d4952",
+      "ticketId": "51969196-e1d1-41a9-b7a5-c6b424b0f87b",
+      "workdirKey": "51969196-e1d1-41a9-b7a5-c6b424b0f87b",
+      "kernel": "dsh",
+      "state": "reported",
+      "lastSeq": 3,
+      "report": {
+        "kind": "waiting",
+        "summary": "approval required",
+        "reason": "waiting for tool approval"
+      }
+    },
+    "pendingInputs": 0,
+    "events": [
+      {
+        "type": "state",
+        "seq": 0,
+        "at": "2026-11-10T18:13:02.222Z",
+        "state": "preparing"
+      },
+      {
+        "type": "state",
+        "seq": 1,
+        "at": "2026-11-10T18:13:02.222Z",
+        "state": "running"
+      },
+      {
+        "type": "report",
+        "seq": 2,
+        "at": "2026-11-10T18:13:02.223Z",
+        "report": {
+          "kind": "waiting",
+          "summary": "approval required",
+          "reason": "waiting for tool approval"
+        }
+      },
+      {
+        "type": "state",
+        "seq": 3,
+        "at": "2026-11-10T18:13:02.223Z",
+        "state": "reported"
+      }
+    ]
+  }
+}

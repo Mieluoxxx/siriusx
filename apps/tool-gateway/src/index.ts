@@ -39,6 +39,13 @@ export interface ToolGatewayOptions {
   readonly policyEnabled?: boolean
   readonly approvalTtlMs?: number
   readonly now?: () => number
+  readonly onApprovalDecided?: (event: {
+    readonly approvalId: string
+    readonly tenantId: string
+    readonly ticketId: string
+    readonly status: 'approved' | 'rejected'
+    readonly request: ActionRequest
+  }) => void | Promise<void>
 }
 
 export type PolicyDecision =
@@ -114,7 +121,7 @@ CREATE TABLE IF NOT EXISTS audit (
 
 export class ToolGateway {
   readonly #db: DatabaseSync
-  readonly #options: { dbPath: string; connectors: Readonly<Record<string, Connector>>; policyEnabled: boolean; approvalTtlMs: number; credentials?: Readonly<Record<string, string>>; credentialProvider?: CredentialProvider }
+  readonly #options: { dbPath: string; connectors: Readonly<Record<string, Connector>>; policyEnabled: boolean; approvalTtlMs: number; credentials?: Readonly<Record<string, string>>; credentialProvider?: CredentialProvider; onApprovalDecided?: (event: { approvalId: string; tenantId: string; ticketId: string; status: 'approved' | 'rejected'; request: ActionRequest }) => void | Promise<void> }
   readonly #now: () => number
   readonly #executed: ActionRequest[] = []
 
@@ -128,6 +135,7 @@ export class ToolGateway {
       ...(options.credentialProvider === undefined ? {} : { credentialProvider: options.credentialProvider }),
       policyEnabled: options.policyEnabled ?? true,
       approvalTtlMs: options.approvalTtlMs ?? 15 * 60 * 1000,
+      ...(options.onApprovalDecided === undefined ? {} : { onApprovalDecided: options.onApprovalDecided }),
     }
     this.#now = options.now ?? Date.now
   }
@@ -216,11 +224,13 @@ export class ToolGateway {
     if (!approved) {
       this.#db.prepare('UPDATE approvals SET status = ?, approver_id = ?, decided_at = ? WHERE id = ?').run('rejected', context.approverId ?? context.operatorId, this.#now(), approvalId)
       this.audit(request, 'rejected:human', undefined, approvalId, context.approverId ?? context.operatorId)
+      await this.#options.onApprovalDecided?.({ approvalId, tenantId: request.tenantId, ticketId: request.ticketId, status: 'rejected', request })
       return { status: 'rejected' }
     }
     const result = await this.execute(request)
     this.#db.prepare('UPDATE approvals SET status = ?, approver_id = ?, decided_at = ? WHERE id = ?').run('approved', context.approverId ?? context.operatorId, this.#now(), approvalId)
     this.audit(request, 'approved:human', result, approvalId, context.approverId ?? context.operatorId)
+    await this.#options.onApprovalDecided?.({ approvalId, tenantId: request.tenantId, ticketId: request.ticketId, status: 'approved', request })
     return { status: 'approved', result }
   }
 

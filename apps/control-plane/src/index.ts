@@ -19,6 +19,7 @@ export interface ControlPlaneOptions {
   readonly dataDir: string
   readonly sessionSecret?: string
   readonly now?: () => number
+  readonly botScenario?: 'ready' | 'waiting'
 }
 
 export interface Session {
@@ -166,6 +167,7 @@ export class ControlPlane {
   readonly #dataDir: string
   readonly #secret: string
   readonly #now: () => number
+  readonly #botScenario: 'ready' | 'waiting'
   readonly #runtimes = new Map<string, BotService>()
   readonly #cloudExecutors = new Map<string, CloudExecutor>()
 
@@ -176,6 +178,7 @@ export class ControlPlane {
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
+    this.#botScenario = options.botScenario ?? 'ready'
   }
 
   close(): void {
@@ -662,7 +665,9 @@ export class ControlPlane {
     const dir = join(this.#dataDir, 'tenants', tenantId)
     mkdirSync(dir, { recursive: true })
     const kernel = new FakeKernel({
-      defaultScenario: { steps: [{ kind: 'delta', text: '```siriusx-report\n{"kind":"ready","summary":"tenant-local Bot runtime finished"}\n```' }] },
+      defaultScenario: this.#botScenario === 'waiting'
+        ? { steps: [{ kind: 'delta', text: '```siriusx-report\n{"kind":"waiting","summary":"approval required","reason":"waiting for tool approval"}\n```' }] }
+        : { steps: [{ kind: 'delta', text: '```siriusx-report\n{"kind":"ready","summary":"tenant-local Bot runtime finished"}\n```' }] },
     })
     const executor = new LocalExecutor({ tenantId, backend: kernel })
     const runtime = new BotService({ dbPath: join(dir, 'bot.sqlite'), executor })
@@ -695,6 +700,16 @@ export class ControlPlane {
     } catch {
       try { return this.getDeviceTicket(session.tenantId, ticketId) } catch { return this.getCloudTicket(session.tenantId, ticketId) }
     }
+  }
+
+  async resumeTicketFromApproval(tenantId: string, ticketId: string, approvalId: string, status: 'approved' | 'rejected'): Promise<boolean> {
+    try {
+      this.botRuntime(tenantId).getTicket(ticketId)
+    } catch {
+      return false
+    }
+    await this.botRuntime(tenantId).sendInput(ticketId, `Approval ${approvalId} was ${status}. Continue the ticket from the previous report.`, 'tool-gateway:approval')
+    return true
   }
 
   async sendTicketInput(session: Session, ticketId: string, text: string): Promise<unknown> {

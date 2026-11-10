@@ -7,10 +7,21 @@ import { HttpCredentialProvider, StaticCredentialProvider } from './credentials.
 const port = process.env.SIRIUSX_TOOL_GATEWAY_PORT === undefined ? 4330 : Number(process.env.SIRIUSX_TOOL_GATEWAY_PORT)
 const db = process.env.SIRIUSX_TOOL_GATEWAY_DB ?? '/tmp/siriusx-tool-gateway.sqlite'
 const host = process.env.SIRIUSX_TOOL_GATEWAY_HOST ?? '127.0.0.1'
+const callbackUrl = process.env.SIRIUSX_APPROVAL_CALLBACK_URL
+const callbackToken = process.env.SIRIUSX_INTERNAL_SERVICE_TOKEN
 const server = await startToolGatewayServer({
   dbPath: db,
   port,
   host,
+  ...(callbackUrl === undefined ? {} : {
+    onApprovalDecided: async (event) => {
+      await fetch(callbackUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(callbackToken === undefined ? {} : { 'x-siriusx-service-token': callbackToken }) },
+        body: JSON.stringify(event),
+      }).catch(() => undefined)
+    },
+  }),
   ...(process.env.SIRIUSX_CREDENTIAL_URL === undefined
     ? { credentials: { github: process.env.GITHUB_TOKEN ?? 'not-configured', gitlab: process.env.GITLAB_TOKEN ?? 'not-configured' } }
     : { credentialProvider: new HttpCredentialProvider({ url: process.env.SIRIUSX_CREDENTIAL_URL, token: process.env.SIRIUSX_CREDENTIAL_TOKEN ?? '' }) }),

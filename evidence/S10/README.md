@@ -38,3 +38,13 @@ Team panel 自动变为单列，工单列表、详情、diff 和事件流均可�
 - 手机端云端抓包（只允许状态/摘要）。
 
 因此当前结论是「先做响应式 Web」，原生端暂不启动。
+
+## 审批唤醒等待任务
+
+- ToolGateway 决策后支持 `onApprovalDecided` 回调；
+- control-plane `POST /v1/approvals/callback` 使用内部 service token 接收；
+- 回调按 `ticketId` 向 BotService 注入审批结果 follow-up，触发 `resume` assignment；
+- 测试：一个 waiting report 的工单在审批后出现 `start → resume` 两个 assignment，且都到 reported。
+- 证据：`07-approval-resume/run.txt`。
+
+仍缺：真实手机 UI 审批与真实等待中 agent 的同一条链路联调。

@@ -9,6 +9,7 @@ export interface ToolGatewayServerOptions {
   readonly port?: number
   readonly host?: string
   readonly policyEnabled?: boolean
+  readonly onApprovalDecided?: import('./index.ts').ToolGatewayOptions['onApprovalDecided']
 }
 
 export interface ToolGatewayServer {
@@ -64,6 +65,7 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
     connectors: options.connectors,
     ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
     ...(options.policyEnabled === undefined ? {} : { policyEnabled: options.policyEnabled }),
+    ...(options.onApprovalDecided === undefined ? {} : { onApprovalDecided: options.onApprovalDecided }),
   })
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') { response.writeHead(204, CORS).end(); return }
