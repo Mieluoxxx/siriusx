@@ -83,4 +83,4 @@
 
 - 设备断开后按宽限期结算未完成 assignment 为 `lost`；
 - 宽限期内重连会清除定时器；
-- 证据：`09-offline-timeout/`。
+- 证据：`09-offline-timeout/`、`10-reconnect-resume/`。

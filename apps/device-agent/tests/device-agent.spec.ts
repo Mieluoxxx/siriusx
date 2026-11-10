@@ -235,4 +235,53 @@ describe('device agent', () => {
     expect(final?.stage).toBe('idle')
   }, 15_000)
 
+  it('replays a running assignment when the device reconnects within the grace period', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-device-reconnect-'))
+    roots.push(root)
+    await execFileAsync('git', ['init', '-q'], { cwd: root })
+    await execFileAsync('git', ['config', 'user.email', 'test@example.com'], { cwd: root })
+    await execFileAsync('git', ['config', 'user.name', 'Test'], { cwd: root })
+    await writeFile(join(root, 'app.txt'), 'one\n')
+    await execFileAsync('git', ['add', '.'], { cwd: root })
+    await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret', deviceOfflineLostMs: 1000 })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
+    const pair = await fetch(`${server.url}/v1/devices/pair/start`, { method: 'POST', headers: auth, body: JSON.stringify({ name: 'Reconnect Device' }) }).then(r => r.json()) as { code: string }
+    const paired = await fetch(`${server.url}/v1/devices/pair/confirm`, { method: 'POST', headers: auth, body: JSON.stringify({ code: pair.code }) }).then(r => r.json()) as { deviceId: string; token: string }
+    const bot = await fetch(`${server.url}/v1/bots`, { method: 'POST', headers: auth, body: JSON.stringify({ name: 'Reconnect Bot' }) }).then(r => r.json()) as { id: string }
+    const gateway = await startDeviceGateway({ control: server.control, port: 0 })
+    gateways.push(gateway)
+    server.setDeviceGateway(gateway)
+    const slowExecutor = new LocalExecutor({ tenantId: tenant.id, backend: new FakeKernel({ defaultScenario: { steps: [{ kind: 'wait', millis: 60_000 }] } }) })
+    const firstAgent = await startDeviceAgent({ url: gateway.url, token: paired.token, executor: slowExecutor })
+    agents.push(firstAgent)
+    await firstAgent.ready
+    const created = await fetch(`${server.url}/v1/bots/${bot.id}/tickets`, {
+      method: 'POST', headers: auth, body: JSON.stringify({ deviceId: paired.deviceId, path: root, prompt: 'reconnect and resume' }),
+    }).then(r => r.json()) as { ticketId: string; delivered: boolean }
+    expect(created.delivered).toBe(true)
+    for (let index = 0; index < 100; index++) {
+      const detail = await fetch(`${server.url}/v1/tickets/${created.ticketId}`, { headers: auth }).then(r => r.json()) as { stage: string }
+      if (detail.stage === 'working') break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    firstAgent.close()
+    const fastExecutor = new LocalExecutor({ tenantId: tenant.id, backend: new FakeKernel() })
+    const secondAgent = await startDeviceAgent({ url: gateway.url, token: paired.token, executor: fastExecutor })
+    agents.push(secondAgent)
+    await secondAgent.ready
+    let final: { stage: string; latestAssignment?: { state: string; report?: { kind: string } } } | undefined
+    for (let index = 0; index < 200; index++) {
+      final = await fetch(`${server.url}/v1/tickets/${created.ticketId}`, { headers: auth }).then(r => r.json()) as typeof final
+      if (final?.latestAssignment?.report?.kind === 'ready') break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    expect(final?.stage).toBe('person/review')
+    expect(final?.latestAssignment?.state).toBe('reported')
+  }, 15_000)
+
 })

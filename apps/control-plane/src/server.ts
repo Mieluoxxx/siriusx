@@ -297,13 +297,13 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         const key = `${auth.tenantId}/${auth.deviceId}`
         const timer = offlineTimers.get(key)
         if (timer !== undefined) { clearTimeout(timer); offlineTimers.delete(key) }
-        for (const pending of control.pendingDeviceAssignments(auth.tenantId, auth.deviceId)) {
+        for (const assignment of [...control.pendingDeviceAssignments(auth.tenantId, auth.deviceId), ...control.recoverableDeviceAssignments(auth.tenantId, auth.deviceId)]) {
           const delivered = gateway.sendToDevice(auth.tenantId, auth.deviceId, {
             type: 'ticket.assign',
-            ticketId: pending.ticketId,
-            assignment: pending.assignment,
+            ticketId: assignment.ticketId,
+            assignment: assignment.assignment,
           })
-          if (delivered) control.markDeviceTicketDelivered(auth.tenantId, pending.ticketId)
+          if (delivered) control.markDeviceTicketDelivered(auth.tenantId, assignment.ticketId)
         }
       })
       gateway.setDisconnectHandler(auth => {

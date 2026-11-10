@@ -462,6 +462,13 @@ export class ControlPlane {
     return rows.length
   }
 
+  /** Delivered assignments that a reconnecting device should resume inside the grace period. */
+  recoverableDeviceAssignments(tenantId: string, deviceId: string): Array<{ ticketId: string; assignment: unknown }> {
+    const rows = this.#db.prepare("SELECT ticket_id, assignment_json FROM device_tickets WHERE tenant_id = ? AND device_id = ? AND delivered_at IS NOT NULL AND latest_state IN ('preparing','running','backgrounded')")
+      .all(tenantId, deviceId) as Array<{ ticket_id: string; assignment_json: string | null }>
+    return rows.flatMap(row => row.assignment_json === null ? [] : [{ ticketId: row.ticket_id, assignment: JSON.parse(row.assignment_json) as unknown }])
+  }
+
   pendingDeviceAssignments(tenantId: string, deviceId: string): Array<{ ticketId: string; assignment: unknown }> {
     const rows = this.#db.prepare('SELECT ticket_id, assignment_json FROM device_tickets WHERE tenant_id = ? AND device_id = ? AND delivered_at IS NULL')
       .all(tenantId, deviceId) as Array<{ ticket_id: string; assignment_json: string | null }>
