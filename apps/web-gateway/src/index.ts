@@ -200,6 +200,13 @@ document.getElementById('f').onsubmit = async (event) => {
 </script>`)
         return
       }
+      if ((request.method === 'GET' || request.method === 'POST') && url.pathname === '/auth/logout') {
+        response.writeHead(302, {
+          'set-cookie': `${cookieName}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`,
+          location: '/login', 'cache-control': 'no-store',
+        }).end()
+        return
+      }
       if (request.method === 'POST' && url.pathname === '/auth/session') {
         const payload = await body(request)
         if (typeof payload.token !== 'string' || payload.token === '' || !(await accountFor(controlPlaneUrl, payload.token))) {

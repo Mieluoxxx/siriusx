@@ -118,3 +118,9 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - web-gateway 用 `createRemoteJWKSet` 验签 RS256 ID token；
 - start/authorize/callback 302，`/v1/me` 200。
 - 证据：`09-oidc-rs256/run.txt`。
+
+## Web Gateway logout
+
+- `/auth/logout` 清除 HttpOnly session cookie；
+- 登出后 `/v1/me` 返回 401。
+- 证据：`10-logout/run.txt`。
