@@ -1,0 +1,42 @@
+ Image siriusx/control-plane:dev Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 531B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.16kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [build  1/18] FROM docker.io/library/debian:bookworm-slim
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 661.98kB 0.0s done
+#6 DONE 0.1s
+
+#7 [build  2/18] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl xz-utils git   && rm -rf /var/lib/apt/lists/*
+#7 0.831 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#7 1.743 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#7 2.140 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#7 2.591 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+#7 ...
+
+#8 [stage-1 2/4] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl xz-utils   && rm -rf /var/lib/apt/lists/*   && curl -fsSLo /tmp/node.tar.xz https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-x64.tar.xz   && tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1   && rm /tmp/node.tar.xz   && npm install -g pnpm@11.28.5
+#8 12.37 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#8 13.60 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#8 14.53 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#8 15.77 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+#8 273.2 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#8 273.4 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [366 kB]
+#8 ...
+
+#7 [build  2/18] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl xz-utils git   && rm -rf /var/lib/apt/lists/*
+#7 276.6 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#7 276.8 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [366 kB]

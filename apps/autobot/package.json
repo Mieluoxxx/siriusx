@@ -1,0 +1,34 @@
+{
+  "name": "@siriusx/autobot",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scenario runner and the first local Bot/Executor loop for SiriusX.",
+  "license": "MIT",
+  "bin": {
+    "autobot": "./src/cli.ts"
+  },
+  "scripts": {
+    "autobot": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@siriusx/contracts": "workspace:*",
+    "@siriusx/fake-kernel": "workspace:*",
+    "@siriusx/kernel-api": "workspace:*",
+    "zod": "4.4.3",
+    "@siriusx/executor-local": "workspace:*",
+    "@siriusx/app-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  },
+  "exports": {
+    ".": "./src/cli.ts",
+    "./bot-service": "./src/bot-service.ts",
+    "./server": "./src/server.ts"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@siriusx/dsh-telemetry-off",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Disable upstream DSH telemetry, session-log upload, anonymous correlation, and official feedback upload.",
+  "license": "MIT",
+  "files": [
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml"
+      ]
+    }
+  }
+}

@@ -1,0 +1,3 @@
+$ pnpm --filter @deepseek-ai/dsh-desktop run start
+$ tsx scripts/dev.ts --skip-build
+desktop build paths: unsupported target linux-x64

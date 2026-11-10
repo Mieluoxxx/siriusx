@@ -1,0 +1,12 @@
+$ pnpm -r run typecheck
+Scope: 7 of 8 workspace projects
+packages/contracts typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-api typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-api typecheck: Done
+packages/fake-kernel typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-dsh typecheck$ tsc -p tsconfig.json --noEmit
+packages/contracts typecheck: Done
+packages/fake-kernel typecheck: Done
+apps/autobot typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-dsh typecheck: Done
+apps/autobot typecheck: Done

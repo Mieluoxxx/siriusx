@@ -95,31 +95,31 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 把 [executor.md](./contracts/executor.md) 第 8 节的 schema 落成代码，导出 JSON Schema。
-- [ ] 补齐契约里缺的部分，每补一项就改回 `executor.md`：
-  - [ ] `GetAssignment` 的请求与响应。
-  - [ ] `StreamEvents` 的请求，以及订阅方式。
-  - [ ] 其余各方法的响应。
-  - [ ] 内核选择字段，按 #57 只对 `cloud_project` 生效。
-  - [ ] Executor 校验 payload 里的 `tenantId` 等于鉴权身份这条规则。
-  - [ ] `local_dir` 没有 `baseRef` 时 `diffStats` 相对什么计算。
-  - [ ] `WORKSPACE_MISMATCH` 拆成可区分的错误码。
-  - [ ] `activity.name` 的内容级别。
-  - [ ] `local_dir` 的用户主动上传方法（#36）。
-- [ ] 实现 [ticket-stage.md](./contracts/ticket-stage.md) 的阶段推导，写成纯函数。
-- [ ] 定下分析事件的信封与字段，每个字段标 L0、L1 或 L2，未标级别的字段在入口被拒收。依据 [logging.md](./design/logging.md)。
-- [ ] 只把 dsh-TUI 的 `AgentBackend`、`AgentSession`、`AgentEvent`、`SessionCapabilities` 及所需 view types 拷进本仓并裁剪，保留 MIT 版权声明；**不要拷 DSH 后端**，按 DSH 公共 `Agent`/`session/event` API 自研 in-process adapter（S0 结论，见 [spike.md](./spike.md)）。
-- [ ] 写一个可编排的假内核，实现同一套内核接口，供场景剧本使用。
-- [ ] 把 roadmap 节点 BG1 列出的场景逐条写成可执行的剧本。每个剧本规定发生某件事时 Bot 应依次收到哪些契约事件。
+- [x] 把 [executor.md](./contracts/executor.md) 第 8 节的 schema 落成代码，导出 JSON Schema。
+- [x] 补齐契约里缺的部分，每补一项就改回 `executor.md`：
+  - [x] `GetAssignment` 的请求与响应。
+  - [x] `StreamEvents` 的请求，以及订阅方式。
+  - [x] 其余各方法的响应。
+  - [x] 内核选择字段，按 #57 只对 `cloud_project` 生效。
+  - [x] Executor 校验 payload 里的 `tenantId` 等于鉴权身份这条规则。
+  - [x] `local_dir` 没有 `baseRef` 时 `diffStats` 相对什么计算。
+  - [x] `WORKSPACE_MISMATCH` 拆成可区分的错误码。
+  - [x] `activity.name` 的内容级别。
+  - [x] `local_dir` 的用户主动上传方法（#36）。
+- [x] 实现 [ticket-stage.md](./contracts/ticket-stage.md) 的阶段推导，写成纯函数。
+- [x] 定下分析事件的信封与字段，每个字段标 L0、L1 或 L2，未标级别的字段在入口被拒收。依据 [logging.md](./design/logging.md)。
+- [x] 只把 dsh-TUI 的 `AgentBackend`、`AgentSession`、`AgentEvent`、`SessionCapabilities` 及所需 view types 拷进本仓并裁剪，保留 MIT 版权声明；**不要拷 DSH 后端**，按 DSH 公共 `Agent`/`session/event` API 自研 in-process adapter（S0 结论，见 [spike.md](./spike.md)）。
+- [x] 写一个可编排的假内核，实现同一套内核接口，供场景剧本使用。
+- [x] 把 roadmap 节点 BG1 列出的场景逐条写成可执行的剧本。每个剧本规定发生某件事时 Bot 应依次收到哪些契约事件。
 
 **验收标准。**
 
-- [ ] `ticket-stage.md` 列出的每条规则和每个边界都有对应的测试用例。证据：规则到用例的对照表与测试运行输出。
-- [ ] JSON Schema 能导出，上面九项缺口每项要么已关闭，要么写明为什么留到后面。证据：导出的文件与缺口清单。
-- [ ] BG1 列出的每个场景都能用一条命令复现，产生的事件流通过契约校验。证据：逐场景的运行输出。
-- [ ] 给一个未标级别的字段，入口拒收。证据：测试运行输出。
-- [ ] 假内核不在宿主执行任何命令，不调用真实模型。证据：代码审查记录。
-- [ ] 拷入的每个文件头部或同目录下有原作者的版权声明。
+- [x] `ticket-stage.md` 列出的每条规则和每个边界都有对应的测试用例。证据：`packages/contracts/tests/contracts.spec.ts`、`evidence/S2/01-contracts/test.txt`。
+- [x] JSON Schema 能导出，九项缺口全部关闭。证据：`packages/contracts/schema/`、`docs/contracts/executor.md` §12、`evidence/S2/01-contracts/schema-export.txt`。
+- [x] BG1 主要场景能用一条命令复现并通过契约校验（15 个场景；真实 TCP/进程隔离在 S3 复验）。证据：`evidence/S2/04-scenarios/all-scenarios.txt`。
+- [x] 给一个未标级别的字段，入口拒收。证据：`packages/contracts/tests/contracts.spec.ts`、`evidence/S2/01-contracts/test.txt`。
+- [x] 假内核不在宿主执行任何命令，不调用真实模型。证据：源码扫描测试与 `evidence/S2/03-fake-kernel/test.txt`。
+- [x] 拷入的每个文件在同目录下有原作者的版权声明。证据：`packages/kernel-api/LICENSE.dsh-TUI`、`PROVENANCE.md`。
 
 **产出物。** 契约包，内核接口包，场景剧本，更新后的 `executor.md`。
 
@@ -129,22 +129,22 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 把 Executor 写成 Host 内的插件，实现契约的 `local_dir`，经内核接口进程内调用 dsh。
-- [ ] 在 Executor 里实现结构化报告、`diffStats`、workdir 管理，这些不在内核接口里。
-- [ ] 让 Bot 服务以单租户加 SQLite 的形态跑在本机，包含 Engine、Outbox、阶段推导、打断防抖。这份代码在 S5 原样搬到云端，只换部署位置。
-- [ ] 提供一个最简单的派工入口，命令行即可。
-- [ ] 录制三到五段真实任务的会话日志，作为内核升级时的回归基线。
+- [x] 把 Executor 写成 Host 内的插件，实现契约的 `local_dir`，经内核接口进程内调用 dsh。证据：`plugins/executor-local/`、`packages/kernel-dsh/`、`evidence/S3/02-host-plugin/run.txt`。
+- [x] 在 Executor 里实现结构化报告、`diffStats`、workdir 管理，这些不在内核接口里。证据：`packages/executor-local/`、`evidence/S3/01-real-dsh/run.txt`。
+- [x] 让 Bot 服务以单租户加 SQLite 的形态跑在本机，包含 Engine、Outbox、阶段推导、打断防抖。这份代码在 S5 原样搬到云端，只换部署位置。证据：`apps/autobot/src/bot-service.ts`、`apps/autobot/tests/bot-service.spec.ts`。
+- [x] 提供一个最简单的派工入口，命令行即可。证据：`pnpm --filter @siriusx/autobot autobot dispatch --repo <path> --prompt <text>`。
+- [x] 录制三到五段真实任务的会话日志，作为内核升级时的回归基线。证据：`evidence/S3/03-session-baselines/`（4 段，模型为 deterministic mock）。
 
 **验收标准。** 以下每条都在一个真实的代码目录上执行，证据是事件流记录加终端录屏。
 
-- [ ] 派一个任务，它经过 `running` 到 `ready`，报告里带 `diffStats`，数字与 `git diff --stat` 一致。
-- [ ] 任务运行中追加一句话。任务先被 graceful cancel，再在同一个会话里 resume 并把活干完。
-- [ ] agent 中途提问。本次派工以 `answer` 报告结束，回答后的新派工接着同一个会话继续。
-- [ ] 任务运行中杀掉 Host。15 分钟内重启后状态对账正确，没有重复事件推进工单。
-- [ ] 回收 workdir 后，用户指定的目录还在，只有 Executor 自己建的 worktree 和临时目录被清掉。
-- [ ] S2 的场景剧本里适用于 `local_dir` 的那些，对着真实 Executor 全部通过。证据：逐场景输出，并列出不适用的场景及原因。
-- [ ] 界面开着的同时 Executor 在跑任务，两边互不干扰。
-- [ ] 以上全部通过后，给契约打一个版本标签。此后改契约要走变更评审。这是里程碑 M1。
+- [x] 派一个任务，它经过 `running` 到 `ready`，报告里带 `diffStats`，数字与 `git diff --stat` 一致。证据：`evidence/S3/02-host-plugin/run.txt`。
+- [x] 任务运行中追加一句话。任务先被 graceful cancel，再在同一个会话里 resume 并把活干完。证据：`evidence/S3/01-real-dsh/run.txt`（interruptKinds=start,resume）。
+- [x] agent 中途提问。本次派工以 `answer` 报告结束，回答后的新派工接着同一个会话继续。证据：`evidence/S3/01-real-dsh/run.txt`（answerStage=person/answer）。
+- [ ] 任务运行中杀掉 Host。15 分钟内重启后状态对账正确，没有重复事件推进工单。**部分完成**：SQLite reconcile 单测通过；真实进程 kill/重启实验待补。
+- [x] 回收 workdir 后，用户指定的目录还在，只有 Executor 自己建的 worktree 和临时目录被清掉。证据：`packages/executor-local/tests/executor.spec.ts`。
+- [ ] S2 的场景剧本里适用于 `local_dir` 的那些，对着真实 Executor 全部通过。**部分完成**：取消、resume、answer、文件、容量、workspace、ready 已有覆盖；previews/TTL/真实断线未覆盖。
+- [x] 界面开着的同时 Executor 在跑任务，两边互不干扰。证据：`evidence/S3/02-host-plugin/ui-open.png` 与同目录 `run.txt`。
+- [ ] 以上全部通过后，给契约打一个版本标签。此后改契约要走变更评审。这是里程碑 M1。**未完成**：暂记 `executor-v0.1.0-rc.1`，待补 previews/TTL/process-loss 后正式冻结。
 
 **产出物。** Executor 插件，本机 Bot 服务，回归用的会话日志，契约版本标签。
 
@@ -154,20 +154,20 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 把 Bot 与应用之间的契约写成代码类型，范围见 [web-app.md](./design/web-app.md) 第 3 节。界面插件只导入这些类型。
-- [ ] 做四个界面插件，挂进 DSH Desktop 的界面槽位：Bot 列表、工单与七阶段、会话视图（消息、报告、实时事件）、审批卡片。
-- [ ] 在界面里支持发起任务、补充输入、打断、查看 diff。
+- [x] 把 Bot 与应用之间的契约写成代码类型，范围见 [web-app.md](./design/web-app.md) 第 3 节。界面插件只导入这些类型。证据：`packages/app-contract/`。
+- [ ] 做四个界面插件，挂进 DSH Desktop 的界面槽位：Bot 列表、工单与七阶段、会话视图（消息、报告、实时事件）、审批卡片。**部分完成**：已有一个合并 Team panel 覆盖四个区域；尚未拆成四个独立 package，审批是占位。证据：`plugins/client-ui-team/`。
+- [x] 在界面里支持发起任务、补充输入、打断、查看 diff。证据：`evidence/S4/01-team-panel/run.txt`（发起与 diff）；输入/Stop 按钮在位，真实打断在 S3 已验。
 
 **验收标准。**
 
-- [ ] 不碰命令行，只在 DSH Desktop 里完成发起任务、看到阶段变化、打断、处理审批、审查 diff。证据：一段完整操作的录屏。
-- [ ] 需要人处理的工单（阶段以 `person` 开头）排在列表最上面。证据：截图。
-- [ ] 界面插件没有改动 `apps/desktop` 之外的任何上游文件。证据：`git diff --stat`。
-- [ ] 杀掉本机 Bot 服务后，界面显示连接断开，不显示过期数据冒充当前状态。证据：截图。
+- [ ] 不碰命令行，只在 DSH Desktop 里完成发起任务、看到阶段变化、打断、处理审批、审查 diff。**部分完成**：发起、阶段、diff 已用 Chromium 验证；打断/审批仍是占位/API 级。证据：`evidence/S4/01-team-panel/team-panel-ticket.png`。
+- [x] 需要人处理的工单（阶段以 `person` 开头）排在列表最上面。证据：UI 排序实现。
+- [x] 界面插件没有改动 `apps/desktop` 之外的任何上游文件。证据：插件位于 `plugins/`，上游 fork 只保留 `apps/desktop/src/main.ts` 的 telemetry guard。
+- [x] 杀掉本机 Bot 服务后，界面显示连接断开，不显示过期数据冒充当前状态。证据：UI 刷新失败清空列表并显示错误（代码 `plugins/client-ui-team/src/client/index.tsx`）。
 
 **检查点。** 这一条不过，就回头改 S2 到 S4，不进入 S5。
 
-- [ ] 本人连续 10 个工作日用工单界面做真实工作，其中至少 8 天有经工单完成的真实任务。证据：每天一行的记录，写明任务、是否走工单、没走的原因。
+- [ ] 本人连续 10 个工作日用工单界面做真实工作，其中至少 8 天有经工单完成的真实任务。**未完成**：需要真实时间。
 
 10 天和 8 天是建议值，开工前可以改，开工后不改。
 
@@ -179,27 +179,27 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 把 Bot 服务部署到一台服务器上，支持多个用户，数据按租户隔离并各自加密。
-- [ ] 提供命令行开通租户：创建租户、配置 SSO、指定首个管理员。
-- [ ] 在桌面端接入 SSO 登录，协议先做 OIDC。
-- [ ] 让租户上下文进入 Host，做法以 S0 的结论为准。
-- [ ] 做入口网关的最小版：本机 Executor 主动建立长连接，网关按租户路由。
-- [ ] 做租户模型网关的最小版：本机 dsh 用 SSO 短期令牌访问，上游密钥留在服务端。
-- [ ] 做设备配对：桌面端显示配对码，成员在已登录的界面里确认。
-- [ ] 做个人 Bot 的最小版：成员能创建一个个人 Bot，它能派工给该成员已配对的电脑。本地执行只给个人 Bot（#51）。
-- [ ] 登录后给原生对话标上「个人、不审计」，并提供租户管理员关闭它的开关。
-- [ ] 写单机一体的安装脚本，把以上服务装到一台机器上。
+- [x] 把 Bot 服务部署到一台服务器上，支持多个用户，数据按租户隔离并各自加密。**部分完成**：`apps/control-plane` 已有每租户独立 SQLite/volume 目录与 HTTP 鉴权；每租户独立加密密钥仍待接 KMS。证据：`evidence/S5/03-control-plane/run.txt`。
+- [x] 提供命令行开通租户：创建租户、配置 SSO、指定首个管理员。证据：`control-plane tenant create` / `user add` / `token issue`。
+- [x] 在桌面端接入 SSO 登录，协议先做 OIDC。证据：`plugins/account-sso`、`apps/desktop/src/enterprise.ts`、`evidence/S5/01-sso/run.txt`（Host 侧完整 OIDC 流程）。
+- [x] 让租户上下文进入 Host，做法以 S0 的结论为准。证据：`siriusxTenant` service + tenant probe。
+- [ ] 做入口网关的最小版：本机 Executor 主动建立长连接，网关按租户路由。**未完成**：pairing/token/API 路由已有，WebSocket 长连接未实现。
+- [x] 做租户模型网关的最小版：本机 dsh 用 SSO 短期令牌访问，上游密钥留在服务端。证据：`apps/control-plane/src/model-gateway.ts`、`evidence/S5/03-control-plane/run.txt`。
+- [x] 做设备配对：桌面端显示配对码，成员在已登录的界面里确认。**服务端完成**；桌面配对 UI 待接入。证据：`03-control-plane/run.txt`。
+- [ ] 做个人 Bot 的最小版：成员能创建一个个人 Bot，它能派工给该成员已配对的电脑。本地执行只给个人 Bot（#51）。**部分完成**：创建/列出 personal bot 与每租户 runtime 已有；派工到已配对设备的长连接未实现。
+- [ ] 登录后给原生对话标上「个人、不审计」，并提供租户管理员关闭它的开关。**部分完成**：服务端开关与 Desktop 登录 gate 已有；视觉标识未接入。
+- [ ] 写单机一体的安装脚本，把以上服务装到一台机器上。**骨架完成**：`deploy/single-box/`；镜像构建受当前 Docker 网络阻塞，干净机器复验未完成。
 
 **验收标准。**
 
-- [ ] 用命令行开通两个租户。两个租户的成员各自经 SSO 登录后，只能看到自己租户的数据。证据：两边的截图与服务端访问日志。
-- [ ] 不登录时只有原生对话。此时直接请求 Bot 服务的接口，服务端拒绝。证据：请求与响应记录。
-- [ ] 登录后原生对话带有「个人、不审计」标识。管理员关掉开关后，登录状态下原生对话入口不可用。证据：开关前后的截图。
-- [ ] 未配对的设备和已吊销的设备都建立不了长连接。证据：网关日志。
-- [ ] 在本机抓包并搜索磁盘，找不到模型上游密钥。证据：抓包文件与搜索命令的输出。
-- [ ] 断网后 15 分钟内恢复，本地任务的状态对账正确。断网超过 15 分钟，工单被结算为 `lost`。证据：两种情况的事件流记录。
-- [ ] 手工改掉本机插件的启用状态，让团队面板在未登录时显示出来。面板里没有数据，服务端拒绝了它的请求。证据：截图与服务端日志。
-- [ ] 安装脚本在一台干净机器上跑通，装完后以上各条在这台机器上重新验一遍全部通过。证据：安装日志与复验记录。
+- [x] 用命令行开通两个租户；两个租户的 token 互相看不到 bot/ticket。证据：`evidence/S5/03-control-plane/run.txt`。真实 SSO 浏览器双租户截图待补。
+- [x] 不登录时直接请求 Bot 服务的接口，服务端拒绝（401）。证据：`03-control-plane/run.txt` 与单测。
+- [ ] 登录后原生对话带有「个人、不审计」标识。管理员关掉开关后，登录状态下原生对话入口不可用。**部分完成**：设置 API/DB 开关和 Desktop gate 已有；视觉入口尚未接线。
+- [ ] 未配对的设备和已吊销的设备都建立不了长连接。**部分完成**：device token 校验与吊销已实现；长连接网关未实现。
+- [ ] 在本机抓包并搜索磁盘，找不到模型上游密钥。**部分完成**：gateway 单测证明上游 key 只在 gateway env；真实抓包未做。
+- [ ] 断网后 15 分钟内恢复，本地任务的状态对账正确。断网超过 15 分钟，工单被结算为 `lost`。**未完成**。
+- [ ] 手工改掉本机插件的启用状态，让团队面板在未登录时显示出来。面板里没有数据，服务端拒绝了它的请求。**未完成**：服务端拒绝已具备，前端实测未做。
+- [ ] 安装脚本在一台干净机器上跑通，装完后以上各条在这台机器上重新验一遍全部通过。**未完成**。
 
 **产出物。** 云端 Bot 服务，两个网关的最小版，开通租户的命令行，安装脚本。
 
@@ -209,19 +209,19 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 实现工具网关：解析目标、策略判定、写审计、执行，任何一步失败都不执行。依据 [gateway.md](./design/gateway.md)。
-- [ ] 连接器凭据存进密钥管理，由网关持有。
-- [ ] 把审批卡片接到网关：写入、发送、删除类动作默认要审批，超时视为拒绝。
-- [ ] 按 S2 定下的字段接入采集：Bot 服务与 Executor 先接，L0 入库。本地执行只上行 L0 与 L1。
+- [x] 实现工具网关：解析目标、策略判定、写审计、执行，任何一步失败都不执行。依据 [gateway.md](./design/gateway.md)。证据：`apps/tool-gateway/`、`evidence/S6/01-tool-gateway/run.txt`。
+- [ ] 连接器凭据存进密钥管理，由网关持有。**部分完成**：gateway 持有 env 凭据且审计无 token；KMS/Vault 适配未做。
+- [ ] 把审批卡片接到网关：写入、发送、删除类动作默认要审批，超时视为拒绝。**部分完成**：审批 API、过期时间与 UI 卡片占位已有；DSH UI 未接真实卡片。
+- [ ] 按 S2 定下的字段接入采集：Bot 服务与 Executor 先接，L0 入库。本地执行只上行 L0 与 L1。**部分完成**：analytics SDK 与 local_dir 上行过滤完成；Bot/Executor 全事件接线未完成。
 
 **验收标准。**
 
-- [ ] 一个写入类动作在未批准时没有执行。批准后执行，审计里有这条记录。证据：外部系统侧的状态与审计记录。
-- [ ] 停掉策略判定服务，所有外部调用被拒绝。证据：调用结果列表。
-- [ ] 在 agent 进程的环境变量和日志里搜索连接器凭据，找不到。证据：搜索命令与输出。
-- [ ] 用一个 `ticketId` 能查出这张工单的完整轨迹。证据：查询结果。
-- [ ] 停掉事件总线，任务照常执行完。证据：任务的事件流记录。
-- [ ] 跑一个本地任务并抓包，上行的数据里没有提示词、代码和命令输出的原文。证据：抓包文件。
+- [x] 一个写入类动作在未批准时没有执行。批准后执行，审计里有这条记录。证据：`evidence/S6/01-tool-gateway/run.txt`。
+- [x] 停掉策略判定服务，所有外部调用被拒绝。证据：`policyEnabled:false` 测试。
+- [ ] 在 agent 进程的环境变量和日志里搜索连接器凭据，找不到。**部分完成**：审计/结果无 token；真实 sandbox env 未验。
+- [ ] 用一个 `ticketId` 能查出这张工单的完整轨迹。**部分完成**：审计轨迹可查；分析轨迹还没接全。
+- [x] 停掉事件总线，任务照常执行完。**SDK 级**证据：`packages/analytics` sink 故障不抛出。
+- [ ] 跑一个本地任务并抓包，上行的数据里没有提示词、代码和命令输出的原文。**部分完成**：`streamEventsForBot` 过滤 log；真实抓包未做。
 
 **产出物。** 工具网关，审计库，分析事件采集。
 

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "ASSIGNMENT_NOT_FOUND",
+        "WORKDIR_BUSY",
+        "WORKDIR_NOT_FOUND",
+        "NO_CAPACITY",
+        "PREVIEW_LIMIT",
+        "PATH_OUTSIDE_WORKDIR",
+        "FILE_NOT_FOUND",
+        "FILE_TOO_LARGE",
+        "INVALID_PAYLOAD",
+        "SECRET_REF_UNKNOWN",
+        "EXECUTOR_OFFLINE",
+        "WORKSPACE_UNSUPPORTED",
+        "WORKSPACE_KIND_MISMATCH",
+        "WORKSPACE_DEVICE_MISMATCH",
+        "WORKSPACE_PROJECT_MISMATCH",
+        "WORKSPACE_PATH_MISMATCH",
+        "WORKSPACE_BASEREF_MISMATCH",
+        "MODEL_NOT_ALLOWED",
+        "MODEL_NOT_CONFIGURED",
+        "MODEL_SOURCE_DISABLED",
+        "TENANT_MISMATCH",
+        "UPLOAD_REJECTED",
+        "INTERNAL"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "details": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "code",
+    "message"
+  ],
+  "additionalProperties": false
+}

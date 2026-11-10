@@ -1,0 +1,5 @@
+{
+  "panel": 1,
+  "body": "DSH Local Build\n0.2.2-rc.1-fcc0ad4\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n1 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\nperson/review\nopen\n8e68d317-5059 · reported\nlocal fake kernel finished\nperson/review\nreported\n8e68d317-5059-411f-b087-7be68b457c2b\nlocal fake kernel finished\n{\n  \"filesChanged\": 1,\n  \"insertions\": 1,\n  \"deletions\": 0\n}\nSend\nStop\nEvents\n{\"type\":\"state\",\"seq\":0,\"at\":\"2026-11-10T14:32:46.717Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":1,\"at\":\"2026-11-10T14:32:46.718Z\",\"state\":\"running\"}\n{\"type\":\"report\",\"seq\":2,\"at\":\"2026-11-10T14:32:46.728Z\",\"report\":{\"kind\":\"ready\",\"summary\":\"local fake kernel finished\",\"diffStats\":{\"filesChanged\":1,\"insertions\":1,\"deletions\":0},\"diffBasis\":\"ticketStart\"}}\n{\"type\":\"state\",\"seq\":3,\"at\":\"2026-11-10T14:32:46.728Z\",\"state\":\"reported\"}",
+  "errors": []
+}

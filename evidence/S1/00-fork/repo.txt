@@ -1,0 +1,19 @@
+$ git remote -v
+upstream	https://github.com/deepseek-ai/deepseek-harness.git (fetch)
+upstream	https://github.com/deepseek-ai/deepseek-harness.git (push)
+
+$ git branch -vv
+  master       fcc0ad4621 [upstream/master] Merge pull request #7873 from deepseek-harness/merge/release-dsh-0.2.2-rc.1-to-master
+* siriusx/main fcc0ad4621 Merge pull request #7873 from deepseek-harness/merge/release-dsh-0.2.2-rc.1-to-master
+
+$ git log --oneline --decorate -5
+fcc0ad4621 (HEAD -> siriusx/main, tag: siriusx-s1-base, upstream/master, upstream/HEAD, master) Merge pull request #7873 from deepseek-harness/merge/release-dsh-0.2.2-rc.1-to-master
+0b4328d514 Merge pull request #7856 from deepseek-harness/docs/liveshare-surface-accuracy
+78be9be83b Merge pull request #7844 from deepseek-harness/fix/desktop-channel-version-policy
+abc0e7092b Merge remote-tracking branch 'origin/release/dsh-0.2.2' into merge/release-dsh-0.2.2-rc.1-to-master
+66491b05e3 (tag: dsh-v0.2.2-rc.1) Merge pull request #7870 from deepseek-harness/worktree/release-dsh-0.2.2-rc.1
+
+$ git describe --tags --always
+siriusx-s1-base
+
+$ git status --short

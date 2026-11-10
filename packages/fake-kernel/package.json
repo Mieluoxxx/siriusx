@@ -1,0 +1,22 @@
+{
+  "name": "@siriusx/fake-kernel",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic in-memory AgentBackend for SiriusX scenario tests; never executes commands or calls a model.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@siriusx/kernel-api": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

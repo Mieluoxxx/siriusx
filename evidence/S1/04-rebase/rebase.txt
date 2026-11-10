@@ -1,0 +1,10 @@
+$ git rebase upstream/master
+Current branch siriusx/main is up to date.
+elapsed=0.01 sec
+
+$ git log --oneline -3
+3b3d50a057 chore(desktop): force upstream telemetry off for Host launches
+fcc0ad4621 Merge pull request #7873 from deepseek-harness/merge/release-dsh-0.2.2-rc.1-to-master
+0b4328d514 Merge pull request #7856 from deepseek-harness/docs/liveshare-surface-accuracy
+
+NOTE: upstream has no tag newer than dsh-v0.2.2-rc.1 at 2026-11-10; rebase was against upstream/master (same as branch base). Re-run against the next tag when published.

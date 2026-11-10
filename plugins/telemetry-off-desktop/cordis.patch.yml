@@ -1,0 +1,8 @@
+# Desktop-only telemetry rows from @deepseek-ai/dsh-web-app. Loading this
+# bundle in headless/sdk/acp profiles would warn about absent rows, so it is a
+# separate bundle used only by the Desktop profile.
+- id: desktop-product-telemetry
+  disabled: true
+
+- id: product-analytics
+  disabled: true

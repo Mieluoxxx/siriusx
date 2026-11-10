@@ -1,0 +1,24 @@
+{
+  "name": "@siriusx/executor-local",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Executor for SiriusX: local_dir assignments driven through the kernel-neutral AgentBackend API.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@siriusx/contracts": "workspace:*",
+    "@siriusx/kernel-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@siriusx/fake-kernel": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

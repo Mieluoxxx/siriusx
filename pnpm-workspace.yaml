@@ -1,0 +1,13 @@
+packages:
+  # DSH plugins are independent packages at the same level as the DSH source
+  # checkout. They are never placed under the upstream `packages/` tree.
+  - plugins/*
+  # Non-plugin shared code: contracts, kernel API, shared clients.
+  - packages/*
+  - apps/*
+
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - jose@6.2.17

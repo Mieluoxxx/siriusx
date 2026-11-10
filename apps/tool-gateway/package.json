@@ -1,0 +1,27 @@
+{
+  "name": "@siriusx/tool-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fail-closed tool gateway: policy, approval cards, audit and connector credentials.",
+  "license": "MIT",
+  "bin": {
+    "tool-gateway": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "tool-gateway": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}

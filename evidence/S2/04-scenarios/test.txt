@@ -1,0 +1,10 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/apps/autobot
+
+ ✓ tests/scenarios.spec.ts (16 tests) 25ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  14:10:25
+   Duration  292ms (transform 69ms, setup 0ms, import 139ms, tests 25ms, environment 0ms)

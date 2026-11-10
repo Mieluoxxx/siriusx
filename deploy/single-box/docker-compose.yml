@@ -1,0 +1,19 @@
+services:
+  control-plane:
+    build:
+      context: ../..
+      dockerfile: deploy/single-box/Dockerfile
+    image: siriusx/control-plane:dev
+    restart: unless-stopped
+    environment:
+      SIRIUSX_SESSION_SECRET: ${SIRIUSX_SESSION_SECRET:?set SIRIUSX_SESSION_SECRET in .env}
+      SIRIUSX_UPSTREAM_MODEL_URL: ${SIRIUSX_UPSTREAM_MODEL_URL:-}
+      SIRIUSX_UPSTREAM_MODEL_KEY: ${SIRIUSX_UPSTREAM_MODEL_KEY:-}
+    ports:
+      - "127.0.0.1:4320:4320"
+      - "127.0.0.1:4321:4321"
+    volumes:
+      - siriusx-data:/data
+
+volumes:
+  siriusx-data:

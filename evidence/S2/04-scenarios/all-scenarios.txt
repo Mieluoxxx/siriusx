@@ -1,0 +1,91 @@
+$ autobot list
+backgrounded-waiting
+cancel-kill
+cancel-graceful
+interrupt-resume
+answer-resume
+lost
+duplicate-out-of-order
+cancel-report-race
+log-truncation
+previews
+file-browse
+ready-end
+disconnect-late-report
+capacity-human
+workspace-immutable
+
+=== backgrounded-waiting
+result=pass
+details={"state": "reported", "reportKind": "waiting"}
+events=4
+
+=== cancel-kill
+result=pass
+details={"state": "cancelled", "lastSeq": 2}
+events=3
+
+=== cancel-graceful
+result=pass
+details={"state": "cancelled", "states": ["preparing", "running", "cancelled"]}
+events=4
+
+=== interrupt-resume
+result=pass
+details={"firstState": "cancelled", "secondState": "preparing", "sameWorkdir": true}
+events=5
+
+=== answer-resume
+result=pass
+details={"firstWorkdir": "3d6cce6c-0422-4d0a-a9f4-e0a75362392a", "secondWorkdir": "3d6cce6c-0422-4d0a-a9f4-e0a75362392a", "resumedState": "preparing"}
+events=4
+
+=== lost
+result=pass
+details={"state": "lost"}
+events=3
+
+=== duplicate-out-of-order
+result=pass
+details={"replayCount": 4, "incrementalCount": 1, "sameTail": true, "repeatedReplayStable": true}
+events=4
+
+=== cancel-report-race
+result=pass
+details={"reportedState": "reported", "afterCancelState": "reported", "cancelledEvents": 0}
+events=3
+
+=== log-truncation
+result=pass
+details={"logsTruncated": true, "oldestLogSeq": 2, "logCount": 3}
+events=4
+
+=== previews
+result=pass
+details={"before": ["preview-1", "preview-2"], "lease": {"workdirKey": "a117bc2a-5a27-450e-967e-f22e207e2027", "leaseExpiresAt": "2023-11-21T22:13:20.000Z"}, "stopped": {"stopped": ["preview-1"]}, "remaining": [], "destroyed": {"destroyed": true}}
+events=3
+
+=== file-browse
+result=pass
+details={"whileRunning": "running", "firstPage": 2, "hasNext": true, "secondPage": 1, "sensitive": {"path": ".env", "size": 8, "binary": false, "redacted": true}, "binary": {"path": "image.png", "size": 5, "binary": true, "redacted": false}, "outside": "PATH_OUTSIDE_WORKDIR", "tooLarge": "FILE_TOO_LARGE"}
+events=2
+
+=== ready-end
+result=pass
+details={"matrix": [{"input": {"changeRequest": true, "filesChanged": 0, "livePreviews": 0}, "review": true}, {"input": {"changeRequest": false, "filesChanged": 1, "livePreviews": 0}, "review": true}, {"input": {"changeRequest": false, "filesChanged": 0, "livePreviews": 1}, "review": true}, {"input": {"changeRequest": false, "filesChanged": 0, "livePreviews": 0}, "review": false}]}
+events=0
+
+=== disconnect-late-report
+result=pass
+details={"offlineCode": "EXECUTOR_OFFLINE", "reconnectedEvents": 2, "beforeLoss": 1, "lateReportCode": "INVALID_PAYLOAD", "finalState": "lost"}
+events=3
+
+=== capacity-human
+result=pass
+details={"noCapacity": "NO_CAPACITY", "humanState": "preparing"}
+events=1
+
+=== workspace-immutable
+result=pass
+details={"project": "WORKSPACE_PROJECT_MISMATCH", "path": "WORKSPACE_PATH_MISMATCH"}
+events=2

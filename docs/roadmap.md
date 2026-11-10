@@ -9,7 +9,7 @@
 
 ## 执行顺序（当前版本）
 
-> **S0 已完成（2026-11），结论与施工图见 [spike.md](./spike.md)，下一步 S1。**
+> **S0 完成；S1–S6 已实现可运行纵切并留下 evidence，仍有人工/真机验收项。下一步 S7。** S0 结论与施工图见 [spike.md](./spike.md)。
 >
 > roadmap #61。#56–#60 之后的顺序，**取代**下面「依赖图」「按人手排期」里的先后关系；节点详情里的内容与验收仍可参考，W1、W2 待 W0/BOT1 定型后按 S0 结论重写。
 
@@ -253,8 +253,8 @@ flowchart LR
 - [x] 解决首批 3 个待定问题（运行中跟进、事件保留、预览进程）
 - [x] 解决第二批 2 个待定问题（workdir 回收、打断防抖）
 - [x] 解决第三批 2 个待定问题（`ready` 结束判定、本地 Executor 断线）
-- [ ] `packages/contracts/`：zod schema 落为代码，导出 JSON Schema
-- [ ] Ticket 阶段推导函数，单测覆盖 ticket-stage.md 列出的全部规则和边界
+- [x] `packages/contracts/`：zod schema 落为代码，导出 JSON Schema
+- [x] Ticket 阶段推导函数，单测覆盖 ticket-stage.md 列出的全部规则和边界
 
 ### BG1 · 可编排 Mock（Background）
 

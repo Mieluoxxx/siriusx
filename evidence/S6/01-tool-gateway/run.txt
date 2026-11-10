@@ -1,0 +1,14 @@
+$ POST /v1/actions outside mandate
+{"status":"pending","approvalId":"2786003a-b935-4444-a628-f9724be2c9c9"}
+$ GET /v1/approvals
+{"approvals":[{"approvalId":"2786003a-b935-4444-a628-f9724be2c9c9","ticketId":"ticket-1","title":"github: send_email","detail":"acme/repo#1\nhello","risk":"medium","status":"pending","expiresAt":"2026-11-10T15:03:16.608Z"}]}
+$ POST approval decision
+{"status":"approved","result":{"result":{"system":"github","action":"send_email","target":"acme/repo#1","credentialPresent":true}}}
+$ GET audit
+{"audit":[{"id":"09cd7864-7cad-48dd-8a35-9de86af62098","tenant_id":"tenant-a","ticket_id":"ticket-1","action_class":"send_email","system":"github","decision":"pending:write/send/delete outside Mandate","approval_id":"2786003a-b935-4444-a628-f9724be2c9c9","approver_id":null,"result_json":null,"created_at":1794322096608},{"id":"02f84243-ec17-4e22-8f96-df8f786de576","tenant_id":"tenant-a","ticket_id":"ticket-1","action_class":"send_email","system":"github","decision":"approved:human","approval_id":"2786003a-b935-4444-a628-f9724be2c9c9","approver_id":"user-1","result_json":"{\"result\":{\"system\":\"github\",\"action\":\"send_email\",\"target\":\"acme/repo#1\",\"credentialPresent\":true}}","created_at":1794322096645}]}
+$ built-in deny
+status=403
+{"error":"built-in baseline denies this action","code":"POLICY_DENIED"}
+$ tenant mismatch
+status=403
+{"error":"request tenant does not match authenticated tenant","code":"TENANT_MISMATCH"}

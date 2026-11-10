@@ -1,0 +1,20 @@
+$ DSH_TELEMETRY_DISABLED=1 dsh --profile offline "..."
+--- stdout ---
+SiriusX offline mock reply: S1 conversation OK.
+--- stderr ---
+--- non-loopback AF_INET connects ---
+--- all connects ---
+2731100 +++ exited with 0 +++
+2731089 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2731089 connect(25, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2731094 +++ exited with 0 +++
+2731090 +++ exited with 0 +++
+2731092 +++ exited with 0 +++
+2731091 +++ exited with 0 +++
+2731093 +++ exited with 0 +++
+2731097 +++ exited with 0 +++
+2731099 +++ exited with 0 +++
+2731096 +++ exited with 0 +++
+2731098 +++ exited with 0 +++
+2731095 +++ exited with 0 +++
+2731089 +++ exited with 0 +++

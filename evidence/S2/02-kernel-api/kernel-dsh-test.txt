@@ -1,0 +1,10 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/packages/kernel-dsh
+
+ ✓ tests/adapter.spec.ts (3 tests) 11ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:12:35
+   Duration  195ms (transform 35ms, setup 0ms, import 61ms, tests 11ms, environment 0ms)

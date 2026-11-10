@@ -1,0 +1,3 @@
+- insert:
+    - id: siriusx-executor-local
+      name: '@siriusx/dsh-executor-local'

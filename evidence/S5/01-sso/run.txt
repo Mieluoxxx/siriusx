@@ -1,0 +1,13 @@
+$ account/startSignIn
+{"type":"server-response","rpcId":"7ea537f3-7801-471f-a47a-ef7fde1a36ee","result":{"ok":true,"value":{"status":"signed-out","links":{"usageUrl":"https://acme.example/usage","topUpUrl":"https://acme.example/topup"},"attempt":{"id":"siriusx-sso-attempt","phase":"waiting-browser","authorizeUrl":"http://127.0.0.1:18082/oauth/authorize?response_type=code&client_id=siriusx-desktop&redirect_uri=http%3A%2F%2F127.0.0.1%3A44157%2F__siriusx%2Fsso%2Fcallback&scope=openid+profile+email&state=lawyUHpFYjTY4y4EVvGRBqUmwt3v7LKc&nonce=hTAP5qo0pokk-IIo6poV27qLpVo-XgEM&code_challenge=ZfSqEx0nfqds8aokHApPEFGuZMp4-XSypjfUDjqHjMM&code_challenge_method=S256","expiresAt":1794322514328}}}}
+$ GET authorizeURL (fake IdP -> Host callback)
+callback_status=200
+<!doctype html><meta charset="utf-8"><title>Signed in</title><p>Signed in. You can close this tab.</p>
+$ account/getState
+{"type":"server-response","rpcId":"ef0b0663-65b7-491d-a447-b57268ca290c","result":{"ok":true,"value":{"status":"credential-stored","links":{"usageUrl":"https://acme.example/usage","topUpUrl":"https://acme.example/topup"},"attempt":{"id":"siriusx-sso-attempt","phase":"succeeded"}}}}
+$ GET /__siriusx/tenant
+{"authenticated":true,"tenantId":"tenant-acme","subjectId":"user-42","roles":["member"]}
+$ account/signOut
+{"type":"server-response","rpcId":"79d361d1-def3-449d-b3cb-4a14903ae764","result":{"ok":true,"value":{"status":"signed-out","links":{"usageUrl":"https://acme.example/usage","topUpUrl":"https://acme.example/topup"},"attempt":null}}}
+$ GET /__siriusx/tenant after sign-out
+{"authenticated":false,"tenantId":null,"subjectId":null,"roles":[]}

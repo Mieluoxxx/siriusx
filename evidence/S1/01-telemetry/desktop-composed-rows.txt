@@ -1,0 +1,49 @@
+===== desktop-product-telemetry =====
+411:- id: desktop-product-telemetry
+412-  name: '@deepseek-ai/dsh-host-product-telemetry-otel'
+413-  disabled: true
+414-  config:
+415-    scheduledDelayMillis: 30000
+416-    timeoutMillis: 15000
+===== product-analytics =====
+422:- id: product-analytics
+423-  name: '@deepseek-ai/dsh-client-product-analytics'
+424-  disabled: true
+425-  config:
+426-    enabled: true
+427-    appVersion: !!js process.env.DSH_CLIENT_VERSION
+===== session-telemetry-otel =====
+116:- id: session-telemetry-otel
+117-  name: '@deepseek-ai/dsh-session-telemetry-otel'
+118-  config:
+119-    mode: DISABLED
+120-# == @deepseek-ai/dsh-base
+121-- id: subprocess
+===== session-log-deepseek =====
+22:- id: session-log-deepseek
+23-  name: '@deepseek-ai/dsh-session-log-deepseek'
+24-  disabled: true
+25-# == @deepseek-ai/dsh-base
+26-- id: typert
+27-  name: '@deepseek-ai/dsh-typert-registry'
+===== command-feedback =====
+203:- id: command-feedback
+204-  name: '@deepseek-ai/dsh-command-feedback'
+205-  disabled: true
+206-# == @deepseek-ai/dsh-base
+207-- id: goal
+208-  name: '@deepseek-ai/dsh-goal'
+===== llm-deepseek =====
+404:- id: llm-deepseek
+405-  name: '@deepseek-ai/dsh-llm-deepseek-api-key'
+406-  disabled: true
+407-- id: llm-deepseek-account
+408-  name: '@deepseek-ai/dsh-llm-deepseek-account'
+409-  disabled: true
+===== llm-deepseek-account =====
+407:- id: llm-deepseek-account
+408-  name: '@deepseek-ai/dsh-llm-deepseek-account'
+409-  disabled: true
+410-# == @deepseek-ai/dsh-web-app, patched by @siriusx/dsh-telemetry-off-desktop
+411-- id: desktop-product-telemetry
+412-  name: '@deepseek-ai/dsh-host-product-telemetry-otel'

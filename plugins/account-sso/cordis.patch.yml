@@ -1,0 +1,11 @@
+# Replace the official account provider with the enterprise SSO provider.
+# A patch may not rename an existing row, so disable it and insert another.
+- id: deepseek-account
+  # SiriusX never mounts the official account provider; the enterprise SSO
+  # row below is conditional, the official row is always removed.
+  disabled: true
+
+- insert:
+    - id: siriusx-account-sso
+      name: '@siriusx/dsh-account-sso'
+      disabled: !!js process.env.SIRIUSX_ENTERPRISE !== '1'

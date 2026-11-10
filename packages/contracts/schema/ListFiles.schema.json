@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "workdirKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "path": {
+      "type": "string"
+    },
+    "cursor": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId",
+    "workdirKey",
+    "path"
+  ],
+  "additionalProperties": false
+}

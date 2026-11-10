@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "assignmentId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "ticketId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "workdirKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "kernel": {
+      "type": "string",
+      "pattern": "^(?:dsh|pi|acp:[a-z0-9][a-z0-9-]{0,31})$"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "preparing",
+        "running",
+        "backgrounded",
+        "reported",
+        "cancelled",
+        "lost"
+      ]
+    },
+    "report": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "ready"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "changeRequest": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "gitlab",
+                    "github"
+                  ]
+                },
+                "number": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "provider",
+                "number",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "diffStats": {
+              "type": "object",
+              "properties": {
+                "filesChanged": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "insertions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "deletions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "filesChanged",
+                "insertions",
+                "deletions"
+              ],
+              "additionalProperties": false
+            },
+            "diffBasis": {
+              "type": "string",
+              "enum": [
+                "baseRef",
+                "ticketStart",
+                "none"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "summary",
+            "diffStats",
+            "diffBasis"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "answer"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "summary",
+            "question"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "blocked"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "summary",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "failed"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "summary",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "waiting"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "summary",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "lastSeq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "tenantId",
+    "assignmentId",
+    "ticketId",
+    "workdirKey",
+    "kernel",
+    "state",
+    "lastSeq"
+  ],
+  "additionalProperties": false
+}

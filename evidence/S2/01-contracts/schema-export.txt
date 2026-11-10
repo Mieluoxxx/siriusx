@@ -1,0 +1,5 @@
+$ tsx scripts/export-json-schema.ts
+{
+  "exported": 22,
+  "output": "/root/siriusx/packages/contracts/schema"
+}

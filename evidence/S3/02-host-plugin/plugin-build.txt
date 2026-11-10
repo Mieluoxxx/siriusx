@@ -1,0 +1,5 @@
+$ esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:@deepseek-ai/*
+
+  dist/index.js  578.8kb
+
+⚡ Done in 21ms

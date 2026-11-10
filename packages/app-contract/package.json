@@ -1,0 +1,15 @@
+{
+  "name": "@siriusx/app-contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bot ⇄ application contract types for the SiriusX DSH plugins.",
+  "license": "MIT",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "dependencies": {
+    "@siriusx/contracts": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": { "typescript": "6.0.3" }
+}

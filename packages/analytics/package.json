@@ -1,0 +1,12 @@
+{
+  "name": "@siriusx/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Analysis-log collector with strict L0/L1/L2 classification and best-effort sinks.",
+  "license": "MIT",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "dependencies": { "@siriusx/contracts": "workspace:*" },
+  "devDependencies": { "typescript": "6.0.3", "vitest": "4.1.11" }
+}

@@ -1,0 +1,81 @@
+{
+  "initial": "preparing",
+  "final": "reported",
+  "report": {
+    "kind": "ready",
+    "summary": "real DSH AgentLoop completed",
+    "diffStats": {
+      "filesChanged": 1,
+      "insertions": 1,
+      "deletions": 0
+    },
+    "diffBasis": "ticketStart"
+  },
+  "modelCalls": 4,
+  "eventTypes": [
+    "state",
+    "state",
+    "report",
+    "state"
+  ],
+  "events": [
+    {
+      "type": "state",
+      "seq": 0,
+      "at": "2026-11-10T14:22:09.799Z",
+      "state": "preparing"
+    },
+    {
+      "type": "state",
+      "seq": 1,
+      "at": "2026-11-10T14:22:09.805Z",
+      "state": "running"
+    },
+    {
+      "type": "report",
+      "seq": 2,
+      "at": "2026-11-10T14:22:09.926Z",
+      "report": {
+        "kind": "ready",
+        "summary": "real DSH AgentLoop completed",
+        "diffStats": {
+          "filesChanged": 1,
+          "insertions": 1,
+          "deletions": 0
+        },
+        "diffBasis": "ticketStart"
+      }
+    },
+    {
+      "type": "state",
+      "seq": 3,
+      "at": "2026-11-10T14:22:09.927Z",
+      "state": "reported"
+    }
+  ],
+  "botStage": "person/review",
+  "botState": "reported",
+  "botReport": {
+    "kind": "ready",
+    "summary": "real DSH AgentLoop completed",
+    "diffStats": {
+      "filesChanged": 2,
+      "insertions": 2,
+      "deletions": 0
+    },
+    "diffBasis": "ticketStart"
+  },
+  "interruptStage": "person/review",
+  "interruptState": "reported",
+  "interruptKinds": [
+    "start",
+    "resume"
+  ],
+  "answerStage": "person/answer",
+  "answerReportKind": "answer",
+  "resumedAnswerStage": "person/review",
+  "answerKinds": [
+    "start",
+    "resume"
+  ]
+}

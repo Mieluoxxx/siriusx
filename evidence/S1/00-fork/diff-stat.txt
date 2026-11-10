@@ -1,0 +1,8 @@
+$ git diff --stat siriusx-s1-base..HEAD
+ apps/desktop/src/main.ts | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+$ git diff --name-only siriusx-s1-base..HEAD
+apps/desktop/src/main.ts
+
+changed_files=1

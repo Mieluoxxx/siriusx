@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "assignmentId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "ticketId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "start",
+        "resume"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "human"
+      ]
+    },
+    "workspace": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "cloud_project"
+            },
+            "projectId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "repo": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "gitlab",
+                    "github"
+                  ]
+                },
+                "host": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "projectPath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cloneUrl": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "provider",
+                "host",
+                "projectPath",
+                "cloneUrl"
+              ],
+              "additionalProperties": false
+            },
+            "baseRef": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "projectId",
+            "repo",
+            "baseRef"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "local_dir"
+            },
+            "deviceId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "baseRef": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "deviceId",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "kernel": {
+      "type": "string",
+      "pattern": "^(?:dsh|pi|acp:[a-z0-9][a-z0-9-]{0,31})$"
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "tenant",
+            "byok",
+            "local"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "workdirKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "input": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "followUps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "human",
+                  "ci",
+                  "bot"
+                ]
+              },
+              "author": {
+                "type": "string",
+                "minLength": 1
+              },
+              "text": {
+                "type": "string"
+              },
+              "triggerId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "source",
+              "author",
+              "text",
+              "triggerId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "prompt",
+        "followUps"
+      ],
+      "additionalProperties": false
+    },
+    "secretRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "traceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "clientContext": {
+      "type": "object",
+      "properties": {
+        "operatorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "gitlab",
+            "github",
+            "feishu",
+            "teams",
+            "app",
+            "cli",
+            "system"
+          ]
+        },
+        "deviceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "platform": {
+          "type": "string",
+          "enum": [
+            "web",
+            "desktop",
+            "mobile"
+          ]
+        }
+      },
+      "required": [
+        "operatorId",
+        "channel"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "tenantId",
+    "assignmentId",
+    "ticketId",
+    "kind",
+    "priority",
+    "workspace",
+    "model",
+    "workdirKey",
+    "input",
+    "secretRefs",
+    "traceId",
+    "clientContext"
+  ],
+  "additionalProperties": false
+}

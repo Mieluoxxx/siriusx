@@ -1,0 +1,25 @@
+teamTexts= 1
+panelCount= 1
+body= DSH Local Build
+0.2.2-rc.1-fcc0ad4
+New Session
+Plugins
+Automation tasks
+▣
+Team
+More
+Workspaces
+No sessions yet
+More
+SiriusX Team
+1 bot · 0 ticket
+tickets
+bots
+approvals
+Refresh
+Dispatch ticket
+
+No tickets yet. Dispatch one to the local Executor.
+
+Select a ticket to inspect its report and events.
+errors= []

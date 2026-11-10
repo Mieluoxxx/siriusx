@@ -1,0 +1,33 @@
+# SiriusX telemetry-off bundle (profile-independent rows).
+#
+# Every row below is disabled rather than merely reconfigured, so no session
+# exporter, session-log suffix, anonymous user header, or official feedback
+# upload can be constructed.
+#
+# The anonymous-user-id package is a library, not a row. Its outbound consumers
+# are:
+#   - @deepseek-ai/dsh-session-telemetry-otel
+#   - @deepseek-ai/dsh-llm-deepseek (x-deepseek-harness-user-id)
+#   - @deepseek-ai/dsh-command-feedback
+# Disabling all three removes its outbound uses. SiriusX model traffic goes
+# through our own tenant model gateway provider instead of the official
+# DeepSeek provider.
+- id: session-telemetry-otel
+  # `disabled: true` is applied by the launcher when DSH_TELEMETRY_DISABLED
+  # is set, but --dump-config does not render that launch patch. Set the
+  # plugin's own hard-off mode as well so the composition is inert even when
+  # inspected or launched without the environment guard.
+  config:
+    mode: DISABLED
+
+- id: session-log-deepseek
+  disabled: true
+
+- id: command-feedback
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: llm-deepseek-account
+  disabled: true

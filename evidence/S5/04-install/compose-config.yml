@@ -1,0 +1,36 @@
+name: single-box
+services:
+  control-plane:
+    build:
+      context: /root/siriusx
+      dockerfile: deploy/single-box/Dockerfile
+    environment:
+      SIRIUSX_SESSION_SECRET: test-secret
+      SIRIUSX_UPSTREAM_MODEL_KEY: ""
+      SIRIUSX_UPSTREAM_MODEL_URL: ""
+    image: siriusx/control-plane:dev
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 4320
+        published: "4320"
+        protocol: tcp
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 4321
+        published: "4321"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: siriusx-data
+        target: /data
+        volume: {}
+networks:
+  default:
+    name: single-box_default
+volumes:
+  siriusx-data:
+    name: single-box_siriusx-data

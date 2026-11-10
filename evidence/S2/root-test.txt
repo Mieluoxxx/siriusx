@@ -1,0 +1,34 @@
+$ pnpm -r run test
+Scope: 7 of 8 workspace projects
+packages/contracts test$ vitest run
+packages/fake-kernel test$ vitest run
+packages/kernel-dsh test$ vitest run
+packages/contracts test:  RUN  v4.1.11 /root/siriusx/packages/contracts
+packages/kernel-dsh test:  RUN  v4.1.11 /root/siriusx/packages/kernel-dsh
+packages/fake-kernel test:  RUN  v4.1.11 /root/siriusx/packages/fake-kernel
+packages/kernel-dsh test:  ✓ tests/adapter.spec.ts (3 tests) 13ms
+packages/kernel-dsh test:  Test Files  1 passed (1)
+packages/kernel-dsh test:       Tests  3 passed (3)
+packages/kernel-dsh test:    Start at  14:13:05
+packages/kernel-dsh test:    Duration  210ms (transform 37ms, setup 0ms, import 67ms, tests 13ms, environment 0ms)
+packages/kernel-dsh test: Done
+packages/contracts test:  ✓ tests/contracts.spec.ts (25 tests) 17ms
+packages/contracts test:  Test Files  1 passed (1)
+packages/contracts test:       Tests  25 passed (25)
+packages/contracts test:    Start at  14:13:05
+packages/contracts test:    Duration  297ms (transform 60ms, setup 0ms, import 138ms, tests 17ms, environment 0ms)
+packages/contracts test: Done
+packages/fake-kernel test:  ✓ tests/fake-kernel.spec.ts (4 tests) 203ms
+packages/fake-kernel test:  Test Files  1 passed (1)
+packages/fake-kernel test:       Tests  4 passed (4)
+packages/fake-kernel test:    Start at  14:13:05
+packages/fake-kernel test:    Duration  384ms (transform 36ms, setup 0ms, import 52ms, tests 203ms, environment 0ms)
+packages/fake-kernel test: Done
+apps/autobot test$ vitest run
+apps/autobot test:  RUN  v4.1.11 /root/siriusx/apps/autobot
+apps/autobot test:  ✓ tests/scenarios.spec.ts (16 tests) 25ms
+apps/autobot test:  Test Files  1 passed (1)
+apps/autobot test:       Tests  16 passed (16)
+apps/autobot test:    Start at  14:13:05
+apps/autobot test:    Duration  280ms (transform 67ms, setup 0ms, import 132ms, tests 25ms, environment 0ms)
+apps/autobot test: Done

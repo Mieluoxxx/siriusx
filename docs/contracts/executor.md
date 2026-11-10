@@ -1,8 +1,8 @@
 # Executor 契约（Bot ⇄ Executor）
 
-> 状态：草案 v0。M1（真实数据流跑通）前允许修改，之后冻结。
+> 状态：草案 v0 + S2 补齐。M1（真实数据流跑通）前允许修改，之后冻结。
 >
-> 唯一源头：`packages/contracts/src/executor.ts`（TypeScript + zod），导出 JSON Schema 供非 TS 调用方使用。本文与代码不一致时以代码为准，并同步修正本文。
+> 唯一源头：`packages/contracts/src/executor.ts`（TypeScript + zod），导出 JSON Schema 供非 TS 调用方使用（`packages/contracts/schema/`）。本文与代码不一致时以代码为准，并同步修正本文。
 
 ## 1. 边界
 
@@ -450,10 +450,16 @@ export const TouchWorkdirResponseSchema = z.object({
 | `SECRET_REF_UNKNOWN` | `secretRefs` 中存在宿主未配置的引用 |
 | `EXECUTOR_OFFLINE` | `local_dir` 对应的本地 Executor 不在线（Bot 侧表现为 `person/delivery`，设备上线后重试；**不回退到云端执行**） |
 | `WORKSPACE_UNSUPPORTED` | 该 Executor 不支持此 `workspace.kind` |
-| `WORKSPACE_MISMATCH` | `workspace` 与该 `workdirKey` 首次派工时不一致（执行位置在任务开始时选定，不可更改） |
+| `WORKSPACE_KIND_MISMATCH` | 同一 `workdirKey` 的 `workspace.kind` 改变 |
+| `WORKSPACE_DEVICE_MISMATCH` | `local_dir.deviceId` 改变 |
+| `WORKSPACE_PROJECT_MISMATCH` | `cloud_project.projectId` 或 repo 字段改变 |
+| `WORKSPACE_PATH_MISMATCH` | `local_dir.path` 改变 |
+| `WORKSPACE_BASEREF_MISMATCH` | `baseRef` 改变 |
 | `MODEL_NOT_ALLOWED` | `tenant` 模型不在租户目录中、当前用户无权使用，或 `cloud_project` 请求了 `byok` |
 | `MODEL_NOT_CONFIGURED` | `byok` 模型未配置 Key，或 `local` 模型在本机不可用 |
 | `MODEL_SOURCE_DISABLED` | 租户已禁用该模型来源（由 Bot 返回，不经过 Executor） |
+| `TENANT_MISMATCH` | payload 的 `tenantId` 与传输层鉴权身份不一致 |
+| `UPLOAD_REJECTED` | 用户主动上传的同意、路径、大小或哈希校验失败 |
 
 ## 10. 已决议的第三批问题
 
@@ -464,3 +470,38 @@ export const TouchWorkdirResponseSchema = z.object({
 
 1. **已决议（roadmap #36），契约待改**：`local_dir` 的 `log` 事件与 `ListFiles` / `ReadFile` 的内容默认不上行，`StreamEvents` 对 `local_dir` 只上行生命周期事件与不含原文的 `activity` 事件（§6）；需要新增「用户主动上传」的方法。决议前的描述：`local_dir` 的 `log` 事件、`ListFiles` / `ReadFile` 的内容按现有传输约定会经长连接到达云端的租户 Bot。是否允许、是否持久化，见 [web-app.md §7 第 8 题](../design/web-app.md#7-待定问题)。结论可能要求 `StreamEvents` 对 `local_dir` 只上行生命周期事件。
 2. **`activity` 事件的字段**（roadmap #53）：§6 与 §8 给出的是首版，尚未随契约冻结。待定：工具名是否算敏感（自定义工具的名字可能带业务含义）；`usage` 在 BYOK 与本地模型下由内核适配层自报，是否可信到能用于计费。
+
+
+## 12. S2 代码补齐（草案 v1）
+
+代码位置：`packages/contracts/src/executor.ts`；JSON Schema 在
+`packages/contracts/schema/`。以下各项均已落成代码并有测试。
+
+| 原缺口 | 决议 |
+| --- | --- |
+| `GetAssignment` 请求与响应 | `GetAssignmentSchema` + `ExecutorResponseSchema(AssignmentSchema)`；按 `tenantId + assignmentId` 查询。 |
+| `StreamEvents` 请求与订阅 | `StreamEventsSchema` 固定 `tenantId`、`assignmentId`、`fromSeq`；订阅本身由传输层承载。`StreamEventsResponseSchema` 明确 `logsTruncated` 与 `oldestLogSeq` 同时出现。 |
+| 其余方法响应 | `ListPreviewsResponse`、`StopPreviewsResponse`、`DestroyWorkdirResponse`、`TouchWorkdirResponse` 均已定义；所有响应使用 `{ok,value}` / `{ok,error}` 包络。 |
+| 内核选择 | `CreateAssignment.kernel` 为可选值：`dsh`、`pi`、`acp:<agent>`；`local_dir` 禁止携带（固定 dsh），`cloud_project` 可省略（默认 dsh）。 |
+| `tenantId` 与鉴权身份 | 新增 `AuthContextSchema` 与 `assertTenantMatches(payloadTenantId, auth)`；不匹配返回 `TENANT_MISMATCH`，传输凭据仍只在 transport header。 |
+| `local_dir` 无 `baseRef` 的 diff 基准 | 新增 `DiffBasis`：`baseRef`（对 workspace.baseRef）、`ticketStart`（对 Ticket 首次 Assignment 的快照）、`none`（无从比较）。`ready.diffStats` 必须同时给出 `diffBasis`。 |
+| `WORKSPACE_MISMATCH` 拆分 | 拆为 `WORKSPACE_KIND_MISMATCH`、`WORKSPACE_DEVICE_MISMATCH`、`WORKSPACE_PROJECT_MISMATCH`、`WORKSPACE_PATH_MISMATCH`、`WORKSPACE_BASEREF_MISMATCH`；`workspaceMismatch()` 返回具体码。 |
+| `activity.name` 内容级别 | `name` 为 **L1**；新增 `nameClass: builtin | custom`。内置工具名走白名单；自定义工具名在跨租户分析前必须哈希或替换。事件仍不含输入/输出原文。 |
+| `local_dir` 用户主动上传 | 新增 `UploadLocalArtifacts`：用户同意后，以附件传输文件字节；payload 只含路径、mediaType、大小、sha256、目标 `tenant_volume` 和 consent。没有自动同步方法。 |
+
+补充约束：
+
+- `ActivityEvent.usage` 只允许 model 调用；tool 调用不得伪造 token 用量。model 活动若内核知道用量则必须上报。
+- `CreateAssignment.cloneUrl` 不得内嵌凭据；`cloud_project` 只能使用 `model.source = tenant`。
+- `AssignmentReport.kind = ready` 时 `diffStats` 必填；只允许在 `state = reported` 时存在 `report`。
+- 错误码完整列表见 `ExecutorErrorCodeSchema`，包含上述拆分码与 `TENANT_MISMATCH`、`UPLOAD_REJECTED`。
+
+BG1 场景执行：
+
+```sh
+pnpm --filter @siriusx/autobot autobot list
+pnpm --filter @siriusx/autobot autobot run --scenario log-truncation --json
+```
+
+假执行器只使用内存状态，不启动进程、不访问网络、不调用模型。S2 的 13 个场景
+全部通过 `AssignmentEventSchema` 校验。

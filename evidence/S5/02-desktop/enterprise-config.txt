@@ -1,0 +1,21 @@
+{
+  "personal": {
+    "enabled": false
+  },
+  "enterprise": {
+    "enabled": true,
+    "ssoIssuer": "https://idp.example",
+    "ssoClientId": "siriusx-desktop",
+    "ssoJwksUri": "https://idp.example/jwks",
+    "modelGatewayUrl": "https://models.example"
+  },
+  "hostEnv": {
+    "PATH": "/usr/bin",
+    "SIRIUSX_ENTERPRISE": "1",
+    "SIRIUSX_SSO_ISSUER": "https://idp.example",
+    "SIRIUSX_SSO_CLIENT_ID": "siriusx-desktop",
+    "SIRIUSX_SSO_JWKS_URI": "https://idp.example/jwks",
+    "SIRIUSX_MODEL_GATEWAY_URL": "https://models.example"
+  },
+  "enterpriseRequiresLogin": true
+}

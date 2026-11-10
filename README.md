@@ -35,6 +35,30 @@
 
 待定：纯浏览器端与手机端没有本机 Host，这套插件界面在它们上面怎么提供（见待验证第 5 条）。
 
+## 仓库布局
+
+```text
+siriusx/
+  deepseek-harness/   # DSH 源码 fork 的本地 checkout（独立 Git，upstream remote；不随本仓库提交）
+  plugins/            # DSH 插件，与 DSH 源码同级；不塞进上游 packages/
+  packages/           # 非插件共享代码：契约、内核接口、Executor、analytics
+  apps/               # 控制面、工具网关、autobot 等独立应用
+  deploy/             # 单机 / 私有化部署
+  evidence/           # 各步骤验收证据
+```
+
+DSH 插件必须是独立 package；能用插件或独立 package 完成的能力，不进入 fork。
+
+## 当前实现状态（滚动更新）
+
+- S0：完成。
+- S1：fork、遥测关闭、源码构建、离线会话与网络审计完成；Desktop 实际启动受 Linux 不支持限制。
+- S2：契约、内核接口、DSH adapter、假内核、BG1 场景完成。
+- S3：本地 Executor、Host 插件、SQLite Bot 服务、真实 DSH AgentLoop 闭环完成；previews/TTL/真实进程 kill 待补。
+- S4：Team panel 客户端插件、应用契约、本地 Bot API 完成；审批/打断 UI 与 10 天自用待补。
+- S5：OIDC Host provider、租户控制面、设备配对、模型网关、Desktop 企业 gate 完成；长连接网关/真实安装待补。
+- S6：工具网关、审批/审计、analytics SDK、local_dir 上行过滤完成；KMS/真实抓包待补。
+
 ## 魔改纪律
 
 - 只 fork 桌面外壳（`apps/desktop`），不改 agent 内核。

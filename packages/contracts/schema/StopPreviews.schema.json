@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "workdirKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "previewId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clientContext": {
+      "type": "object",
+      "properties": {
+        "operatorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "gitlab",
+            "github",
+            "feishu",
+            "teams",
+            "app",
+            "cli",
+            "system"
+          ]
+        },
+        "deviceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "platform": {
+          "type": "string",
+          "enum": [
+            "web",
+            "desktop",
+            "mobile"
+          ]
+        }
+      },
+      "required": [
+        "operatorId",
+        "channel"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "tenantId",
+    "workdirKey",
+    "clientContext"
+  ],
+  "additionalProperties": false
+}

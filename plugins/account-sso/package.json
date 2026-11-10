@@ -1,0 +1,33 @@
+{
+  "name": "@siriusx/dsh-account-sso",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Enterprise OIDC account provider for SiriusX DSH Desktop; replaces the official account seam.",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "exports": { ".": "./lib/index.js" },
+  "files": ["lib/index.js", "cordis.patch.yml", "README.md"],
+  "dsh": {
+    "bundle": {
+      "patch": ["./cordis.patch.yml"]
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=lib/index.js --external:@deepseek-ai/* --external:jose",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-credentials": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-deepseek-account": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-host-webserver": "0.2.2-rc.1",
+    "jose": "6.2.17"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

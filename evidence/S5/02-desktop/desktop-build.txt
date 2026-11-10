@@ -1,0 +1,82 @@
+$ pnpm --filter @deepseek-ai/dsh-desktop run build
+native/system/packages/darwin-arm64      | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["darwin"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+native/system/packages/darwin-x64        | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["darwin"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+native/system/packages/linux-arm64       | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+packages/experimental/cua-macos          | [WARN] Unsupported platform: wanted: {"cpu":["any"],"os":["darwin"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+$ tsc -b && pnpm run bundle
+$ tsdown --config-loader native
+[34mℹ[39m [34mtsdown v0.22.2[39m powered by [38;2;255;126;23mrolldown v1.1.1[39m
+[34mℹ[39m config file: [4m/root/siriusx/deepseek-harness/apps/desktop/tsdown.config.ts[24m
+[34mℹ[39m entry: [34mlib/types/command-manager-entry.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/operation-report-worker.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/main.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/preload-app.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/preload-welcome.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/preload-platform-account.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/preload-mandatory.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34mlib/types/preload-update-dialog.js[39m
+[34mℹ[39m target: [34mes2024[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m Build start
+[34mℹ[39m [33m[CJS][39m [2mlib/[22m[1mpreload-platform-account.cjs[22m  [2m2.08 kB[22m [2m│ gzip: 0.90 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 2.08 kB
+[34mℹ[39m [33m[CJS][39m [2mlib/[22m[1mpreload-mandatory.cjs[22m  [2m1.03 kB[22m [2m│ gzip: 0.47 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 1.03 kB
+[34mℹ[39m [33m[CJS][39m [2mlib/[22m[1mpreload-update-dialog.cjs[22m  [2m1.11 kB[22m [2m│ gzip: 0.52 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 1.11 kB
+[32m✔[39m Build complete in [32m144ms[39m
+[32m✔[39m Build complete in [32m145ms[39m
+[32m✔[39m Build complete in [32m149ms[39m
+[34mℹ[39m [33m[CJS][39m [2mlib/[22m[1mpreload-welcome.cjs[22m  [2m118.17 kB[22m [2m│ gzip: 29.84 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 118.17 kB
+[32m✔[39m Build complete in [32m152ms[39m
+[34mℹ[39m [34m[ESM][39m [2mlib/[22m[1mcommand-manager-entry.js[22m  [2m23.00 kB[22m [2m│ gzip: 6.88 kB[22m
+[34mℹ[39m [34m[ESM][39m 1 files, total: 23.00 kB
+[32m✔[39m Build complete in [32m157ms[39m
+[34mℹ[39m [33m[CJS][39m [2mlib/[22m[1mpreload-app.cjs[22m  [2m139.07 kB[22m [2m│ gzip: 36.15 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 139.07 kB
+[32m✔[39m Build complete in [32m159ms[39m
+[34mℹ[39m Hint: consider adding [34mdeps.onlyBundle[39m option to avoid unintended bundling of dependencies, or set [34mdeps.onlyBundle: false[39m to disable this hint.
+See more at [4mhttps://tsdown.dev/options/dependencies#deps-onlybundle[24m
+Detected dependencies in bundle:
+- [34mzod[39m
+[34mℹ[39m [34m[ESM][39m [2mlib/[22m[1moperation-report-worker.js[22m  [2m141.34 kB[22m [2m│ gzip: 28.93 kB[22m
+[34mℹ[39m [34m[ESM][39m 1 files, total: 141.34 kB
+[32m✔[39m Build complete in [32m188ms[39m
+[34mℹ[39m Hint: consider adding [34mdeps.onlyBundle[39m option to avoid unintended bundling of dependencies, or set [34mdeps.onlyBundle: false[39m to disable this hint.
+See more at [4mhttps://tsdown.dev/options/dependencies#deps-onlybundle[24m
+Detected dependencies in bundle:
+- [34mmime[39m
+- [34mzod[39m
+- [34mjs-yaml[39m
+[34mℹ[39m [34m[ESM][39m [2mlib/[22m[1mmain.js[22m  [2m884.55 kB[22m [2m│ gzip: 222.01 kB[22m
+[34mℹ[39m [34m[ESM][39m 1 files, total: 884.55 kB
+[32m✔[39m Build complete in [32m300ms[39m
+vite v6.4.3 building for production...
+transforming...
+✓ 34 modules transformed.
+rendering chunks...
+computing gzip size...
+lib/welcome/Montserrat-OFL.txt          4.40 kB │ gzip:  1.98 kB
+lib/welcome/montserrat-light.woff2     61.55 kB
+lib/welcome/montserrat-regular.woff2   62.01 kB
+lib/welcome/montserrat-medium.woff2    62.15 kB
+lib/welcome/brand-font.css              0.55 kB │ gzip:  0.20 kB
+lib/welcome/design-platform.css        24.86 kB │ gzip:  3.29 kB
+lib/welcome/welcome.css                38.77 kB │ gzip:  5.36 kB
+lib/welcome/welcome.js                230.29 kB │ gzip: 70.30 kB
+✓ built in 823ms
