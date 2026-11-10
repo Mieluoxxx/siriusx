@@ -13,6 +13,9 @@ export interface DockerSandboxProviderOptions {
   readonly allowlistNetwork?: string
   readonly prefix?: string
   readonly binds?: readonly { hostPath: string; containerPath: string; readOnly?: boolean }[]
+  readonly memoryLimit?: string
+  readonly cpuLimit?: string
+  readonly pidsLimit?: number
 }
 
 function safePart(value: string): string {
@@ -39,6 +42,9 @@ export class DockerSandboxProvider implements SandboxProvider {
   readonly #allowlistNetwork: string | undefined
   readonly #prefix: string
   readonly #binds: readonly { hostPath: string; containerPath: string; readOnly?: boolean }[]
+  readonly #memoryLimit: string
+  readonly #cpuLimit: string
+  readonly #pidsLimit: number
 
   constructor(options: DockerSandboxProviderOptions = {}) {
     this.#dockerBin = options.dockerBin ?? 'docker'
@@ -46,6 +52,9 @@ export class DockerSandboxProvider implements SandboxProvider {
     this.#allowlistNetwork = options.allowlistNetwork
     this.#prefix = options.prefix ?? 'siriusx'
     this.#binds = options.binds ?? []
+    this.#memoryLimit = options.memoryLimit ?? '1g'
+    this.#cpuLimit = options.cpuLimit ?? '1'
+    this.#pidsLimit = options.pidsLimit ?? 256
   }
 
   async available(): Promise<boolean> {
@@ -71,6 +80,9 @@ export class DockerSandboxProvider implements SandboxProvider {
     const started = await dockerBin(this.#dockerBin, [
       'run', '-d', '--name', container,
       '--network', network,
+      '--memory', this.#memoryLimit,
+      '--cpus', this.#cpuLimit,
+      '--pids-limit', String(this.#pidsLimit),
       '--label', `siriusx.tenant=${request.tenantId}`,
       '--label', `siriusx.workdir=${request.workdirKey}`,
       '-v', `${home}:/home/siriusx`,

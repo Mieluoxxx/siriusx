@@ -237,7 +237,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 - [x] 写 ACP 后端：一个符合内核接口的 ACP 客户端，后端标识 `acp:<agent>`。证据：`packages/kernel-acp`、`evidence/S7/02-acp-backend/test.txt`。
 - [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel/仓库 clone 已实现；真实 dsh/pi 镜像与真实代码平台认证未接。证据：`packages/cloud-executor`、`evidence/S7/08-repo-clone/`。
-- [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。**部分完成**：独立 volume 与 `--network none` 已完成；allowlist/资源限额未做。
+- [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。**部分完成**：独立 volume、`--network none`、`--memory/--cpus/--pids-limit` 与宿主 env 隔离已完成；allowlist 代理未做。证据：`evidence/S7/11-sandbox-hardening/`。
 - [x] 接入云端 dsh 与 pi 两个内核。证据：真实 DSH ACP 与真实 Pi CLI 都已在 Docker sandbox 内跑通；同一 local_dir 工单内核一致性通过。`evidence/S7/03-real-dsh-acp/`、`09-real-dsh-docker/`、`10-real-pi-docker/`、`07-kernel-parity/`。
 - [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub REST connector + 工具网关审批写测试完成；真实仓库全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`。
 - [x] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：SQLite 持久化 + 跨进程 `recoverOrphans()` 单测通过；真实 kill/重试未做。证据：`evidence/S7/01-cloud-executor/store-test.txt`。
@@ -249,7 +249,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 两个任务的沙箱互相看不到进程和文件。证据：`evidence/S7/01-cloud-executor/docker-isolation.txt`（文件隔离；进程隔离由独立容器保证）。
 - [x] 沙箱内访问白名单以外的地址被拒绝。证据：`--network none` 下 fetch 失败。
 - [x] 沙箱销毁后 workdir 还在，`resume` 在新沙箱里续上了同一个会话。**部分完成**：volume 持久化已验；ACP resume 未实现。证据：`docker-isolation.txt`。
-- [ ] 沙箱内找不到任何连接器凭据。**部分完成**：代码不向沙箱注入 secretRefs；未做 env 搜索。
+- [x] 沙箱内找不到任何连接器凭据。证据：`evidence/S7/11-sandbox-hardening/test.txt`（容器 env 不含宿主 GITHUB_TOKEN）。
 - [x] 用 pi 作内核完成一个任务，再用 dsh 完成同一个任务，Bot 侧不需要任何区分。证据：`evidence/S7/07-kernel-parity/run.txt`（真实 DSH ACP 与真实 Pi CLI，stage/report/事件类型一致）。
 - [ ] 在代码平台上提一个真实的 Issue，团队 Bot 接手、改代码、经审批后开出合并请求。**未完成**。
 - [ ] 模拟进程崩溃，服务自动恢复，运行中的工单没有丢。这是里程碑 M2。**部分完成**：SQLite 跨进程恢复单测；真实进程 kill/重启未做。

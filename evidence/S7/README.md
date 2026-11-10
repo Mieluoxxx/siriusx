@@ -32,6 +32,8 @@
   本地 mock 模型返回真实 assistant 文本。证据：`09-real-dsh-docker/run.txt`。
 - 真实 Pi CLI 在 Docker sandbox 内运行：挂载 Pi release + Node 24 + Pi models.json，
   `PiCloudKernel` 读取 JSON 事件并产出 ready 报告。证据：`10-real-pi-docker/run.txt`。
+- 沙箱资源限额与凭据隔离：Docker `--memory/--cpus/--pids-limit`，容器 env 不继承宿主连接器凭据；
+  `--network none` 下外网请求失败。证据：`11-sandbox-hardening/test.txt`。
 
 ## 验收对照
 
