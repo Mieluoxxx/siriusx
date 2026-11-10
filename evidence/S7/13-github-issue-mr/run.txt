@@ -1,0 +1,154 @@
+{
+  "issueRead": true,
+  "branchCreated": true,
+  "fileWritten": true,
+  "pullRequest": {
+    "head": "feature/7",
+    "base": "main",
+    "title": "Fix #7",
+    "body": "Closes #7"
+  },
+  "issue": {
+    "status": "executed",
+    "result": {
+      "result": {
+        "provider": "github",
+        "number": 7,
+        "title": "Broken button",
+        "body": "Fix the button",
+        "state": "open",
+        "url": "http://github.test/acme/repo/issues/7"
+      }
+    }
+  },
+  "branch": {
+    "status": "pending",
+    "approvalId": "c87a8af8-4a81-4ecc-9ae1-0f0a9f188ea3",
+    "decided": {
+      "status": "approved",
+      "result": {
+        "result": {
+          "ref": "refs/heads/feature/7"
+        }
+      }
+    }
+  },
+  "file": {
+    "status": "pending",
+    "approvalId": "21c8aa47-7612-407e-bc67-d6a1403e1e34",
+    "decided": {
+      "status": "approved",
+      "result": {
+        "result": {
+          "content": {
+            "path": "feature.txt"
+          },
+          "commit": {
+            "sha": "def456"
+          }
+        }
+      }
+    }
+  },
+  "pr": {
+    "status": "pending",
+    "approvalId": "81186460-308a-48bb-908f-b57a22274671",
+    "decided": {
+      "status": "approved",
+      "result": {
+        "result": {
+          "provider": "github",
+          "number": 12,
+          "url": "http://github.test/acme/repo/pull/12",
+          "title": "Fix #7"
+        }
+      }
+    }
+  },
+  "audit": [
+    {
+      "id": "b879e32c-ebc1-45f0-8090-83900197b578",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "read_issue",
+      "system": "github",
+      "decision": "allow:read action",
+      "approval_id": null,
+      "approver_id": null,
+      "result_json": "{\"result\":{\"provider\":\"github\",\"number\":7,\"title\":\"Broken button\",\"body\":\"Fix the button\",\"state\":\"open\",\"url\":\"http://github.test/acme/repo/issues/7\"}}",
+      "created_at": 1794334637633
+    },
+    {
+      "id": "301926f2-1ec8-40b0-b94a-ab4b663e556b",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "create_branch",
+      "system": "github",
+      "decision": "pending:write/send/delete outside Mandate",
+      "approval_id": "c87a8af8-4a81-4ecc-9ae1-0f0a9f188ea3",
+      "approver_id": null,
+      "result_json": null,
+      "created_at": 1794334637633
+    },
+    {
+      "id": "0f25b6dc-5b1b-4647-8e2e-764269a5d0aa",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "create_branch",
+      "system": "github",
+      "decision": "approved:human",
+      "approval_id": "c87a8af8-4a81-4ecc-9ae1-0f0a9f188ea3",
+      "approver_id": "admin",
+      "result_json": "{\"result\":{\"ref\":\"refs/heads/feature/7\"}}",
+      "created_at": 1794334637639
+    },
+    {
+      "id": "556f02ed-d1e5-47d2-8629-251320541a50",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "create_or_update_file",
+      "system": "github",
+      "decision": "pending:write/send/delete outside Mandate",
+      "approval_id": "21c8aa47-7612-407e-bc67-d6a1403e1e34",
+      "approver_id": null,
+      "result_json": null,
+      "created_at": 1794334637639
+    },
+    {
+      "id": "b32c5130-4c83-4537-b859-28b35cbc08c2",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "create_or_update_file",
+      "system": "github",
+      "decision": "approved:human",
+      "approval_id": "21c8aa47-7612-407e-bc67-d6a1403e1e34",
+      "approver_id": "admin",
+      "result_json": "{\"result\":{\"content\":{\"path\":\"feature.txt\"},\"commit\":{\"sha\":\"def456\"}}}",
+      "created_at": 1794334637642
+    },
+    {
+      "id": "a7a8361f-4540-46ed-aa87-0edfaf1f06bb",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "open_pull_request",
+      "system": "github",
+      "decision": "pending:write/send/delete outside Mandate",
+      "approval_id": "81186460-308a-48bb-908f-b57a22274671",
+      "approver_id": null,
+      "result_json": null,
+      "created_at": 1794334637642
+    },
+    {
+      "id": "553d429a-7732-4c33-af53-d57d986c3777",
+      "tenant_id": "tenant-gh",
+      "ticket_id": "ticket-gh",
+      "action_class": "open_pull_request",
+      "system": "github",
+      "decision": "approved:human",
+      "approval_id": "81186460-308a-48bb-908f-b57a22274671",
+      "approver_id": "admin",
+      "result_json": "{\"result\":{\"provider\":\"github\",\"number\":12,\"url\":\"http://github.test/acme/repo/pull/12\",\"title\":\"Fix #7\"}}",
+      "created_at": 1794334637645
+    }
+  ]
+}

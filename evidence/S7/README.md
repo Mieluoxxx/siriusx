@@ -62,3 +62,15 @@
 - `PiSession` 现在等待 **进程 exit + stdout end** 后才决定是否补发 fallback turn.end；
 - 避免真实 Pi 两轮测试出现重复 `turn.end`。
 - 证据：`06-pi-backend/test.txt`。
+
+## GitHub Issue → MR 演练
+
+- `GitHubConnector` 新增 `create_or_update_file`；
+- 本地 mock GitHub API 串起：
+  1. `read_issue`
+  2. `create_branch`（审批）
+  3. `create_or_update_file`（审批）
+  4. `open_pull_request`（审批）
+- 每个写操作都经过 tool-gateway 审批，审计链完整；最终 PR 内容正确。
+- 证据：`13-github-issue-mr/run.txt`。
+- 仍未接真实 GitHub/GitLab 仓库凭据。

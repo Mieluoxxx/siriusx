@@ -239,7 +239,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel/仓库 clone 已实现；真实 dsh/pi 镜像与真实代码平台认证未接。证据：`packages/cloud-executor`、`evidence/S7/08-repo-clone/`。
 - [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。证据：独立 volume、`--network none`、`--memory/--cpus/--pids-limit`、宿主 env 隔离、internal network + allowlist proxy 均通过；`evidence/S7/11-sandbox-hardening/`、`12-egress-allowlist/`。
 - [x] 接入云端 dsh 与 pi 两个内核。证据：真实 DSH ACP 与真实 Pi CLI 都已在 Docker sandbox 内跑通；同一 local_dir 工单内核一致性通过。`evidence/S7/03-real-dsh-acp/`、`09-real-dsh-docker/`、`10-real-pi-docker/`、`07-kernel-parity/`。
-- [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub REST connector + 工具网关审批写测试完成；真实仓库全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`。
+- [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub connector + tool-gateway 审批已串通 Issue→branch→file→PR（本地 mock API）；真实仓库/凭据全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`、`13-github-issue-mr/`。
 - [x] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：SQLite 持久化 + 跨进程 `recoverOrphans()` 单测通过；真实 kill/重试未做。证据：`evidence/S7/01-cloud-executor/store-test.txt`。
 
 **验收标准。**
@@ -251,7 +251,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 沙箱销毁后 workdir 还在，`resume` 在新沙箱里续上了同一个会话。**部分完成**：volume 持久化已验；ACP resume 未实现。证据：`docker-isolation.txt`。
 - [x] 沙箱内找不到任何连接器凭据。证据：`evidence/S7/11-sandbox-hardening/test.txt`（容器 env 不含宿主 GITHUB_TOKEN）。
 - [x] 用 pi 作内核完成一个任务，再用 dsh 完成同一个任务，Bot 侧不需要任何区分。证据：`evidence/S7/07-kernel-parity/run.txt`（真实 DSH ACP 与真实 Pi CLI，stage/report/事件类型一致）。
-- [ ] 在代码平台上提一个真实的 Issue，团队 Bot 接手、改代码、经审批后开出合并请求。**未完成**。
+- [ ] 在代码平台上提一个真实的 Issue，团队 Bot 接手、改代码、经审批后开出合并请求。**部分完成**：本地 mock 串通 Issue→branch→file→PR；真实平台/仓库/机器人身份未接。证据：`evidence/S7/13-github-issue-mr/run.txt`。
 - [x] 模拟进程崩溃，服务自动恢复，运行中的工单没有丢。这是里程碑 M2。证据：SQLite 跨进程恢复、真实 DSH Web Host SIGKILL/重启、`autoRetryLost` resume 重试、Docker orphan sweep + systemd timer 巡检；`evidence/S3/07-host-kill/`、`10-lost-retry/`、`11-sandbox-reap/`、`12-reap-scheduler/`。
 
 **产出物。** ACP 后端，云端 Executor，沙箱，第一个代码平台的接入。

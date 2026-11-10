@@ -51,6 +51,15 @@ export class GitHubConnector implements Connector {
       const pull = await response.json() as { number: number; html_url: string; title: string }
       return { result: { provider: 'github', number: pull.number, url: pull.html_url, title: pull.title } }
     }
+    if (request.actionClass === 'create_or_update_file') {
+      const input = JSON.parse(request.content ?? '{}') as { path?: string; message?: string; content?: string; branch?: string }
+      if (input.path === undefined || input.message === undefined || input.content === undefined || input.branch === undefined) throw new Error('create_or_update_file needs path/message/content/branch')
+      const response = await this.#fetch(`${this.#apiBase}/repos/${parts.owner}/${parts.repo}/contents/${input.path}`, {
+        method: 'PUT', headers, body: JSON.stringify({ message: input.message, content: Buffer.from(input.content).toString('base64'), branch: input.branch }),
+      })
+      if (!response.ok) throw new Error(`GitHub file write failed: HTTP ${response.status}`)
+      return { result: await response.json() }
+    }
     if (request.actionClass === 'create_branch') {
       const input = JSON.parse(request.content ?? '{}') as { branch?: string; sha?: string }
       if (input.branch === undefined || input.sha === undefined) throw new Error('create_branch needs branch/sha')
