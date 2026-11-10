@@ -20,6 +20,7 @@ export interface ControlPlaneOptions {
   readonly sessionSecret?: string
   readonly now?: () => number
   readonly botScenario?: 'ready' | 'waiting'
+  readonly sessionTtlMs?: number
 }
 
 export interface Session {
@@ -168,6 +169,7 @@ export class ControlPlane {
   readonly #secret: string
   readonly #now: () => number
   readonly #botScenario: 'ready' | 'waiting'
+  readonly #sessionTtlMs: number
   readonly #runtimes = new Map<string, BotService>()
   readonly #cloudExecutors = new Map<string, CloudExecutor>()
 
@@ -179,6 +181,7 @@ export class ControlPlane {
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
     this.#botScenario = options.botScenario ?? 'ready'
+    this.#sessionTtlMs = options.sessionTtlMs ?? 12 * 60 * 60 * 1000
   }
 
   close(): void {
@@ -255,7 +258,7 @@ export class ControlPlane {
     const user = this.#db.prepare('SELECT id, role FROM users WHERE id = ? AND tenant_id = ?').get(input.userId, input.tenantId) as
       | { id: string; role: string } | undefined
     if (user === undefined) throw new ControlPlaneError(401, 'USER_NOT_FOUND', 'user is not a member of this tenant')
-    const payload = Buffer.from(JSON.stringify({ tenantId: input.tenantId, userId: input.userId, role: input.role })).toString('base64url')
+    const payload = Buffer.from(JSON.stringify({ tenantId: input.tenantId, userId: input.userId, role: input.role, exp: this.#now() + this.#sessionTtlMs })).toString('base64url')
     const signature = createHmac('sha256', this.#secret).update(payload).digest('base64url')
     return `${payload}.${signature}`
   }
@@ -265,10 +268,11 @@ export class ControlPlane {
     if (payload === undefined || signature === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session token')
     const expected = createHmac('sha256', this.#secret).update(payload).digest('base64url')
     if (!safeEqual(signature, expected)) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session token')
-    const value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as Partial<Session>
-    if (typeof value.tenantId !== 'string' || typeof value.userId !== 'string' || (value.role !== 'admin' && value.role !== 'member')) {
+    const value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as Partial<Session> & { exp?: number }
+    if (typeof value.tenantId !== 'string' || typeof value.userId !== 'string' || (value.role !== 'admin' && value.role !== 'member') || typeof value.exp !== 'number') {
       throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session claims')
     }
+    if (value.exp <= this.#now()) throw new ControlPlaneError(401, 'SESSION_EXPIRED', 'session expired')
     const user = this.#db.prepare('SELECT role FROM users WHERE id = ? AND tenant_id = ?').get(value.userId, value.tenantId) as { role: Role } | undefined
     if (user === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'user no longer exists')
     return { tenantId: value.tenantId, userId: value.userId, role: user.role }

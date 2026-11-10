@@ -38,3 +38,9 @@
   证据：`04-native-label/native-disabled.png`、`gate-off.txt`。
 - 单机 Docker 镜像默认从 Docker Hub 拉 `debian:bookworm-slim`，当前执行环境网络无法完成；
   构建命令与 compose config 已验证。
+
+## Session expiry
+
+- control-plane session token 加入 `exp`，默认 12h TTL；
+- 过期后 `verifySession` 返回 `SESSION_EXPIRED`；
+- 证据：`04-session-expiry/`。

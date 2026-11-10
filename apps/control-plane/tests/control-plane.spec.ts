@@ -251,4 +251,18 @@ describe('control plane', () => {
     expect(trace.analytics[0]?.ticketId).toBe(ticket.ticketId)
   })
 
+  it('rejects expired sessions', async () => {
+    let now = 1_000_000
+    const dir = await mkdtemp(join(tmpdir(), 'siriusx-session-expiry-'))
+    roots.push(dir)
+    const plane = new ControlPlane({ dbPath: join(dir, 'expiry.sqlite'), dataDir: join(dir, 'expiry-data'), now: () => now, sessionTtlMs: 1000 })
+    planes.push(plane)
+    const tenant = plane.provisionTenant({ name: 'Expiry', idpIssuer: 'https://e.example', adminEmail: 'admin@e.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@e.example')!
+    const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    expect(plane.verifySession(token).tenantId).toBe(tenant.id)
+    now += 1001
+    expect(() => plane.verifySession(token)).toThrow('session expired')
+  })
+
 })
