@@ -15,6 +15,7 @@ import {
 } from '@siriusx/contracts/executor'
 import { deriveTicketStage, readyNeedsReview, type TicketStage } from '@siriusx/contracts/ticket-stage'
 import type { LocalExecutor } from '@siriusx/executor-local'
+import type { AnalyticsCollector, AnalyticsEvent } from '@siriusx/analytics'
 
 export interface CreateTicketInput {
   readonly tenantId: string
@@ -142,6 +143,8 @@ export interface BotServiceOptions {
   readonly inputDebounceMs?: number
   /** Hard cap from the first input in a debounce burst. */
   readonly inputDebounceMaxWaitMs?: number
+  readonly analytics?: AnalyticsCollector
+  readonly analyticsBotId?: string
 }
 
 export class BotService {
@@ -153,6 +156,11 @@ export class BotService {
   readonly #debounce = new Map<string, { timer: ReturnType<typeof setTimeout>; maxTimer: ReturnType<typeof setTimeout> }>()
   readonly #inputDebounceMs: number
   readonly #inputDebounceMaxWaitMs: number
+  readonly #analytics: AnalyticsCollector | undefined
+  readonly #analyticsBotId: string
+  #analyticsSeq = 0
+  readonly #analyticsSeen = new Set<string>()
+  readonly #analyticsStates = new Map<string, Assignment['state']>()
 
   constructor(options: BotServiceOptions) {
     this.#db = new DatabaseSync(options.dbPath)
@@ -161,6 +169,8 @@ export class BotService {
     this.#now = options.now ?? Date.now
     this.#inputDebounceMs = options.inputDebounceMs ?? 0
     this.#inputDebounceMaxWaitMs = options.inputDebounceMaxWaitMs ?? 60_000
+    this.#analytics = options.analytics
+    this.#analyticsBotId = options.analyticsBotId ?? 'bot-local'
     this.reconcile()
   }
 
@@ -252,6 +262,96 @@ export class BotService {
     return row.count
   }
 
+  private emitAnalytics(input: {
+    ticketId: string
+    assignmentId?: string
+    schema: AnalyticsEvent['schema']
+    source: AnalyticsEvent['source']
+    payload: Record<string, unknown>
+    workspaceKind?: 'local_dir' | 'cloud_project'
+  }): void {
+    if (this.#analytics === undefined) return
+    const ticket = this.#db.prepare('SELECT tenant_id FROM tickets WHERE id = ?').get(input.ticketId) as { tenant_id: string } | undefined
+    if (ticket === undefined) return
+    const seq = this.#analyticsSeq++
+    const event: AnalyticsEvent = {
+      eventId: randomUUID(),
+      schema: input.schema,
+      schemaVersion: 1,
+      occurredAt: new Date(this.#now()).toISOString(),
+      seq,
+      tenantId: ticket.tenant_id,
+      botId: this.#analyticsBotId,
+      ticketId: input.ticketId,
+      ...(input.assignmentId === undefined ? {} : { assignmentId: input.assignmentId }),
+      traceId: input.ticketId,
+      spanId: `span-${seq}`,
+      source: input.source,
+      ...(input.workspaceKind === undefined ? {} : { workspaceKind: input.workspaceKind }),
+      variant: {
+        promptVersion: 's3',
+        policyVersion: 's3',
+        model: 'unknown',
+        kernel: 'dsh',
+        kernelVersion: '0.2.2',
+        featureFlags: {},
+      },
+      payload: input.payload,
+    }
+    void this.#analytics.record(event).catch(() => undefined)
+  }
+
+  private emitAssignmentAnalytics(assignment: Assignment, events: readonly AssignmentEvent[]): void {
+    for (const event of events) {
+      const dedupe = `${assignment.assignmentId}:${event.seq}:${event.type}`
+      if (this.#analyticsSeen.has(dedupe)) continue
+      this.#analyticsSeen.add(dedupe)
+      if (event.type === 'state') {
+        const from = this.#analyticsStates.get(assignment.assignmentId) ?? 'preparing'
+        this.#analyticsStates.set(assignment.assignmentId, event.state)
+        this.emitAnalytics({
+          ticketId: assignment.ticketId, assignmentId: assignment.assignmentId, schema: 'assignment.state_changed',
+          source: 'executor', payload: { from, to: event.state, reasonClass: 'executor' },
+        })
+      } else if (event.type === 'report') {
+        this.emitAnalytics({
+          ticketId: assignment.ticketId, assignmentId: assignment.assignmentId, schema: 'report.produced',
+          source: 'executor', payload: {
+            reportKind: event.report.kind,
+            ...(event.report.kind === 'ready' ? {
+              filesChanged: event.report.diffStats.filesChanged,
+              insertions: event.report.diffStats.insertions,
+              deletions: event.report.diffStats.deletions,
+              hasChangeRequest: event.report.changeRequest !== undefined,
+            } : {}),
+          },
+        })
+      } else if (event.type === 'activity') {
+        if (event.kind === 'tool') {
+          this.emitAnalytics({
+            ticketId: assignment.ticketId, assignmentId: assignment.assignmentId, schema: 'tool.called',
+            source: 'executor', payload: {
+              toolName: event.name, durationMs: event.durationMs, resultClass: event.resultClass,
+              ...(event.inputBytes === undefined ? {} : { inputBytes: event.inputBytes }),
+              ...(event.outputBytes === undefined ? {} : { outputBytes: event.outputBytes }),
+            },
+          })
+        } else {
+          this.emitAnalytics({
+            ticketId: assignment.ticketId, assignmentId: assignment.assignmentId, schema: 'model.called',
+            source: 'executor', payload: {
+              model: 'unknown', provider: 'executor', durationMs: event.durationMs, resultClass: event.resultClass,
+              ...(event.usage === undefined ? {} : {
+                inputTokens: event.usage.inputTokens, outputTokens: event.usage.outputTokens,
+                ...(event.usage.cachedTokens === undefined ? {} : { cachedTokens: event.usage.cachedTokens }),
+              }),
+            },
+          })
+        }
+      }
+    }
+  }
+
   private recordAssignment(assignment: Assignment, events: readonly AssignmentEvent[]): void {
     this.#db.prepare(`
       INSERT INTO assignments (id, tenant_id, ticket_id, kind, workdir_key, state, report_json, last_seq, created_at)
@@ -270,6 +370,7 @@ export class BotService {
     )
     const insert = this.#db.prepare('INSERT OR IGNORE INTO assignment_events (assignment_id, seq, event_json) VALUES (?, ?, ?)')
     for (const event of events) insert.run(assignment.assignmentId, event.seq, JSON.stringify(event))
+    this.emitAssignmentAnalytics(assignment, events)
   }
 
   private buildAssignment(ticketId: string, ticket: TicketRow, kind: 'start' | 'resume', followUps: readonly InputRow[]): CreateAssignment {
@@ -341,6 +442,9 @@ export class BotService {
   async sendInput(ticketId: string, text: string, author = 'app:local-user'): Promise<TicketView> {
     const ticket = this.#db.prepare('SELECT * FROM tickets WHERE id = ?').get(ticketId) as unknown as TicketRow | undefined
     if (ticket === undefined) throw new Error(`ticket ${ticketId} not found`)
+    this.emitAnalytics({
+      ticketId, schema: 'human.input', source: 'app', payload: { kind: 'input', state: 'received', textLength: text.length },
+    })
     const inputId = randomUUID()
     this.#db.prepare('INSERT INTO pending_inputs (id, ticket_id, text, author, consumed_by, created_at) VALUES (?, ?, ?, ?, NULL, ?)')
       .run(inputId, ticketId, text, author, this.#now())

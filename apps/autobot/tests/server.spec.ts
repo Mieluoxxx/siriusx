@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -24,14 +24,15 @@ async function setup() {
   await writeFile(join(root, 'app.txt'), 'one\n')
   await execFileAsync('git', ['add', '.'], { cwd: root })
   await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
-  const server = await startBotServer({ dbPath: ':memory:', port: 0 })
+  const analyticsPath = join(root, 'analytics.jsonl')
+  const server = await startBotServer({ dbPath: ':memory:', port: 0, analyticsPath })
   servers.push(server)
-  return { root, server }
+  return { root, server, analyticsPath }
 }
 
 describe('loopback Bot API', () => {
   it('serves bots, tickets and ticket detail', async () => {
-    const { root, server } = await setup()
+    const { root, server, analyticsPath } = await setup()
     const bots = await fetch(`${server.url}/api/bots`).then(response => response.json()) as { bots: unknown[] }
     expect(bots.bots).toHaveLength(1)
     const created = await fetch(`${server.url}/api/tickets`, {
@@ -47,10 +48,15 @@ describe('loopback Bot API', () => {
     const detail = await fetch(`${server.url}/api/tickets/${ticket.ticketId}`).then(response => response.json()) as { events: unknown[]; latestAssignment?: { state: string } }
     expect(detail.latestAssignment?.state).toBe('reported')
     expect(detail.events.length).toBeGreaterThan(0)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const analytics = await readFile(analyticsPath.replace(/\.jsonl$/u, '.l0l1.jsonl'), 'utf8')
+    expect(analytics).toContain('assignment.state_changed')
+    expect(analytics).toContain('report.produced')
+    expect(analytics).not.toContain('do the task')
   })
 
   it('allows a follow-up after an answer ticket', async () => {
-    const { root, server } = await setup()
+    const { root, server, analyticsPath } = await setup()
     // The default fake kernel returns ready, so a follow-up exercises the
     // endpoint contract rather than the person/answer branch.
     const response = await fetch(`${server.url}/api/tickets`, {

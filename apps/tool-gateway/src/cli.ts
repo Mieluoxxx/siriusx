@@ -2,16 +2,16 @@
 /** Run the tool gateway with a demo GitHub/GitLab connector that never performs a real external write. */
 import { startToolGatewayServer } from './server.ts'
 import { GitHubConnector } from './github.ts'
+import { HttpCredentialProvider, StaticCredentialProvider } from './credentials.ts'
 
 const port = process.env.SIRIUSX_TOOL_GATEWAY_PORT === undefined ? 4330 : Number(process.env.SIRIUSX_TOOL_GATEWAY_PORT)
 const db = process.env.SIRIUSX_TOOL_GATEWAY_DB ?? '/tmp/siriusx-tool-gateway.sqlite'
 const server = await startToolGatewayServer({
   dbPath: db,
   port,
-  credentials: {
-    github: process.env.GITHUB_TOKEN ?? 'not-configured',
-    gitlab: process.env.GITLAB_TOKEN ?? 'not-configured',
-  },
+  ...(process.env.SIRIUSX_CREDENTIAL_URL === undefined
+    ? { credentials: { github: process.env.GITHUB_TOKEN ?? 'not-configured', gitlab: process.env.GITLAB_TOKEN ?? 'not-configured' } }
+    : { credentialProvider: new HttpCredentialProvider({ url: process.env.SIRIUSX_CREDENTIAL_URL, token: process.env.SIRIUSX_CREDENTIAL_TOKEN ?? '' }) }),
   connectors: {
     github: process.env.SIRIUSX_GITHUB_REAL === '1'
       ? new GitHubConnector(process.env.SIRIUSX_GITHUB_API_BASE === undefined ? {} : { apiBase: process.env.SIRIUSX_GITHUB_API_BASE })

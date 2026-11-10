@@ -25,9 +25,11 @@ if (command === 'serve') {
     if (value === undefined) usage()
     options.set(key.slice(2), value)
   }
+  const analyticsPath = options.get('analytics')
   const server = await startBotServer({
     dbPath: options.get('db') ?? ':memory:',
     port: options.get('port') === undefined ? 4319 : Number(options.get('port')),
+    ...(analyticsPath === undefined ? {} : { analyticsPath }),
   })
   console.log(JSON.stringify({ ready: true, url: server.url }, undefined, 2))
   const stop = async (): Promise<void> => { await server.close(); process.exit(0) }

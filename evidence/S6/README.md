@@ -3,13 +3,16 @@
 ## 已完成
 
 - `apps/tool-gateway`：
-  - Fail-Closed 策略（内置拒绝、Mandate、读/回复放行、写/发/删审批）；
+  - `CredentialProvider`：静态 env 与 Vault-style HTTP 密钥管理；secret 只在 connector 执行时读取；
+  - fail-closed 策略（内置拒绝、Mandate、读/回复放行、写/发/删审批）；
   - 审批卡片表与 HTTP API；
   - 不可变审计表，每次决策先写审计；
   - connector 凭据只从 gateway 进程环境读取，不进入 payload、审计或结果；
   - 策略不可用时拒绝全部调用。
 - `packages/analytics`：
   - 严格复用 S2 的 L0/L1/L2 字段分级；
+  - BotService 已接 assignment.state_changed / report.produced / tool.called / model.called / human.input；
+  - `autobot serve --analytics <path>` 用 `FileAnalyticsSink(local=true)` 落 L0/L1；
   - 未标级别字段在入库前拒绝；
   - local_dir 出现 L2 直接拒收；
   - 写 L0/L1 投影到单独文件；
@@ -27,8 +30,9 @@
 | local_dir 上行不含日志原文 | **通过** | `02-analytics/executor-uplink-test.txt` |
 | L0/L1/L2 未标字段拒绝 | **通过** | `02-analytics/test.txt` |
 | 事件总线停掉任务继续 | **通过（SDK 级）** | `02-analytics/test.txt` |
+| Bot/Executor 事件接入 | **通过（本地 L0/L1 文件）** | `02-analytics/bot-test.txt`、`server-test.txt` |
 | 真机抓包证明本地包无提示词/代码/命令 | **未完成** | 需真实本地任务 + tcpdump |
-| 凭据托管到 KMS/Vault | **未完成** | 当前 gateway 从进程 env 读取 |
+| 凭据托管到 KMS/Vault | **部分通过** | Vault-style HTTP provider + 缓存 + 审计不含 secret；真实 Vault 部署未验。证据：`01-tool-gateway/credential-manager-test.txt` |
 | 审批卡片接进 DSH UI | **通过** | `03-ui-approval/approval-card.png`、`run.txt`（真实 DSH Web UI 批准后 status=approved） |
 
 ## 备注

@@ -7,6 +7,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FakeKernel } from '@siriusx/fake-kernel'
 import { LocalExecutor } from '@siriusx/executor-local'
+import { AnalyticsCollector, type AnalyticsSink } from '@siriusx/analytics'
+import type { AnalyticsEvent } from '@siriusx/contracts/analytics'
 import { BOT_SCHEMA, BotService } from '../src/bot-service.ts'
 
 const execFileAsync = promisify(execFile)
@@ -175,4 +177,32 @@ describe('single-tenant local Bot loop', () => {
     expect(view.latestAssignment?.state).toBe('lost')
     expect(view.stage).toBe('idle')
   })
+  it('emits classified Bot/Executor analytics without source text', async () => {
+    class Sink implements AnalyticsSink {
+      readonly events: AnalyticsEvent[] = []
+      async append(event: AnalyticsEvent): Promise<void> { this.events.push(event) }
+    }
+    const sink = new Sink()
+    const analytics = new AnalyticsCollector({ sink })
+    const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: fake() })
+    const service = new BotService({ dbPath: await dbFile(), executor, analytics })
+    services.push(service)
+    const ticketId = service.createTicket({
+      tenantId: 'tenant-a',
+      workspace: { kind: 'local_dir', deviceId: 'device-1', path: await repo() },
+      prompt: 'write a secret prompt',
+    })
+    await service.dispatch(ticketId)
+    await service.sendInput(ticketId, 'follow up secret text')
+    await new Promise(resolve => setTimeout(resolve, 20))
+    const schemas = new Set(sink.events.map(event => event.schema))
+    expect(schemas).toContain('assignment.state_changed')
+    expect(schemas).toContain('report.produced')
+    expect(schemas).toContain('human.input')
+    const serialized = JSON.stringify(sink.events)
+    expect(serialized).not.toContain('write a secret prompt')
+    expect(serialized).not.toContain('follow up secret text')
+    expect(sink.events.find(event => event.schema === 'human.input')?.payload.textLength).toBe('follow up secret text'.length)
+  })
+
 })

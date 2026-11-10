@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { z } from 'zod'
+import type { CredentialProvider } from './credentials.ts'
 
 export const ActionRequestSchema = z.object({
   tenantId: z.string().min(1),
@@ -34,6 +35,7 @@ export interface ToolGatewayOptions {
   readonly dbPath: string
   readonly connectors: Readonly<Record<string, Connector>>
   readonly credentials?: Readonly<Record<string, string>>
+  readonly credentialProvider?: CredentialProvider
   readonly policyEnabled?: boolean
   readonly approvalTtlMs?: number
   readonly now?: () => number
@@ -112,7 +114,7 @@ CREATE TABLE IF NOT EXISTS audit (
 
 export class ToolGateway {
   readonly #db: DatabaseSync
-  readonly #options: { dbPath: string; connectors: Readonly<Record<string, Connector>>; policyEnabled: boolean; approvalTtlMs: number; credentials?: Readonly<Record<string, string>> }
+  readonly #options: { dbPath: string; connectors: Readonly<Record<string, Connector>>; policyEnabled: boolean; approvalTtlMs: number; credentials?: Readonly<Record<string, string>>; credentialProvider?: CredentialProvider }
   readonly #now: () => number
   readonly #executed: ActionRequest[] = []
 
@@ -123,6 +125,7 @@ export class ToolGateway {
       dbPath: options.dbPath,
       connectors: options.connectors,
       ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
+      ...(options.credentialProvider === undefined ? {} : { credentialProvider: options.credentialProvider }),
       policyEnabled: options.policyEnabled ?? true,
       approvalTtlMs: options.approvalTtlMs ?? 15 * 60 * 1000,
     }
@@ -172,7 +175,10 @@ export class ToolGateway {
   private async execute(request: ActionRequest): Promise<unknown> {
     const connector = this.#options.connectors[request.system]
     if (connector === undefined) throw new ToolGatewayError(404, 'CONNECTOR_NOT_FOUND', request.system)
-    const result = await connector.execute(request, this.#options.credentials?.[request.system])
+    const credential = this.#options.credentialProvider === undefined
+      ? this.#options.credentials?.[request.system]
+      : await this.#options.credentialProvider.get(request.system)
+    const result = await connector.execute(request, credential)
     this.#executed.push(request)
     return result
   }

@@ -1,0 +1,10 @@
+$ vitest run tests/server.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/apps/autobot
+
+ ✓ tests/server.spec.ts (2 tests) 319ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:07:38
+   Duration  637ms (transform 107ms, setup 0ms, import 201ms, tests 319ms, environment 0ms)
