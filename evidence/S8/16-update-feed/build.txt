@@ -1,0 +1,1 @@
+wrote /tmp/s8-update-feed/artifacts/stable.yml and stable-mac.yml

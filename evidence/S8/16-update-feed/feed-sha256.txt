@@ -1,0 +1,2 @@
+915fa95e002bbfb677a3f93e6b5ac48fc23454f52a41c412681019ecbbf722c4  /tmp/s8-update-feed/artifacts/stable-mac.yml
+915fa95e002bbfb677a3f93e6b5ac48fc23454f52a41c412681019ecbbf722c4  /tmp/s8-update-feed/artifacts/stable.yml

@@ -148,3 +148,10 @@
 - electron-builder `extraResources` 支持 `SIRIUSX_PLUGIN_BUNDLE`；
 - enterprise config 支持 `bundledPluginsDir` 并传给 Host。
 - 证据：`15-plugin-bundle/`。
+
+## 更新源 static feed
+
+- 新增 feed 生成脚本与静态服务；
+- 本地生成 `stable.yml`，包含 artifact sha512/size；
+- `/health`、manifest、artifact 下载通过。
+- 证据：`16-update-feed/`。
