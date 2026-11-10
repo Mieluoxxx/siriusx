@@ -1,0 +1,18 @@
+tag executor-v0.1.0
+
+Executor contract v0.1.0: local/cloud lifecycle, previews/TTL, Host SIGKILL recovery and model disconnect verified
+cf79b22 feat: finalize executor contract v0.1.0 after crash and disconnect probes
+ docs/contracts/executor.md                         |  7 ++-
+ docs/plan.md                                       |  4 +-
+ docs/status.md                                     |  2 +-
+ evidence/S1/02-conversation/mock-llm-server.mjs    |  6 +++
+ evidence/S3/08-model-disconnect/result.txt         |  2 +
+ evidence/S3/08-model-disconnect/run.err.txt        |  1 +
+ evidence/S3/08-model-disconnect/run.sh             | 62 ++++++++++++++++++++++
+ evidence/S3/08-model-disconnect/run.txt            |  3 ++
+ evidence/S3/09-contract-final/contracts-test.txt   | 10 ++++
+ .../S3/09-contract-final/contracts-typecheck.txt   |  1 +
+ evidence/S3/09-contract-final/schema-sha256.txt    | 23 ++++++++
+ evidence/S3/README.md                              |  7 +++
+ 12 files changed, 121 insertions(+), 7 deletions(-)
+f22fba471d049a4ae0a1985a4379f1b8ad95aa1f
