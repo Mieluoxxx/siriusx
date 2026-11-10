@@ -92,3 +92,11 @@
 - `AcpCloudKernel` 新增 `onEvent`；
 - 两边事件类型序列一致。
 - 证据：`15-dsh-local-cloud-sequences/run.txt`。
+
+## ACP 接入边界
+
+- pi 1.5.0 无 ACP server，改走 JSON backend；
+- ACP SDK 有 background activity 概念但没有现成 `backgrounded` 状态映射；
+- 当前 AcpSession 只映射明确 update；缺的语义不伪造，Executor 以新 assignment 补；
+- 家目录卷按 tenant+workdirKey 单写者串行。
+- 证据：`16-acp-design/run.txt`、`docs/design/acp-gaps.md`。

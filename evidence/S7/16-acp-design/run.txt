@@ -1,0 +1,50 @@
+--- pi --help ---
+pi - AI coding assistant with read, bash, edit, write tools
+
+Usage:
+  pi [options] [--] [@files...] [messages...]
+
+Commands:
+  pi install <source> [-l]     Install extension source and add to settings
+  pi remove <source> [-l]      Remove extension source from settings
+  pi uninstall <source> [-l]   Alias for remove
+  pi update [source|self|pi]   Update pi, extensions, or model catalogs
+  pi list                      List installed extensions from settings
+  pi config [-l]               Open TUI to enable/disable package resources (Tab switches scope)
+  pi auth <command>            Print credentials or check provider readiness
+  pi mcp <command>             Manage MCP servers
+  pi <command> --help          Show help for install/remove/uninstall/update/list/config/auth/mcp
+
+Options:
+  --provider <name>              Provider to search for --model (requires --model)
+  --model <pattern>              Model pattern or ID (supports "provider/id" and optional ":<thinking>")
+  --api-key <key>                API key (defaults to env vars)
+  --system-prompt <text>         System prompt (default: coding assistant prompt)
+  --append-system-prompt <text>  Append text or file contents to the system prompt (can be used multiple times)
+  --mode <mode>                  Output mode: text (default), json, or rpc
+  --print, -p                    Non-interactive mode: process prompt and exit
+  --continue, -c                 Continue the most recent session for the current directory
+  --resume, -r                   Pick a session to resume
+  --session <path|id>            Open a session by file path or full/partial ID
+  --session-id <id>              Use the current directory's existing session with the ID, creating it otherwise
+  --fork <path|id>               Fork a session by file path or full/partial ID into the current directory
+  --session-dir <dir>            Directory for session storage and lookup
+  --no-session                   Don't save session (ephemeral)
+  --name, -n <name>              Set session display name
+  --models <patterns>            Comma-separated model patterns for Ctrl+P cycling
+                                 Supports globs (anthropic/*, *sonnet*) and fuzzy matching
+  --no-tools, -nt                Disable all tools by default (built-in and extension)
+  --no-builtin-tools, -nbt       Disable built-in tools by default but keep extension/custom tools enabled
+  --tools, -t <tools>            Comma-separated allowlist of tool names or patterns (*) to enable
+                                 Keeps MCP tools unless an entry starts with mcp__
+                                 Only +name/-name entries add to or remove from the defaults
+  --exclude-tools, -xt <tools>   Comma-separated denylist of tool names or patterns (*) to disable
+--- ACP v2 background/activity evidence ---
+3399: * These updates report messages, progress, and other session activity.
+3706: * Background activity can continue and emit other `session/update` notifications
+--- our AcpSession mapped update kinds ---
+update.sessionUpdate === 'agent_message_chunk'
+update.sessionUpdate === 'agent_thought_chunk'
+update.sessionUpdate === 'tool_call'
+update.sessionUpdate === 'tool_call_update'
+update.sessionUpdate === 'usage_update'

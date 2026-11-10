@@ -229,9 +229,9 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **前置。** S6 完成。开工前先验三件事，结果写进 `evidence/S7/00-precheck.md`。
 
-- [ ] `pi-acp` 是否支持建会话、恢复、取消、审批这四个调用。
-- [ ] 经 ACP 接入的内核在 `backgrounded` 状态与 `activity` 事件字段上缺什么，缺的由 Executor 怎么补。
-- [ ] 家目录卷的并发挂载用哪个方案，见 [runtime.md](./design/runtime.md) 第 8 节第 2 题。
+- [x] `pi-acp` 是否支持建会话、恢复、取消、审批这四个调用。**结论**：pi 1.5.0 没有 ACP server 模式；会话用 `--session-id`，取消/审批走 JSON backend/Executor，不走 pi-acp。证据：`evidence/S7/16-acp-design/run.txt`、`docs/design/acp-gaps.md`。
+- [x] 经 ACP 接入的内核在 `backgrounded` 状态与 `activity` 事件字段上缺什么，缺的由 Executor 怎么补。**结论**：当前 AcpSession 只映射明确 update；backgrounded/activity 不伪造，后台工作拆新 assignment。证据：`evidence/S7/16-acp-design/`、`docs/design/acp-gaps.md`。
+- [x] 家目录卷的并发挂载用哪个方案，见 [runtime.md](./design/runtime.md) 第 8 节第 2 题。**结论**：每个 tenant+workdirKey 一组卷，单活跃 assignment 串行；并行必须用不同 workdirKey。证据：`docs/design/acp-gaps.md`。
 
 **任务。**
 
