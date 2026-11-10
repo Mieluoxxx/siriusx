@@ -1,3 +1,13 @@
+# Executor 契约
+
+这是 SiriusX Executor 与 Bot 之间的冻结候选契约。当前版本：`0.1.0-rc.1`。
+
+## 版本状态
+
+- `executor-v0.1.0-rc.1`：候选版本，已覆盖本地/云 Executor、分配状态机、事件流、报告、workdir、预览 TTL、取消与错误码。
+- 仍需在 Electron Host 级 kill/restart 与真实断线场景复验后，才能升级为正式冻结版本。
+- 候选版本之后修改 `packages/contracts/src/executor.ts` 或 `schema/` 必须走变更评审。
+
 # Executor 契约（Bot ⇄ Executor）
 
 > 状态：草案 v0 + S2 补齐。M1（真实数据流跑通）前允许修改，之后冻结。
