@@ -60,6 +60,9 @@ importers:
       '@siriusx/autobot':
         specifier: workspace:*
         version: link:../autobot
+      '@siriusx/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@siriusx/executor-local':
         specifier: workspace:*
         version: link:../../packages/executor-local
@@ -73,6 +76,37 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
+      tsx:
+        specifier: 4.23.13
+        version: 4.23.13
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@24.13.3)(vite@8.3.7(@types/node@24.13.3)(esbuild@0.28.2)(tsx@4.23.13))
+
+  apps/device-agent:
+    dependencies:
+      '@siriusx/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@siriusx/executor-local':
+        specifier: workspace:*
+        version: link:../../packages/executor-local
+      '@siriusx/fake-kernel':
+        specifier: workspace:*
+        version: link:../../packages/fake-kernel
+      ws:
+        specifier: 8.18.3
+        version: 8.18.3
+    devDependencies:
+      '@siriusx/control-plane':
+        specifier: workspace:*
+        version: link:../control-plane
       '@types/ws':
         specifier: 8.18.1
         version: 8.18.1

@@ -13,6 +13,8 @@ export interface DeviceGateway {
   readonly server: WebSocketServer
   connectedDevices(tenantId: string): string[]
   sendToDevice(tenantId: string, deviceId: string, message: unknown): boolean
+  setMessageHandler(handler: (auth: { tenantId: string; userId: string; deviceId: string }, message: Record<string, unknown>) => void): void
+  setConnectHandler(handler: (auth: { tenantId: string; userId: string; deviceId: string }) => void): void
   closeDevice(deviceId: string): void
   close(): Promise<void>
 }
@@ -28,6 +30,8 @@ interface Connection {
 export async function startDeviceGateway(options: DeviceGatewayOptions): Promise<DeviceGateway> {
   const connections = new Map<string, Connection>()
   const messages = new Map<string, Array<Record<string, unknown>>>()
+  let messageHandler: ((auth: { tenantId: string; userId: string; deviceId: string }, message: Record<string, unknown>) => void) | undefined
+  let connectHandler: ((auth: { tenantId: string; userId: string; deviceId: string }) => void) | undefined
   const server = new WebSocketServer({ port: options.port ?? 4322, host: options.host ?? '127.0.0.1' })
   await new Promise<void>((resolve, reject) => {
     server.once('listening', resolve)
@@ -51,6 +55,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
     const connection: Connection = { socket, deviceId: auth.deviceId, tenantId: auth.tenantId, userId: auth.userId, token }
     connections.set(auth.deviceId, connection)
     socket.send(JSON.stringify({ type: 'registered', deviceId: auth.deviceId, tenantId: auth.tenantId, userId: auth.userId }))
+    connectHandler?.(auth)
     socket.on('message', raw => {
       try {
         // Re-check the token on every heartbeat/message; revocation closes the
@@ -64,6 +69,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
         const queue = messages.get(auth.deviceId) ?? []
         queue.push({ ...message, receivedAt: Date.now() })
         messages.set(auth.deviceId, queue.slice(-100))
+        messageHandler?.(auth, message)
         socket.send(JSON.stringify({ type: 'ack', id: message.id ?? null }))
       } catch {
         socket.close(4001, 'device token revoked')
@@ -83,6 +89,8 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
       connection.socket.send(JSON.stringify(message))
       return true
     },
+    setMessageHandler: handler => { messageHandler = handler },
+    setConnectHandler: handler => { connectHandler = handler },
     closeDevice: deviceId => { connections.get(deviceId)?.socket.close(4001, 'device revoked') },
     close: async () => {
       for (const connection of connections.values()) connection.socket.terminate()

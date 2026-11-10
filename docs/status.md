@@ -12,7 +12,7 @@
 | S7 云执行 | `packages/cloud-executor`、`packages/kernel-acp` | `evidence/S7/` | **部分**：Docker 隔离/卷持久化/ACP-in-Docker/真实 dsh ACP/SQLite 恢复通过；真实 pi、真实 Issue→MR、M2 真崩溃待补 |
 | S8 发布 | `plugins/brand-siriusx`、`deploy/release`、`deploy/offline` | `evidence/S8/` | **骨架**：品牌/图标/打包参数通过；mac/win 签名安装与真机验收待补 |
 | S9 Web | DSH Web Host + Team panel control-plane 模式 | `evidence/S9/` | **部分**：同插件复用、两租户隔离通过；正式 SSO/反向代理/云端项目待补 |
-| S10 手机 | Team panel 响应式 | `evidence/S10/` | **评估通过**：390×844 可用；真机、审批、远程本地目录待补 |
+| S10 手机 | Team panel 响应式 | `evidence/S10/` | **部分通过**：390×844 响应式、手机审批、配对设备远程 `local_dir` 发起/离线补发/报告已验；真机、跟进/打断待补 |
 
 ## 下一步优先级（不需要人工等待的）
 

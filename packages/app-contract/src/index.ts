@@ -42,6 +42,13 @@ export const TicketEventSchema = z.object({
 
 export const TicketDetailSchema = TicketSummarySchema.extend({ events: z.array(TicketEventSchema) })
 
+export const DeviceSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  revoked: z.boolean(),
+  lastSeenAt: z.number().int().nullable().optional(),
+})
+
 export const ApprovalCardSchema = z.object({
   approvalId: z.string(),
   ticketId: z.string(),
@@ -56,6 +63,7 @@ export const ApiErrorSchema = z.object({ error: z.string(), code: z.string().opt
 export const BotsResponseSchema = z.object({ bots: z.array(BotSummarySchema) })
 export const TicketsResponseSchema = z.object({ tickets: z.array(TicketSummarySchema) })
 export const ApprovalsResponseSchema = z.object({ approvals: z.array(ApprovalCardSchema) })
+export const DevicesResponseSchema = z.object({ devices: z.array(DeviceSummarySchema) })
 export const CreateTicketRequestSchema = z.object({ path: z.string().min(1), prompt: z.string().min(1), title: z.string().optional() })
 export const FollowUpRequestSchema = z.object({ text: z.string().min(1) })
 export const EmptyRequestSchema = z.object({})
@@ -66,5 +74,6 @@ export type AssignmentReportView = z.infer<typeof AssignmentReportViewSchema>
 export type TicketSummary = z.infer<typeof TicketSummarySchema>
 export type TicketDetail = z.infer<typeof TicketDetailSchema>
 export type ApprovalCard = z.infer<typeof ApprovalCardSchema>
+export type DeviceSummary = z.infer<typeof DeviceSummarySchema>
 export type CreateTicketRequest = z.infer<typeof CreateTicketRequestSchema>
 export type FollowUpRequest = z.infer<typeof FollowUpRequestSchema>

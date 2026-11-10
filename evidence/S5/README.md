@@ -8,7 +8,7 @@
 | 租户上下文 | `siriusxTenant` Host service，OIDC claims 更新/清除 | `01-sso/run.txt` 的 tenant probe |
 | 多租户控制面 | `apps/control-plane`：tenant/user/settings/device/pairing/bot/ticket | `03-control-plane/run.txt` |
 | 设备配对与吊销 | 配对码 10 分钟、一次性消费、device token hash、撤销后拒绝 | `03-control-plane/run.txt` |
-| 设备长连接网关 | WebSocket 握手校验 device token；心跳重验；吊销后关闭 4001；`POST /v1/devices/:id/tickets` 下发 `ticket.assign` | `03-control-plane/device-gateway-test.txt`、`evidence/S10/device-assign-test.txt` |
+| 设备长连接网关 | WebSocket 握手校验 device token；心跳重验；吊销后关闭 4001；`POST /v1/devices/:id/tickets` 下发 `ticket.assign`；离线补发 | `03-control-plane/device-gateway-test.txt`、`evidence/S10/05-device-ui/` |
 | 个人 Bot 最小版 | 创建/列出 owner bot；每租户独立 Bot runtime | `03-control-plane/run.txt` |
 | 管理开关 | `nativeConversationEnabled` / `byokEnabled` / `localExecutionEnabled`，仅 admin 可改 | `03-control-plane/run.txt` |
 | 租户模型网关 | 校验 SSO session，代理上游，上游 key 只在 gateway env | `03-control-plane/run.txt`；单测验证上游收到 Bearer key |

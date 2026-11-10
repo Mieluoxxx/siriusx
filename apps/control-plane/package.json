@@ -9,7 +9,9 @@
     "control-plane": "./src/cli.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./device-gateway": "./src/device-gateway.ts"
   },
   "scripts": {
     "control-plane": "tsx src/cli.ts",
@@ -22,7 +24,8 @@
     "@siriusx/fake-kernel": "workspace:*",
     "@siriusx/executor-local": "workspace:*",
     "zod": "4.4.3",
-    "ws": "8.18.3"
+    "ws": "8.18.3",
+    "@siriusx/contracts": "workspace:*"
   },
   "devDependencies": {
     "tsx": "4.23.13",

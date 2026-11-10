@@ -6,6 +6,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { BotService } from '@siriusx/autobot/bot-service'
 import { FakeKernel } from '@siriusx/fake-kernel'
 import { LocalExecutor } from '@siriusx/executor-local'
+import { AssignmentEventSchema, type AssignmentEvent } from '@siriusx/contracts/executor'
+import { deriveTicketStage, type TicketStage } from '@siriusx/contracts/ticket-stage'
 
 export type Role = 'admin' | 'member'
 
@@ -101,6 +103,28 @@ CREATE TABLE IF NOT EXISTS bots (
   owner_user_id TEXT NOT NULL REFERENCES users(id),
   name TEXT NOT NULL,
   created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS device_tickets (
+  ticket_id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  device_id TEXT NOT NULL REFERENCES devices(id),
+  path TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  stage TEXT NOT NULL,
+  latest_state TEXT,
+  report_kind TEXT,
+  delivery_failing INTEGER NOT NULL DEFAULT 0,
+  report_json TEXT,
+  assignment_json TEXT,
+  delivered_at INTEGER,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS device_ticket_events (
+  ticket_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  event_json TEXT NOT NULL,
+  PRIMARY KEY (ticket_id, seq)
 );
 `
 
@@ -298,6 +322,124 @@ export class ControlPlane {
     return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, ownerUserId: row.owner_user_id, name: row.name }))
   }
 
+  private deviceRow(tenantId: string, deviceId: string): { id: string; revoked: number } {
+    const row = this.#db.prepare('SELECT id, revoked FROM devices WHERE id = ? AND tenant_id = ?').get(deviceId, tenantId) as
+      | { id: string; revoked: number } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'DEVICE_NOT_FOUND', deviceId)
+    if (row.revoked === 1) throw new ControlPlaneError(410, 'DEVICE_REVOKED', deviceId)
+    return row
+  }
+
+  createDeviceTicket(session: Session, deviceId: string, input: { path: string; prompt: string }): {
+    ticketId: string
+    assignment: Record<string, unknown>
+  } {
+    if (!this.getSettings(session.tenantId).localExecutionEnabled) {
+      throw new ControlPlaneError(403, 'LOCAL_EXECUTION_DISABLED', 'local execution is disabled')
+    }
+    this.deviceRow(session.tenantId, deviceId)
+    const ticketId = randomUUID()
+    const assignmentId = randomUUID()
+    const workdirKey = ticketId
+    const stage = deriveTicketStage({ deliveryFailing: true, pendingInput: false })
+    const assignment = {
+      tenantId: session.tenantId,
+      assignmentId,
+      ticketId,
+      workdirKey,
+      kind: 'start',
+      priority: 'normal',
+      workspace: { kind: 'local_dir', deviceId, path: input.path },
+      model: { source: 'local', id: 'device-default' },
+      input: { prompt: input.prompt, followUps: [] },
+      secretRefs: [],
+      traceId: ticketId,
+      clientContext: { operatorId: `app:${session.userId}`, channel: 'app', platform: 'web', deviceId },
+    }
+    this.#db.prepare('INSERT INTO device_tickets (ticket_id, tenant_id, device_id, path, prompt, stage, delivery_failing, assignment_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)')
+      .run(ticketId, session.tenantId, deviceId, input.path, input.prompt, stage, JSON.stringify(assignment), this.#now(), this.#now())
+    return { ticketId, assignment }
+  }
+
+  markDeviceTicketDelivered(tenantId: string, ticketId: string): void {
+    const row = this.#db.prepare('SELECT * FROM device_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, tenantId) as
+      | { latest_state: string | null; report_kind: string | null } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
+    const stage = deriveTicketStage({
+      deliveryFailing: false,
+      pendingInput: false,
+      ...(row.latest_state === null ? {} : { latest: { state: row.latest_state as 'preparing', ...(row.report_kind === null ? {} : { reportKind: row.report_kind as 'ready' }) } }),
+    })
+    this.#db.prepare('UPDATE device_tickets SET delivery_failing = 0, delivered_at = ?, stage = ?, updated_at = ? WHERE ticket_id = ?')
+      .run(this.#now(), stage, this.#now(), ticketId)
+  }
+
+  pendingDeviceAssignments(tenantId: string, deviceId: string): Array<{ ticketId: string; assignment: unknown }> {
+    const rows = this.#db.prepare('SELECT ticket_id, assignment_json FROM device_tickets WHERE tenant_id = ? AND device_id = ? AND delivered_at IS NULL')
+      .all(tenantId, deviceId) as Array<{ ticket_id: string; assignment_json: string | null }>
+    return rows.flatMap(row => row.assignment_json === null ? [] : [{ ticketId: row.ticket_id, assignment: JSON.parse(row.assignment_json) as unknown }])
+  }
+
+  recordDeviceEvent(tenantId: string, ticketId: string, value: unknown): void {
+    const event = AssignmentEventSchema.parse(value) as AssignmentEvent
+    const row = this.#db.prepare('SELECT * FROM device_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, tenantId) as
+      | { latest_state: string | null; report_kind: string | null; report_json: string | null } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
+    this.#db.prepare('INSERT OR REPLACE INTO device_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
+      .run(ticketId, event.seq, JSON.stringify(event))
+    let latestState = row.latest_state
+    let reportKind = row.report_kind
+    let reportJson = row.report_json
+    if (event.type === 'state') {
+      latestState = event.state
+      if (event.state === 'reported') { /* report event follows */ }
+    } else if (event.type === 'report') {
+      latestState = 'reported'
+      reportKind = event.report.kind
+      reportJson = JSON.stringify(event.report)
+    }
+    const stage = deriveTicketStage({
+      deliveryFailing: false,
+      pendingInput: false,
+      ...(latestState === null ? {} : { latest: { state: latestState as 'preparing', ...(reportKind === null ? {} : { reportKind: reportKind as 'ready' }) } }),
+    })
+    this.#db.prepare('UPDATE device_tickets SET latest_state = ?, report_kind = ?, report_json = ?, stage = ?, updated_at = ? WHERE ticket_id = ?')
+      .run(latestState, reportKind, reportJson, stage, this.#now(), ticketId)
+  }
+
+  private listDeviceTickets(tenantId: string): Array<{
+    ticketId: string; title: string; stage: TicketStage; closed: boolean; pendingInputs: number;
+    latestAssignment?: { assignmentId: string; state: string; report?: unknown }
+  }> {
+    const rows = this.#db.prepare('SELECT * FROM device_tickets WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as Array<{
+      ticket_id: string; prompt: string; stage: string; latest_state: string | null; report_json: string | null
+    }>
+    return rows.map(row => {
+      const report = row.report_json === null ? undefined : JSON.parse(row.report_json) as unknown
+      const latestState = row.latest_state ?? 'preparing'
+      return {
+        ticketId: row.ticket_id,
+        title: row.prompt.slice(0, 120),
+        stage: row.stage as TicketStage,
+        closed: row.stage === 'idle',
+        pendingInputs: 0,
+        latestAssignment: {
+          assignmentId: row.ticket_id,
+          state: latestState,
+          ...(report === undefined ? {} : { report }),
+        },
+      }
+    })
+  }
+
+  private getDeviceTicket(tenantId: string, ticketId: string): unknown {
+    const ticket = this.listDeviceTickets(tenantId).find(item => item.ticketId === ticketId)
+    if (ticket === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
+    const events = (this.#db.prepare('SELECT event_json FROM device_ticket_events WHERE ticket_id = ? ORDER BY seq').all(ticketId) as Array<{ event_json: string }>)
+      .map(row => JSON.parse(row.event_json) as unknown)
+    return { ...ticket, events }
+  }
+
   private botRuntime(tenantId: string): BotService {
     const existing = this.#runtimes.get(tenantId)
     if (existing !== undefined) return existing
@@ -328,12 +470,16 @@ export class ControlPlane {
   }
 
   listTickets(session: Session): unknown[] {
-    return this.botRuntime(session.tenantId).listTickets()
+    return [...this.botRuntime(session.tenantId).listTickets(), ...this.listDeviceTickets(session.tenantId)]
   }
 
   ticketDetail(session: Session, ticketId: string): unknown {
     const runtime = this.botRuntime(session.tenantId)
-    return { ...runtime.getTicket(ticketId), events: runtime.eventsForTicket(ticketId) }
+    try {
+      return { ...runtime.getTicket(ticketId), events: runtime.eventsForTicket(ticketId) }
+    } catch {
+      return this.getDeviceTicket(session.tenantId, ticketId)
+    }
   }
 
   async sendTicketInput(session: Session, ticketId: string, text: string): Promise<unknown> {

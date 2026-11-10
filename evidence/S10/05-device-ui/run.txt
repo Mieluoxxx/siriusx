@@ -1,0 +1,18 @@
+{
+  "body": "Workspaces\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nCloud/local Bot runtime\nDevice: CI Mac\nDispatch ticket\nperson/review\nopen\n702b5bac-73f3 · reported\ndevice-local task finished\nperson/review\nreported\n702b5bac-73f3-47b2-82b3-95674b2afac9\ndevice-local task finished\n{\n  \"filesChanged\": 0,\n  \"insertions\": 0,\n  \"deletions\": 0\n}\nSend\nStop\nEvents\n{\"type\":\"state\",\"seq\":0,\"at\":\"2026-11-10T15:48:59.452Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":1,\"at\":\"2026-11-10T15:48:59.454Z\",\"state\":\"running\"}\n{\"type\":\"report\",\"seq\":2,\"at\":\"2026-11-10T15:48:59.466Z\",\"report\":{\"kind\":\"ready\",\"summary\":\"device-local task finished\",\"diffStats\":{\"filesChanged\":0,\"insertions\":0,\"deletions\":0},\"diffBasis\":\"ticketStart\"}}\n{\"type\":\"state\",\"seq\":3,\"at\":\"2026-11-10T15:48:59.467Z\",\"state\":\"reported\"}",
+  "errors": [],
+  "requests": [
+    "GET http://127.0.0.1:4320/v1/devices",
+    "GET http://127.0.0.1:4320/v1/tickets/702b5bac-73f3-47b2-82b3-95674b2afac9",
+    "GET http://127.0.0.1:4320/v1/bots",
+    "GET http://127.0.0.1:4320/v1/tickets",
+    "GET http://127.0.0.1:4320/v1/approvals",
+    "GET http://127.0.0.1:4320/v1/devices",
+    "GET http://127.0.0.1:4320/v1/tickets/702b5bac-73f3-47b2-82b3-95674b2afac9",
+    "GET http://127.0.0.1:4320/v1/bots",
+    "GET http://127.0.0.1:4320/v1/tickets",
+    "GET http://127.0.0.1:4320/v1/approvals",
+    "GET http://127.0.0.1:4320/v1/devices",
+    "GET http://127.0.0.1:4320/v1/tickets/702b5bac-73f3-47b2-82b3-95674b2afac9"
+  ]
+}

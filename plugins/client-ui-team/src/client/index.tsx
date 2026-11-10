@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ApprovalCard, BotSummary, TicketDetail, TicketSummary } from '@siriusx/app-contract'
+import type { ApprovalCard, BotSummary, DeviceSummary, TicketDetail, TicketSummary } from '@siriusx/app-contract'
 import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -69,6 +69,8 @@ function TicketPanel(): ReactNode {
   const [bots, setBots] = useState<BotSummary[]>([])
   const [tickets, setTickets] = useState<TicketSummary[]>([])
   const [approvals, setApprovals] = useState<ApprovalCard[]>([])
+  const [devices, setDevices] = useState<DeviceSummary[]>([])
+  const [deviceId, setDeviceId] = useState('')
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selected, setSelected] = useState<TicketDetail | undefined>()
   const [repo, setRepo] = useState('')
@@ -83,10 +85,11 @@ function TicketPanel(): ReactNode {
 
   const refresh = async (): Promise<void> => {
     try {
-      const [botResult, ticketResult, approvalResult] = await Promise.all([
+      const [botResult, ticketResult, approvalResult, deviceResult] = await Promise.all([
         json<{ bots: BotSummary[] }>('/api/bots'),
         json<{ tickets: TicketSummary[] }>('/api/tickets'),
         json<{ approvals: ApprovalCard[] }>('/api/approvals'),
+        json<{ devices: DeviceSummary[] }>('/api/devices').catch(() => ({ devices: [] })),
       ])
       setBots(botResult.bots.map(bot => ({
         id: bot.id,
@@ -96,6 +99,7 @@ function TicketPanel(): ReactNode {
       })))
       setTickets(ticketResult.tickets)
       setApprovals(approvalResult.approvals)
+      setDevices(deviceResult.devices.filter(device => !device.revoked))
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -105,6 +109,7 @@ function TicketPanel(): ReactNode {
       // A disconnected Bot API must not leave stale tickets pretending to be live.
       setTickets([])
       setApprovals([])
+      setDevices([])
       setSelected(undefined)
     }
   }
@@ -119,7 +124,8 @@ function TicketPanel(): ReactNode {
     if (repo.trim() === '' || prompt.trim() === '') return
     setBusy(true)
     try {
-      const created = await json<TicketSummary>('/api/tickets', { method: 'POST', body: JSON.stringify({ path: repo.trim(), prompt: prompt.trim() }) })
+      const endpoint = deviceId === '' ? '/api/tickets' : `/api/devices/${deviceId}/tickets`
+      const created = await json<TicketSummary>(endpoint, { method: 'POST', body: JSON.stringify({ path: repo.trim(), prompt: prompt.trim() }) })
       setSelectedId(created.ticketId)
       setPrompt('')
       await refresh()
@@ -189,6 +195,12 @@ function TicketPanel(): ReactNode {
             <div style={styles.form}>
               <input style={styles.input} placeholder="Local repository path (absolute)" value={repo} onChange={event => setRepo(event.target.value)} />
               <textarea style={{ ...styles.input, minHeight: 54 }} placeholder="What should the bot do?" value={prompt} onChange={event => setPrompt(event.target.value)} />
+              {devices.length === 0 ? null : (
+                <select style={styles.input} value={deviceId} onChange={event => setDeviceId(event.target.value)}>
+                  <option value="">Cloud/local Bot runtime</option>
+                  {devices.map(device => <option key={device.id} value={device.id}>Device: {device.name}</option>)}
+                </select>
+              )}
               <button style={styles.button} disabled={busy || repo.trim() === '' || prompt.trim() === ''} onClick={() => { void createTicket() }}>Dispatch ticket</button>
             </div>
             <div style={{ overflow: 'auto' }}>

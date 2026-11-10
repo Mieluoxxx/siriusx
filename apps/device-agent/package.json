@@ -1,0 +1,32 @@
+{
+  "name": "@siriusx/device-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Paired-device agent: receives ticket.assign over the control-plane WebSocket and runs local_dir tasks.",
+  "license": "MIT",
+  "bin": {
+    "device-agent": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "device-agent": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@siriusx/contracts": "workspace:*",
+    "@siriusx/executor-local": "workspace:*",
+    "@siriusx/fake-kernel": "workspace:*",
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "8.18.1",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "@siriusx/control-plane": "workspace:*"
+  }
+}

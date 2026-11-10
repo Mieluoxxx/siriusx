@@ -109,14 +109,14 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')
         const body = await readJson(request)
         if (typeof body.path !== 'string' || typeof body.prompt !== 'string') throw new Error('path and prompt are required')
-        const ticket = control.createTicket(session, { path: body.path, prompt: body.prompt })
+        const ticket = control.createDeviceTicket(session, parts[2], { path: body.path, prompt: body.prompt })
         const delivered = deviceGateway.sendToDevice(session.tenantId, parts[2], {
           type: 'ticket.assign',
           ticketId: ticket.ticketId,
-          workspace: { kind: 'local_dir', path: body.path },
-          prompt: body.prompt,
+          assignment: ticket.assignment,
         })
-        write(response, 202, { ...ticket, delivered })
+        if (delivered) control.markDeviceTicketDelivered(session.tenantId, ticket.ticketId)
+        write(response, 202, { ticketId: ticket.ticketId, delivered })
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/approvals') {
@@ -195,7 +195,24 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
     server,
     url: `http://${options.host ?? '127.0.0.1'}:${port}`,
     control,
-    setDeviceGateway: gateway => { deviceGateway = gateway },
+    setDeviceGateway: gateway => {
+      deviceGateway = gateway
+      gateway.setMessageHandler((auth, message) => {
+        if (message.type === 'ticket.event' && typeof message.ticketId === 'string' && 'event' in message) {
+          try { control.recordDeviceEvent(auth.tenantId, message.ticketId, message.event) } catch { /* malformed device event is ignored */ }
+        }
+      })
+      gateway.setConnectHandler(auth => {
+        for (const pending of control.pendingDeviceAssignments(auth.tenantId, auth.deviceId)) {
+          const delivered = gateway.sendToDevice(auth.tenantId, auth.deviceId, {
+            type: 'ticket.assign',
+            ticketId: pending.ticketId,
+            assignment: pending.assignment,
+          })
+          if (delivered) control.markDeviceTicketDelivered(auth.tenantId, pending.ticketId)
+        }
+      })
+    },
     close: async () => {
       await new Promise<void>((resolve, reject) => server.close(error => { error === undefined ? resolve() : reject(error) }))
       control.close()
