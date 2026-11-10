@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="${OUT:-$ROOT/artifacts/offline}"
 STAGE="$OUT/stage"
-rm -rf "$STAGE" && mkdir -p "$STAGE/app"
+rm -rf "$STAGE" && mkdir -p "$STAGE/app/apps" "$STAGE/app/packages"
 cd "$ROOT"
 pnpm install --frozen-lockfile --offline
 cp -a package.json pnpm-lock.yaml pnpm-workspace.yaml "$STAGE/app/"

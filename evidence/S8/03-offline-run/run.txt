@@ -1,0 +1,5 @@
+{
+  "ready": true,
+  "controlPlaneUrl": "http://127.0.0.1:4320",
+  "modelGatewayUrl": "http://127.0.0.1:4321"
+}

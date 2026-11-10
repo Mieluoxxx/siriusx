@@ -1,0 +1,9 @@
+{
+  "tenant": {
+    "id": "tenant-offline",
+    "name": "Offline",
+    "idpIssuer": "https://idp.example",
+    "createdAt": 1794328097712
+  },
+  "adminUserId": "fba2d7f8-09c2-476a-8dd4-bac4b72f7bc4"
+}

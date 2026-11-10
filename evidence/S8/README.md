@@ -10,6 +10,8 @@
 - electron-builder 配置支持 `SIRIUSX_PRODUCT_NAME`、`SIRIUSX_ARTIFACT_PREFIX`、
   `SIRIUSX_ICON_MACOS`、`SIRIUSX_ICON_WINDOWS`。
 - 离线包脚本 `deploy/offline/build-offline.sh` 与安装脚本。
+- 实测生成 27MB `siriusx-offline-linux-x64.tar.gz`，解包后启动 control-plane，
+  开通租户、签发 token、读取 settings、创建 Bot 均成功；无需 npm registry。证据：`03-offline-run/`。
 - 版本冻结条款模板 `deploy/release/README.md`。
 
 ## 验证
@@ -27,7 +29,7 @@
 | 换品牌、去官方账号入口 | **部分**：品牌与账号 provider 已有；欢迎页/关于页仍有上游文案 |
 | macOS/Windows 签名安装包 | **未完成**：当前 Linux 环境不能产 mac/win 包 |
 | 企业插件打进安装包 | **部分**：插件机制与 bundle patch 已有；安装包资源清单未接 |
-| 断网安装 | **未完成** |
+| 断网安装 | **部分**：离线包在本机解包后可启动 control-plane 并完成租户/Token/Bot 操作；未在真正断网干净机验桌面/Web。证据：`03-offline-run/` |
 | 我方更新源 | **未完成**：配置字段已留 |
 | 正式包遥测抓包 | **未完成** |
 | 补丁回移演练 | **未完成** |
