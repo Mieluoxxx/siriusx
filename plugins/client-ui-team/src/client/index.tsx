@@ -11,10 +11,15 @@ const PANEL_ID = 'siriusx-team' as MainPanelId
 const DEFAULT_API = 'http://127.0.0.1:4319'
 const DEFAULT_CONTROL_API = 'http://127.0.0.1:4320'
 
+function gatewayMode(): boolean {
+  try { return localStorage.getItem('siriusx.gatewayAuth') === '1' } catch { return false }
+}
+
 function apiBase(): string {
   try {
     const control = localStorage.getItem('siriusx.controlToken')
-    if (control !== undefined && control !== '') return localStorage.getItem('siriusx.controlApi') ?? DEFAULT_CONTROL_API
+    if (control !== null && control !== '') return localStorage.getItem('siriusx.controlApi') ?? DEFAULT_CONTROL_API
+    if (gatewayMode()) return ''
     return localStorage.getItem('siriusx.botApi') ?? DEFAULT_API
   } catch { return DEFAULT_API }
 }
@@ -34,7 +39,8 @@ function controlPath(path: string): string {
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const token = controlToken()
-  const response = await fetch(`${apiBase()}${token === undefined ? path : controlPath(path)}`, {
+  const control = token !== undefined || gatewayMode()
+  const response = await fetch(`${apiBase()}${control ? controlPath(path) : path}`, {
     ...init,
     headers: {
       'content-type': 'application/json',

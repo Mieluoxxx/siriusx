@@ -291,14 +291,14 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 先验一件事：DSH 的 `web` profile 能否在云端按用户提供与桌面端相同的前端和插件。**通过**：真实 Web Host 复用同一 Team 客户端插件。证据：`evidence/S9/README.md`。
 - [x] 如果能，把它部署成 Web 端，工单界面插件原样复用。**部分完成**：Web Host + Team panel 已跑通；控制面 token 已支持 localStorage 注入，正式 SSO/HttpOnly 未接。证据：`evidence/S9/01-control-plane/run.txt`。
 - [x] 如果不能，把工单、Bot 列表、审批这部分做成独立的 Web 应用，按 S4 的应用契约直连 Bot 服务，并修订 roadmap #59。**不适用**：web profile 可复用。
-- [ ] 预览地址经带鉴权的反向代理访问。**未完成**。
+- [x] 预览地址经带鉴权的反向代理访问。证据：`apps/web-gateway`、`evidence/S9/02-gateway/`（未登录→login，`/v1`→401）。
 
 **验收标准。**
 
-- [ ] 在浏览器里经 SSO 登录后，能看 Bot 列表和工单、处理审批、对云端项目发起任务并打断。**部分完成**：工单 UI 已跑通；SSO/云端项目/审批未接。
+- [ ] 在浏览器里经 SSO 登录后，能看 Bot 列表和工单、处理审批、对云端项目发起任务并打断。**部分完成**：同源 SSO cookie、Bot 列表/工单、审批已通；真实 OIDC/云端项目/打断未接。证据：`evidence/S9/02-gateway/`。
 - [ ] Web 端没有原生对话入口，也没有打开本地目录的入口。**未完成**：Web profile 仍保留原生对话。
-- [ ] 未登录直接访问预览地址被拒绝。**未完成**。
-- [ ] 两个租户的成员各自登录，互相看不到对方的数据。**未完成**：控制面单测已验隔离，Web 端未接。
+- [x] 未登录直接访问预览地址被拒绝。证据：`evidence/S9/02-gateway/run.txt`（`/`→`/login`，`/v1`→401）。
+- [x] 两个租户的成员各自登录，互相看不到对方的数据。证据：`evidence/S9/02-gateway/run.txt`（Acme 1 ticket / Beta 0 ticket）。
 - [ ] 同一张工单在桌面端和 Web 端显示的阶段与内容一致。**部分完成**：同一插件；未做同工单并排。
 
 **产出物。** Web 端，以及关于 `web` profile 的结论。

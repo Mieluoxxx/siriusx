@@ -14,11 +14,11 @@
 
 ## 未完成
 
-- 浏览器 SSO 登录后把控制面 token 注入 Team panel；
-- 未登录访问预览地址的 401；
-- 两租户 Web 并排验证；
+- 浏览器 SSO 登录后把控制面 token 注入 Team panel：**已由 web-gateway HttpOnly cookie + 同源 `/v1` 代理完成**；
+- 未登录访问预览地址的 401：**通过**，重定向 `/login`，`/v1` 返回 401；
+- 两租户 Web 并排验证：**通过**，Acme 1 ticket / Beta 0 ticket；
 - 云端 `cloud_project` 任务发起（当前 Team panel 仍连本地 Bot API）；
-- 带鉴权的预览反向代理；
+- 带鉴权的预览反向代理：**最小版通过**（web-gateway）；
 - 关闭标签页后任务继续（Bot 侧可继续，但 Web 端未做任务恢复 UI）。
 
 ## 控制面 token 接入（最小可用）
@@ -36,3 +36,21 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 
 这证明 Web UI 可以按租户隔离，但 token 仍是开发期 localStorage 注入；正式入口必须由
 带鉴权的反向代理/SSO 设置 HttpOnly 会话，不能把 token 放在 URL 或持久化到可读 JS 存储。
+
+## 鉴权 Web Gateway
+
+`apps/web-gateway` 提供同源入口：
+
+- `POST /auth/session`：校验 control-plane session，写 HttpOnly `siriusx_session` cookie；
+- `/v1/*`：把 cookie 换成 Bearer 后代理到 control-plane；
+- 其他路径：代理到 DSH Web Host，并在服务端附加 Host 的 authority-bound cookie；
+- 未登录访问 `/` → `/login`；未登录 `/v1/*` → 401；
+- Team panel 使用同源相对路径，不再把 token 放进可读 localStorage。
+
+验证：
+
+- 未登录访问 → `/login`；
+- Acme cookie：Team panel 显示 `1 ticket`；
+- Beta cookie：同一 Web Host 下 `0 ticket`；
+- 浏览器无控制台错误。
+- 证据：`02-gateway/run.txt`、`02-gateway/gateway.png`。

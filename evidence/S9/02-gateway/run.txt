@@ -1,0 +1,20 @@
+{
+  "unauthResult": {
+    "url": "http://127.0.0.1:8080/login",
+    "body": "Sign in"
+  },
+  "acme": {
+    "status": 200,
+    "title": "",
+    "ticketWord": "1 ticket",
+    "body": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\nidle\nclosed\nd36a96f4-1a99 · reported\ntenant-local Bot runtime finished\n\nSelect a ticket to inspect its report and events.",
+    "errors": []
+  },
+  "beta": {
+    "status": 200,
+    "title": "",
+    "ticketWord": "0 ticket",
+    "body": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\n\nNo tickets yet. Dispatch one to the local Executor.\n\nSelect a ticket to inspect its report and events.",
+    "errors": []
+  }
+}

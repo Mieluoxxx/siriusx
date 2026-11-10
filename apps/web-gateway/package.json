@@ -1,0 +1,28 @@
+{
+  "name": "@siriusx/web-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Authenticated same-origin gateway for DSH Web and the SiriusX control plane.",
+  "license": "MIT",
+  "bin": {
+    "web-gateway": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "web-gateway": "tsx src/cli.ts",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "http-proxy": "1.18.1"
+  },
+  "devDependencies": {
+    "@types/http-proxy": "1.17.17",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}
