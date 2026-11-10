@@ -132,6 +132,11 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
   const server = createServer((request, response) => {
     void (async () => {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
+      const origin = request.headers.origin
+      if (origin !== undefined && origin !== url.origin) {
+        response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }).end('cross-origin request rejected')
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/health') { json(response, 200, { ok: true, service: 'siriusx-web-gateway' }); return }
       if (request.method === 'GET' && url.pathname === '/auth/oidc/start' && oidcEnabled && oidc !== undefined && oidcMetadata !== undefined) {
         const state = randomBytes(24).toString('base64url')
@@ -186,7 +191,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         return
       }
       if (request.method === 'GET' && url.pathname === '/login') {
-        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY' })
         response.end(`<!doctype html><meta charset="utf-8"><title>SiriusX Login</title>
 <script>try { localStorage.setItem('siriusx.gatewayAuth','1') } catch {}</script>
 <form id="f"><input id="t" type="password" placeholder="control-plane session token" style="width:360px"><button>Sign in</button></form>

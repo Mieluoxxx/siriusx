@@ -1,0 +1,9 @@
+{
+  "evil": 403,
+  "sameOrigin": 204,
+  "noOrigin": 204,
+  "loginStatus": 200,
+  "nosniff": "nosniff",
+  "frame": "DENY",
+  "referrer": "no-referrer"
+}

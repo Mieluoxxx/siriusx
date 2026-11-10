@@ -124,3 +124,9 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - `/auth/logout` 清除 HttpOnly session cookie；
 - 登出后 `/v1/me` 返回 401；配置 OIDC 时还会跳到 IdP `end_session_endpoint`。
 - 证据：`10-logout/run.txt`。
+
+## CSRF / security headers
+
+- Web Gateway 拒绝跨源 state-changing 请求；
+- `/login` 设置 nosniff / DENY / no-referrer。
+- 证据：`12-csrf-origin/run.txt`。
