@@ -102,3 +102,12 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 证据：`07-browser-oidc/run.txt`、`oidc-login.png`。
 
 仍缺：真实企业 IdP、RS256/JWKS、真实客户身份映射。
+
+## 同一工单跨接入模式
+
+- 同一张 control-plane 工单分别通过：
+  - 直连 DSH Web + localStorage control token（桌面式控制面模式）；
+  - web-gateway HttpOnly cookie（Web 模式）；
+- 两边 Team panel 都显示相同 ticket 前缀、`idle/closed/reported` 和相同报告摘要。
+- 这验证了同一客户端插件与同一控制面数据源；真实 Electron 桌面窗口仍需 macOS/Windows 机器。
+- 证据：`08-desktop-web-consistency/run.txt`、`desktop-mode.png`、`web-mode.png`。

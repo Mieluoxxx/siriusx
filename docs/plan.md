@@ -299,7 +299,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [ ] Web 端没有原生对话入口，也没有打开本地目录的入口。**未完成**：Web profile 仍保留原生对话。
 - [x] 未登录直接访问预览地址被拒绝。证据：`evidence/S9/02-gateway/run.txt`（`/`→`/login`，`/v1`→401）。
 - [x] 两个租户的成员各自登录，互相看不到对方的数据。证据：`evidence/S9/02-gateway/run.txt`（Acme 1 ticket / Beta 0 ticket）。
-- [ ] 同一张工单在桌面端和 Web 端显示的阶段与内容一致。**部分完成**：同一插件；未做同工单并排。
+- [ ] 同一张工单在桌面端和 Web 端显示的阶段与内容一致。**部分完成**：同一工单在直连 DSH Web control-token 模式与 web-gateway cookie 模式下并排渲染一致；真实 Electron 桌面窗口未验。证据：`evidence/S9/08-desktop-web-consistency/`。
 
 **产出物。** Web 端，以及关于 `web` profile 的结论。
 

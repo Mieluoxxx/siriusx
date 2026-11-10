@@ -1,0 +1,9 @@
+{
+  "ticketId": "2502b89d-5358-4413-84dc-aaa58c6f6917",
+  "directHasTicket": true,
+  "webHasTicket": true,
+  "directHasReport": true,
+  "webHasReport": true,
+  "direct": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\n个人 · 不审计\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\nidle\nclosed\n2502b89d-5358 · reported\ntenant-local Bot runtime finished\n\nSelect a ticket to inspect its report and events.",
+  "web": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\n\nWeb 端只使用云端项目；本地目录请使用桌面端或已配对手机。\n\nDispatch cloud ticket\nidle\nclosed\n2502b89d-5358 · reported\ntenant-local Bot runtime finished\n\nSelect a ticket to inspect its report and events."
+}
