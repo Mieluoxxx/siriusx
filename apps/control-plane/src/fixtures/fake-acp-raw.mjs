@@ -16,7 +16,6 @@ rl.on('line', line => {
   }
   if (message.method === 'session/prompt') {
     const text = (message.params?.prompt ?? []).map(block => block.type === 'text' ? block.text : '').join('')
-    if (text.includes('[slow]')) await new Promise(resolve => setTimeout(resolve, 60_000))
     send({
       jsonrpc: '2.0',
       method: 'session/update',

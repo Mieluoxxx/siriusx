@@ -87,5 +87,5 @@
 ## 离线包全依赖更新
 
 - 离线 bundle 增加 cloud-executor、kernel-acp、web-gateway；
-- 解包 control-plane health、租户、token、settings 通过。
+- 解包 control-plane health、租户、token、settings 通过；修复 ACP fixture 后离线包内 cloud_project 任务也跑通。
 - 证据：`08-offline-full/`。
