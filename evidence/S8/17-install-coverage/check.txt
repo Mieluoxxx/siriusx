@@ -1,0 +1,12 @@
+OK compose control-plane
+OK compose tool-gateway
+OK compose dsh-web
+OK compose web-gateway
+OK bundle control-plane image
+OK bundle dsh-web image
+OK bundle sandbox image
+OK offline app web-gateway
+OK offline package cloud-executor
+OK offline package kernel-acp
+OK native reaper timer
+install coverage OK

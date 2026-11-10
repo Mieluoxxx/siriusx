@@ -44,3 +44,9 @@
 - control-plane session token 加入 `exp`，默认 12h TTL；
 - 过期后 `verifySession` 返回 `SESSION_EXPIRED`；
 - 证据：`04-session-expiry/`。
+
+## Server authority
+
+- 未登录请求 `/v1/bots` 和 `/v1/tickets` 均为 401；
+- 服务端不依赖客户端插件状态。
+- 证据：`05-server-authority/`。

@@ -156,3 +156,8 @@
 - `/health`、manifest、artifact 下载通过；
 - Desktop builder 支持 `SIRIUSX_UPDATE_URL` / `SIRIUSX_UPDATE_CHANNEL`。
 - 证据：`16-update-feed/`。
+
+## Install coverage
+
+- `scripts/check-install-coverage.sh` 校验 compose/bundle/offline/native installer 都覆盖当前服务。
+- 证据：`17-install-coverage/`。

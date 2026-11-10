@@ -265,4 +265,20 @@ describe('control plane', () => {
     expect(() => plane.verifySession(token)).toThrow('session expired')
   })
 
+  it('rejects unauthenticated team-panel requests at the server boundary', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'siriusx-server-authority-'))
+    roots.push(dir)
+    const server = await startControlPlaneServer({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data'), port: 0, sessionSecret: 'authority-secret' })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ tenantId: 'tenant-authority', name: 'Authority', idpIssuer: 'https://idp.example', adminEmail: 'admin@authority.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@authority.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const anonymous = await fetch(`${server.url}/v1/bots`)
+    const anonymousTickets = await fetch(`${server.url}/v1/tickets`)
+    const authorized = await fetch(`${server.url}/v1/bots`, { headers: { authorization: `Bearer ${token}` } })
+    expect(anonymous.status).toBe(401)
+    expect(anonymousTickets.status).toBe(401)
+    expect(authorized.status).toBe(200)
+  })
+
 })
