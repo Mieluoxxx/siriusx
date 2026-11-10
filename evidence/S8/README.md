@@ -117,3 +117,11 @@
 - `install-offline.sh` 启动前 `docker load`，并把 `SIRIUSX_SANDBOX_IMAGE` 传给 control-plane；
 - 解包后无外网启动 control-plane，cloud_project 任务在 Docker sandbox 内到 `person/review`。
 - 证据：`11-offline-sandbox/`。
+
+## 隔离网络 Compose
+
+- `docker-compose.isolated.yml` 把服务全部放到 `internal: true` 网络；
+- 容器内 control-plane/tool-gateway/web-gateway 健康检查通过；
+- web-gateway 访问外网失败（exit 7）；
+- web-gateway 能访问内部 `dsh-web:3000`（401 是 DSH token fence，连接成立）。
+- 证据：`12-isolated-network/`。

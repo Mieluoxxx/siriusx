@@ -1,0 +1,118 @@
+name: single-box
+services:
+  control-plane:
+    environment:
+      SIRIUSX_DATA_DIR: /data
+      SIRIUSX_DB: /data/control.sqlite
+      SIRIUSX_SESSION_SECRET: isolated-secret
+    image: siriusx/control-plane:offline4
+    networks:
+      isolated: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 4320
+        published: "4320"
+        protocol: tcp
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 4321
+        published: "4321"
+        protocol: tcp
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 4322
+        published: "4322"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: siriusx-data
+        target: /data
+        volume: {}
+  dsh-web:
+    profiles:
+      - full
+    image: siriusx/dsh-web:offline6
+    networks:
+      isolated: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 3000
+        published: "3000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: dsh-web-data
+        target: /data
+        volume: {}
+  tool-gateway:
+    command:
+      - node
+      - --import
+      - tsx
+      - apps/tool-gateway/src/cli.ts
+    environment:
+      GITHUB_TOKEN: ""
+      GITLAB_TOKEN: ""
+      SIRIUSX_TOOL_GATEWAY_DB: /data/tool-gateway.sqlite
+      SIRIUSX_TOOL_GATEWAY_HOST: 0.0.0.0
+      SIRIUSX_TOOL_GATEWAY_PORT: "4330"
+    image: siriusx/control-plane:offline4
+    networks:
+      isolated: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 4330
+        published: "4330"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: siriusx-data
+        target: /data
+        volume: {}
+  web-gateway:
+    profiles:
+      - full
+    command:
+      - sh
+      - -c
+      - |
+        for _ in $$(seq 1 120); do [ -s /data/dsh-web-url ] && break; sleep 1; done
+        URL=$$(cat /data/dsh-web-url)
+        exec node --import tsx apps/web-gateway/src/cli.ts --control-plane http://control-plane:4320 --dsh-web "$$URL" --host 0.0.0.0 --port 8080
+    depends_on:
+      control-plane:
+        condition: service_started
+        required: true
+      dsh-web:
+        condition: service_started
+        required: true
+    image: siriusx/control-plane:offline4
+    networks:
+      isolated: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 8080
+        published: "8080"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: dsh-web-data
+        target: /data
+        volume: {}
+networks:
+  isolated:
+    name: single-box_isolated
+    internal: true
+volumes:
+  dsh-web-data:
+    name: single-box_dsh-web-data
+  siriusx-data:
+    name: single-box_siriusx-data

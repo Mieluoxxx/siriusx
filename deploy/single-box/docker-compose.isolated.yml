@@ -1,0 +1,14 @@
+# Overlay for an air-gapped single-box run: services can talk to each other,
+# but the compose network has no external egress. Published host ports remain.
+services:
+  control-plane:
+    networks: [isolated]
+  tool-gateway:
+    networks: [isolated]
+  dsh-web:
+    networks: [isolated]
+  web-gateway:
+    networks: [isolated]
+networks:
+  isolated:
+    internal: true
