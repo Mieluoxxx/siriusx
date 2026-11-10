@@ -1,0 +1,24 @@
+From f20ceb35d89e53606588252eb34988ac9593eb10 Mon Sep 17 00:00:00 2001
+From: SiriusX Bot <siriusx@localhost>
+Date: Tue, 10 Nov 2026 18:06:10 +0000
+Subject: [PATCH] docs: clarify preview expiry contract
+
+---
+ docs/contracts/executor.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/contracts/executor.md b/docs/contracts/executor.md
+index 2f12733..aba1e84 100644
+--- a/docs/contracts/executor.md
++++ b/docs/contracts/executor.md
+@@ -452,7 +452,7 @@ export const TouchWorkdirResponseSchema = z.object({
+ | `WORKDIR_NOT_FOUND` | `resume` / 预览操作时 `workdirKey` 对应目录不存在 |
+ | `NO_CAPACITY` | 槽位已满，或该租户的并发配额已用完（Bot 应排队，不应重试轰炸） |
+ | `PREVIEW_LIMIT` | 宿主预览进程数已达上限 |
+-| `PREVIEW_NOT_FOUND` | 预览进程不存在或不属于该 workdir |
++| `PREVIEW_NOT_FOUND` | 预览进程不存在或不属于该 workdir。过期后不得静默复用旧 previewId，由调用方决定是否重新 `startPreview`。 |
+ | `PATH_OUTSIDE_WORKDIR` | 文件浏览的路径越出 workdir |
+ | `FILE_NOT_FOUND` | 文件浏览的路径不存在 |
+ | `FILE_TOO_LARGE` | 读取的文件超过单次上限 |
+--
+2.53.0

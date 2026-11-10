@@ -1,0 +1,6 @@
+  release/executor-0.1
+executor-v0.1.0
+executor-v0.1.0-rc.1
+executor-v0.1.1
+f20ceb3 (tag: executor-v0.1.1, release/executor-0.1) docs: clarify preview expiry contract
+cf79b22 (tag: executor-v0.1.0) feat: finalize executor contract v0.1.0 after crash and disconnect probes

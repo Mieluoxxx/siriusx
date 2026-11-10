@@ -74,3 +74,12 @@
 
 注意：本机测试镜像基于已有 `teams-bridge:0.2.0`（Node 22）以避开 Docker Hub
 下载阻塞；正式交付镜像仍需固定 Node 24 基础镜像 digest。
+
+## 补丁回移演练
+
+- 冻结线：`executor-v0.1.0`；
+- 分支：`release/executor-0.1`；
+- 主分支修复 `8553c8c docs: clarify preview expiry contract`；
+- cherry-pick 到冻结线，契约 25 个测试通过；
+- 打标签 `executor-v0.1.1`，生成 patch 文件。
+- 证据：`07-backport/`。

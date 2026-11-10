@@ -1,0 +1,4 @@
+✓ Lockfile passes supply-chain policies (verified 1h ago)
+Lockfile is up to date, resolution step is skipped
+Done in 792ms using pnpm v11.28.5
+$ tsc -p tsconfig.json --noEmit
