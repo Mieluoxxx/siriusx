@@ -141,3 +141,10 @@
 - `install-full.sh` 本地 load + compose up + health wait；
 - 实测 health 全通过、web-gateway 登录 `/v1/me` 通过。
 - 证据：`14-full-bundle/`。
+
+## 企业插件随包分发
+
+- 新增插件 bundle 构建脚本与 manifest；
+- electron-builder `extraResources` 支持 `SIRIUSX_PLUGIN_BUNDLE`；
+- enterprise config 支持 `bundledPluginsDir` 并传给 Host。
+- 证据：`15-plugin-bundle/`。

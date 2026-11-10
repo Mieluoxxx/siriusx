@@ -1,0 +1,56 @@
+{
+  "enabled": false,
+  "bundledPluginsDir": "plugins",
+  "plugins": [
+    {
+      "name": "@siriusx/dsh-telemetry-off",
+      "path": "plugins/telemetry-off",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-telemetry-off-desktop",
+      "path": "plugins/telemetry-off-desktop",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-executor-local",
+      "path": "plugins/executor-local",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-client-ui-team",
+      "path": "plugins/client-ui-team",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-client-ui-bots",
+      "path": "plugins/client-ui-bots",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-client-ui-tickets",
+      "path": "plugins/client-ui-tickets",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-client-ui-sessions",
+      "path": "plugins/client-ui-sessions",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-client-ui-approvals",
+      "path": "plugins/client-ui-approvals",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-client-brand",
+      "path": "plugins/brand-siriusx",
+      "version": "0.0.0"
+    },
+    {
+      "name": "@siriusx/dsh-account-sso",
+      "path": "plugins/account-sso",
+      "version": "0.0.0"
+    }
+  ]
+}
