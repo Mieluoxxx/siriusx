@@ -29,10 +29,12 @@
 | 事件总线停掉任务继续 | **通过（SDK 级）** | `02-analytics/test.txt` |
 | 真机抓包证明本地包无提示词/代码/命令 | **未完成** | 需真实本地任务 + tcpdump |
 | 凭据托管到 KMS/Vault | **未完成** | 当前 gateway 从进程 env 读取 |
-| 审批卡片接进 DSH UI | **未完成** | gateway API 已有，UI 仍是占位 |
+| 审批卡片接进 DSH UI | **通过** | `03-ui-approval/approval-card.png`、`run.txt`（真实 DSH Web UI 批准后 status=approved） |
 
 ## 备注
 
+- `03-ui-approval/` 证明 Team panel 经 control-plane 代理读取 tool-gateway 审批卡，
+  Approve 后上游状态变为 approved。
 - `01-tool-gateway/run.txt` 里 connector 只返回 `credentialPresent: true`，证明
   gateway 持有凭据；审计与审批卡都没有 token 原文。
 - 策略当前是内置纯函数；下一步应把租户策略库与审批人规则接入 control-plane。

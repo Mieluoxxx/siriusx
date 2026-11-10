@@ -1,0 +1,10 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/apps/control-plane
+
+ ✓ tests/control-plane.spec.ts (7 tests) 159ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  15:19:38
+   Duration  481ms (transform 112ms, setup 0ms, import 209ms, tests 159ms, environment 0ms)

@@ -9,6 +9,7 @@ export interface ControlPlaneServerOptions {
   readonly port?: number
   readonly host?: string
   readonly sessionSecret?: string
+  readonly toolGatewayUrl?: string
 }
 
 export interface ControlPlaneServer {
@@ -51,6 +52,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
   const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }) })
   let deviceGateway: DeviceGateway | undefined
+  const toolGatewayUrl = options.toolGatewayUrl
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, CORS).end()
@@ -115,6 +117,26 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
           prompt: body.prompt,
         })
         write(response, 202, { ...ticket, delivered })
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/approvals') {
+        if (toolGatewayUrl === undefined) { write(response, 200, { approvals: [] }); return }
+        const upstream = await fetch(`${toolGatewayUrl}/v1/approvals`, {
+          headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role },
+        })
+        write(response, upstream.status, await upstream.json())
+        return
+      }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'approvals' && parts[2] !== undefined && parts[3] === 'decide') {
+        if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
+        const body = await readJson(request)
+        if (typeof body.approved !== 'boolean') throw new Error('approved is required')
+        const upstream = await fetch(`${toolGatewayUrl}/v1/approvals/${parts[2]}/decide`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role },
+          body: JSON.stringify({ approved: body.approved }),
+        })
+        write(response, upstream.status, await upstream.json())
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/bots') {

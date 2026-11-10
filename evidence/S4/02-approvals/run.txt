@@ -1,0 +1,5 @@
+{
+  "before": "DSH Local Build\n0.2.2-rc.1-fcc0ad4\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\npending · medium\nacme/repo\nplease approve this UI card\nticket ticket-ui\nApprove\nReject",
+  "after": "DSH Local Build\n0.2.2-rc.1-fcc0ad4\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\napproved · medium\nacme/repo\nplease approve this UI card\nticket ticket-ui\nApprove\nReject",
+  "errors": []
+}

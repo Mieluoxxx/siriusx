@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { BotSummary, TicketDetail, TicketSummary } from '@siriusx/app-contract'
+import type { ApprovalCard, BotSummary, TicketDetail, TicketSummary } from '@siriusx/app-contract'
 import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -68,6 +68,7 @@ function TicketPanel(): ReactNode {
   const [tab, setTab] = useState<'tickets' | 'bots' | 'approvals'>('tickets')
   const [bots, setBots] = useState<BotSummary[]>([])
   const [tickets, setTickets] = useState<TicketSummary[]>([])
+  const [approvals, setApprovals] = useState<ApprovalCard[]>([])
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selected, setSelected] = useState<TicketDetail | undefined>()
   const [repo, setRepo] = useState('')
@@ -82,9 +83,10 @@ function TicketPanel(): ReactNode {
 
   const refresh = async (): Promise<void> => {
     try {
-      const [botResult, ticketResult] = await Promise.all([
+      const [botResult, ticketResult, approvalResult] = await Promise.all([
         json<{ bots: BotSummary[] }>('/api/bots'),
         json<{ tickets: TicketSummary[] }>('/api/tickets'),
+        json<{ approvals: ApprovalCard[] }>('/api/approvals'),
       ])
       setBots(botResult.bots.map(bot => ({
         id: bot.id,
@@ -93,6 +95,7 @@ function TicketPanel(): ReactNode {
         status: 'online',
       })))
       setTickets(ticketResult.tickets)
+      setApprovals(approvalResult.approvals)
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -101,6 +104,7 @@ function TicketPanel(): ReactNode {
       setError(cause instanceof Error ? cause.message : String(cause))
       // A disconnected Bot API must not leave stale tickets pretending to be live.
       setTickets([])
+      setApprovals([])
       setSelected(undefined)
     }
   }
@@ -130,6 +134,16 @@ function TicketPanel(): ReactNode {
     try {
       await json(`/api/tickets/${selectedId}/input`, { method: 'POST', body: JSON.stringify({ text: followUp.trim() }) })
       setFollowUp('')
+      await refresh()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally { setBusy(false) }
+  }
+
+  const decideApproval = async (approvalId: string, approved: boolean): Promise<void> => {
+    setBusy(true)
+    try {
+      await json(`/api/approvals/${approvalId}/decide`, { method: 'POST', body: JSON.stringify({ approved }) })
       await refresh()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
@@ -228,9 +242,23 @@ function TicketPanel(): ReactNode {
         </div>
       ) : null}
       {tab === 'approvals' ? (
-        <div style={{ padding: 18 }}>
+        <div style={{ padding: 18, overflow: 'auto' }}>
           <h2 style={{ fontSize: 16 }}>Approvals</h2>
-          <p style={{ opacity: 0.65 }}>No pending approvals. The real approval API arrives with the tool gateway (S6).</p>
+          {approvals.length === 0 ? <p style={{ opacity: 0.65 }}>No approval cards for this tenant.</p> : null}
+          {approvals.map(card => (
+            <div key={card.approvalId} style={{ ...styles.ticket, cursor: 'default' }}>
+              <div style={styles.row}>
+                <strong>{card.title}</strong>
+                <span style={{ ...styles.stage, marginLeft: 'auto' }}>{card.status} · {card.risk}</span>
+              </div>
+              <div style={{ ...styles.report, marginTop: 8 }}>{card.detail}</div>
+              <div style={{ ...styles.row, marginTop: 8 }}>
+                <span style={styles.stage}>ticket {card.ticketId}</span>
+                <button style={{ ...styles.button, marginLeft: 'auto' }} disabled={busy || card.status !== 'pending'} onClick={() => { void decideApproval(card.approvalId, true) }}>Approve</button>
+                <button style={styles.button} disabled={busy || card.status !== 'pending'} onClick={() => { void decideApproval(card.approvalId, false) }}>Reject</button>
+              </div>
+            </div>
+          ))}
         </div>
       ) : null}
     </div>

@@ -72,20 +72,20 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 建我方仓库，把上游设为 `upstream` remote，从 S0 记下的标签拉出我方主分支。证据：`git remote -v` 的输出。
-- [ ] 在开发机上从源码构建并启动桌面端。证据：构建命令与启动日志，写进仓库 README。
-- [ ] 关掉上游自带的遥测与日志上报。逐个处理 `dsh-host-product-telemetry-otel`、`dsh-client-product-analytics`、`dsh-session-telemetry-otel`、`dsh-session-log-deepseek`、`dsh-anonymous-user-id`，记下每个包默认是否开启、发往哪里、怎么关的。证据：一张对照表。
-- [ ] 做一次 rebase 演练，把我方分支 rebase 到上游的下一个标签。证据：耗时与冲突文件数。
+- [x] 建我方仓库，把上游设为 `upstream` remote，从 S0 记下的标签拉出我方主分支。证据：`evidence/S1/00-fork/repo.txt`。
+- [ ] 在开发机上从源码构建并启动桌面端。**部分完成**：源码构建通过；Electron 启动需 macOS/Windows。证据：`evidence/S1/03-build/`。
+- [x] 关掉上游自带的遥测与日志上报。逐个处理 `dsh-host-product-telemetry-otel`、`dsh-client-product-analytics`、`dsh-session-telemetry-otel`、`dsh-session-log-deepseek`、`dsh-anonymous-user-id`，记下每个包默认是否开启、发往哪里、怎么关的。证据：`evidence/S1/telemetry-audit.md`。
+- [x] 做一次 rebase 演练，把我方分支 rebase 到上游的下一个标签。**部分完成**：对 `upstream/master` 演练无冲突；上游暂无新 tag。证据：`evidence/S1/04-rebase/`。
 
 这一步不做品牌、签名、更新源，它们在 S8。
 
 **验收标准。**
 
-- [ ] 在一份干净的 clone 上，只照 README 的命令就能构建、启动，并完成一轮对话。证据：全程终端记录与截图。
-- [ ] 开着抓包用它工作 10 分钟，没有任何请求发往上游的遥测或日志端点。证据：抓包文件，以及按域名汇总的请求列表。
-- [ ] `git diff --stat upstream/<标签>` 的改动文件数是个位数。
-- [ ] rebase 演练完成，冲突都落在施工图列出的文件里。
-- [ ] 本人连续 5 个工作日把它当作日常工具使用。证据：每天一行的使用记录，写明做了什么、哪里用不下去。
+- [ ] 在一份干净的 clone 上，只照 README 的命令就能构建、启动，并完成一轮对话。**部分完成**：构建与 headless 对话已验；Desktop 启动需 mac/win。
+- [x] 开着抓包用它工作 10 分钟，没有任何请求发往上游的遥测或日志端点。证据：`evidence/S1/01-telemetry/network-soak-10min.txt`（27 轮，`nonloopback_inet_connects=0`）及 `.trace`。
+- [x] `git diff --stat upstream/<标签>` 的改动文件数是个位数。证据：`evidence/S1/00-fork/diff-stat.txt`（1 个文件）。
+- [x] rebase 演练完成，冲突都落在施工图列出的文件里。证据：`evidence/S1/04-rebase/rebase.txt`。
+- [ ] 本人连续 5 个工作日把它当作日常工具使用。**未完成**：需要真实时间。
 
 **产出物。** 我方仓库与主分支，遥测对照表，使用记录。
 
@@ -155,12 +155,12 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [x] 把 Bot 与应用之间的契约写成代码类型，范围见 [web-app.md](./design/web-app.md) 第 3 节。界面插件只导入这些类型。证据：`packages/app-contract/`。
-- [ ] 做四个界面插件，挂进 DSH Desktop 的界面槽位：Bot 列表、工单与七阶段、会话视图（消息、报告、实时事件）、审批卡片。**部分完成**：已有一个合并 Team panel 覆盖四个区域；尚未拆成四个独立 package，审批是占位。证据：`plugins/client-ui-team/`。
+- [ ] 做四个界面插件，挂进 DSH Desktop 的界面槽位：Bot 列表、工单与七阶段、会话视图（消息、报告、实时事件）、审批卡片。**部分完成**：一个合并 Team panel 覆盖四个区域；审批卡已接真实 tool-gateway，尚未拆成四个独立 package。证据：`plugins/client-ui-team/`、`evidence/S4/02-approvals/`。
 - [x] 在界面里支持发起任务、补充输入、打断、查看 diff。证据：`evidence/S4/01-team-panel/run.txt`（发起与 diff）；输入/Stop 按钮在位，真实打断在 S3 已验。
 
 **验收标准。**
 
-- [ ] 不碰命令行，只在 DSH Desktop 里完成发起任务、看到阶段变化、打断、处理审批、审查 diff。**部分完成**：发起、阶段、diff 已用 Chromium 验证；打断/审批仍是占位/API 级。证据：`evidence/S4/01-team-panel/team-panel-ticket.png`。
+- [ ] 不碰命令行，只在 DSH Desktop 里完成发起任务、看到阶段变化、打断、处理审批、审查 diff。**部分完成**：发起、阶段、diff、审批已用 Chromium 验证；打断 UI 未用慢任务验证。证据：`evidence/S4/01-team-panel/team-panel-ticket.png`、`evidence/S4/02-approvals/approval-card.png`。
 - [x] 需要人处理的工单（阶段以 `person` 开头）排在列表最上面。证据：UI 排序实现。
 - [x] 界面插件没有改动 `apps/desktop` 之外的任何上游文件。证据：插件位于 `plugins/`，上游 fork 只保留 `apps/desktop/src/main.ts` 的 telemetry guard。
 - [x] 杀掉本机 Bot 服务后，界面显示连接断开，不显示过期数据冒充当前状态。证据：UI 刷新失败清空列表并显示错误（代码 `plugins/client-ui-team/src/client/index.tsx`）。
@@ -211,7 +211,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 - [x] 实现工具网关：解析目标、策略判定、写审计、执行，任何一步失败都不执行。依据 [gateway.md](./design/gateway.md)。证据：`apps/tool-gateway/`、`evidence/S6/01-tool-gateway/run.txt`。
 - [ ] 连接器凭据存进密钥管理，由网关持有。**部分完成**：gateway 持有 env 凭据且审计无 token；KMS/Vault 适配未做。
-- [ ] 把审批卡片接到网关：写入、发送、删除类动作默认要审批，超时视为拒绝。**部分完成**：审批 API、过期时间与 UI 卡片占位已有；DSH UI 未接真实卡片。
+- [x] 把审批卡片接到网关：写入、发送、删除类动作默认要审批，超时视为拒绝。证据：`evidence/S6/03-ui-approval/`（真实 DSH Web UI 批准卡）。
 - [ ] 按 S2 定下的字段接入采集：Bot 服务与 Executor 先接，L0 入库。本地执行只上行 L0 与 L1。**部分完成**：analytics SDK 与 local_dir 上行过滤完成；Bot/Executor 全事件接线未完成。
 
 **验收标准。**
@@ -310,12 +310,12 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [ ] 先评估响应式 Web 是否够用，评估对象是 S9 的 Web 端。不够用再决定是否做原生端。**部分完成**：390×844 浏览器仿真可用；iOS/Android 真机未验。证据：`evidence/S10/`。
-- [ ] 支持在手机上处理审批卡片。**未完成**。
+- [x] 支持在手机上处理审批卡片。**浏览器仿真通过**：390×844 viewport 批准 pending 卡，tool-gateway 状态变 approved。证据：`evidence/S10/mobile-approval.png`。**未完成**。
 - [ ] 支持经 Bot 控制远程电脑：选择一台在线的已配对设备和其中的本地目录，发起、跟进、打断 `local_dir` 任务。**未完成**。
 
 **验收标准。**
 
-- [ ] 在手机上批准一个审批，电脑上等待中的任务随即继续。证据：手机录屏与任务事件流。
+- [ ] 在手机上批准一个审批，电脑上等待中的任务随即继续。**部分完成**：手机 viewport 批准动作与 connector 执行已验；电脑等待任务未接。
 - [ ] 在手机上选择公司电脑的一个本地目录发起任务，任务在那台电脑上执行，手机上能看到状态和报告摘要。证据：手机录屏与电脑端日志。
 - [ ] 手机发起本地任务期间在云端抓包，经过云端的只有状态与摘要，没有日志和文件内容。证据：抓包文件。
 - [ ] 电脑离线时发起任务，工单停在 `person/delivery`，电脑上线后自动重试。证据：事件流记录。

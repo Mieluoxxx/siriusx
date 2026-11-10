@@ -16,13 +16,16 @@ MOCK_PID=$!
 trap 'kill "$MOCK_PID" 2>/dev/null || true' EXIT
 sleep 1
 
-start=$(date +%s)
-while (( $(date +%s) - start < DURATION )); do
-  PATH=/opt/node24/bin:$PATH DSH_HOME="$HOME_DIR" SIRIUSX_MOCK_KEY=local-test DSH_TELEMETRY_DISABLED=1 \
-    strace -f -e trace=connect -o "$TRACE" \
-    node "$REPO/apps/cli/lib/bin.js" --profile offline "Offline soak $(date +%s): reply with S1 soak OK" >>"$OUT" 2>&1 || exit 1
-  sleep 20
-done
+# One strace covers the whole soak; per-iteration -o would truncate it.
+export PATH="/opt/node24/bin:$PATH"
+export DSH_HOME="$HOME_DIR" SIRIUSX_MOCK_KEY=local-test DSH_TELEMETRY_DISABLED=1
+strace -f -e trace=connect -o "$TRACE" bash -c '
+  start=$(date +%s)
+  while (( $(date +%s) - start < "$1" )); do
+    node "$2/apps/cli/lib/bin.js" --profile offline "Offline soak $(date +%s): reply with S1 soak OK" >>"$3" 2>&1 || exit 1
+    sleep 20
+  done
+' _ "$DURATION" "$REPO" "$OUT"
 
 nonloopback=$(grep -E 'connect\(.*AF_INET' "$TRACE" | grep -v '127\.0\.0\.1' | grep -vc '::1' || true)
 printf 'duration_seconds=%s\nnonloopback_inet_connects=%s\n' "$DURATION" "$nonloopback"

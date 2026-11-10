@@ -74,6 +74,7 @@ try {
       dataDir,
       port: flags.get('port') === undefined ? 4320 : Number(flags.get('port')),
       ...(process.env.SIRIUSX_SESSION_SECRET === undefined ? {} : { sessionSecret: process.env.SIRIUSX_SESSION_SECRET }),
+      ...(process.env.SIRIUSX_TOOL_GATEWAY_URL === undefined ? {} : { toolGatewayUrl: process.env.SIRIUSX_TOOL_GATEWAY_URL }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,

@@ -3,7 +3,7 @@
 | 阶段 | 代码 | 证据 | 状态 |
 | --- | --- | --- | --- |
 | S0 前提 | `docs/spike.md`、`evidence/S0/` | auth/tenant/coexist/agent-interface | **完成** |
-| S1 fork/遥测 | `deepseek-harness` 仅 `apps/desktop/src/main.ts` 改动；`plugins/telemetry-off*` | `evidence/S1/` | **部分**：Linux 构建通过；mac/win 启动与 10 分钟抓包待收尾 |
+| S1 fork/遥测 | `deepseek-harness` 仅 `apps/desktop/src/main.ts` 改动；`plugins/telemetry-off*` | `evidence/S1/` | **部分**：Linux 构建、10 分钟零外联抓包通过；mac/win 启动与 5 天使用待补 |
 | S2 契约/内核 | `packages/contracts`、`kernel-api`、`kernel-dsh`、`fake-kernel` | `evidence/S2/` | **完成** |
 | S3 本机闭环 | `packages/executor-local`、`plugins/executor-local`、`apps/autobot` | `evidence/S3/` | **部分**：真实 DSH AgentLoop 已验证；previews/TTL/真实 Host kill 待补 |
 | S4 工单界面 | `plugins/client-ui-team`、`packages/app-contract`、`apps/autobot/src/server.ts` | `evidence/S4/` | **部分**：发起/阶段/diff/排序/断线清空通过；审批与完整打断 UI 待补 |

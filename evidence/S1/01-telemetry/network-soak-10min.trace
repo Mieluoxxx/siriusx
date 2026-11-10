@@ -1,0 +1,572 @@
+2958503 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2958503, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2958504 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2958504, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2958505 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2958505, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2958517 +++ exited with 0 +++
+2958506 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2958506 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2958511 +++ exited with 0 +++
+2958508 +++ exited with 0 +++
+2958510 +++ exited with 0 +++
+2958509 +++ exited with 0 +++
+2958507 +++ exited with 0 +++
+2958513 +++ exited with 0 +++
+2958514 +++ exited with 0 +++
+2958516 +++ exited with 0 +++
+2958515 +++ exited with 0 +++
+2958512 +++ exited with 0 +++
+2958506 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2958506, si_uid=0, si_status=0, si_utime=151 /* 1.51 s */, si_stime=63 /* 0.63 s */} ---
+2958525 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2958525, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2959442 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2959442, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2959443 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2959443, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2959456 +++ exited with 0 +++
+2959444 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2959444 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2959446 +++ exited with 0 +++
+2959447 +++ exited with 0 +++
+2959448 +++ exited with 0 +++
+2959449 +++ exited with 0 +++
+2959445 +++ exited with 0 +++
+2959454 +++ exited with 0 +++
+2959453 +++ exited with 0 +++
+2959455 +++ exited with 0 +++
+2959452 +++ exited with 0 +++
+2959451 +++ exited with 0 +++
+2959444 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2959444, si_uid=0, si_status=0, si_utime=151 /* 1.51 s */, si_stime=50 /* 0.50 s */} ---
+2959457 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2959457, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2960578 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2960578, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2960579 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2960579, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2960598 +++ exited with 0 +++
+2960580 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2960580 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2960585 +++ exited with 0 +++
+2960582 +++ exited with 0 +++
+2960581 +++ exited with 0 +++
+2960583 +++ exited with 0 +++
+2960584 +++ exited with 0 +++
+2960595 +++ exited with 0 +++
+2960596 +++ exited with 0 +++
+2960597 +++ exited with 0 +++
+2960594 +++ exited with 0 +++
+2960586 +++ exited with 0 +++
+2960580 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2960580, si_uid=0, si_status=0, si_utime=152 /* 1.52 s */, si_stime=57 /* 0.57 s */} ---
+2960599 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2960599, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2961589 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2961589, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2961590 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2961590, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2961628 +++ exited with 0 +++
+2961591 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2961591 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2961596 +++ exited with 0 +++
+2961595 +++ exited with 0 +++
+2961593 +++ exited with 0 +++
+2961594 +++ exited with 0 +++
+2961592 +++ exited with 0 +++
+2961627 +++ exited with 0 +++
+2961624 +++ exited with 0 +++
+2961626 +++ exited with 0 +++
+2961625 +++ exited with 0 +++
+2961597 +++ exited with 0 +++
+2961591 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2961591, si_uid=0, si_status=0, si_utime=147 /* 1.47 s */, si_stime=61 /* 0.61 s */} ---
+2961775 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2961775, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2962611 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2962611, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2962612 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2962612, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2962776 +++ exited with 0 +++
+2962613 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2962613 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2962616 +++ exited with 0 +++
+2962615 +++ exited with 0 +++
+2962617 +++ exited with 0 +++
+2962618 +++ exited with 0 +++
+2962614 +++ exited with 0 +++
+2962773 +++ exited with 0 +++
+2962772 +++ exited with 0 +++
+2962771 +++ exited with 0 +++
+2962770 +++ exited with 0 +++
+2962619 +++ exited with 0 +++
+2962613 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2962613, si_uid=0, si_status=0, si_utime=143 /* 1.43 s */, si_stime=54 /* 0.54 s */} ---
+2962923 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2962923, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2964020 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2964020, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2964021 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2964021, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2964041 +++ exited with 0 +++
+2964022 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2964022 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2964027 +++ exited with 0 +++
+2964025 +++ exited with 0 +++
+2964024 +++ exited with 0 +++
+2964026 +++ exited with 0 +++
+2964023 +++ exited with 0 +++
+2964037 +++ exited with 0 +++
+2964038 +++ exited with 0 +++
+2964040 +++ exited with 0 +++
+2964039 +++ exited with 0 +++
+2964030 +++ exited with 0 +++
+2964022 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2964022, si_uid=0, si_status=0, si_utime=145 /* 1.45 s */, si_stime=54 /* 0.54 s */} ---
+2964043 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2964043, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2965007 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2965007, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2965008 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2965008, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2965021 +++ exited with 0 +++
+2965009 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2965009 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2965012 +++ exited with 0 +++
+2965013 +++ exited with 0 +++
+2965011 +++ exited with 0 +++
+2965014 +++ exited with 0 +++
+2965010 +++ exited with 0 +++
+2965017 +++ exited with 0 +++
+2965019 +++ exited with 0 +++
+2965018 +++ exited with 0 +++
+2965016 +++ exited with 0 +++
+2965015 +++ exited with 0 +++
+2965009 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2965009, si_uid=0, si_status=0, si_utime=138 /* 1.38 s */, si_stime=55 /* 0.55 s */} ---
+2965027 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2965027, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2966112 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2966112, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2966113 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2966113, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2966130 +++ exited with 0 +++
+2966114 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2966114 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2966118 +++ exited with 0 +++
+2966119 +++ exited with 0 +++
+2966116 +++ exited with 0 +++
+2966117 +++ exited with 0 +++
+2966115 +++ exited with 0 +++
+2966128 +++ exited with 0 +++
+2966127 +++ exited with 0 +++
+2966126 +++ exited with 0 +++
+2966129 +++ exited with 0 +++
+2966120 +++ exited with 0 +++
+2966114 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2966114, si_uid=0, si_status=0, si_utime=143 /* 1.43 s */, si_stime=51 /* 0.51 s */} ---
+2966157 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2966157, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2967202 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2967202, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2967203 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2967203, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2967361 +++ exited with 0 +++
+2967204 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2967204 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2967209 +++ exited with 0 +++
+2967205 +++ exited with 0 +++
+2967207 +++ exited with 0 +++
+2967208 +++ exited with 0 +++
+2967206 +++ exited with 0 +++
+2967211 +++ exited with 0 +++
+2967213 +++ exited with 0 +++
+2967212 +++ exited with 0 +++
+2967214 +++ exited with 0 +++
+2967210 +++ exited with 0 +++
+2967204 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2967204, si_uid=0, si_status=0, si_utime=143 /* 1.43 s */, si_stime=56 /* 0.56 s */} ---
+2967514 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2967514, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2968434 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2968434, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2968435 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2968435, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2968448 +++ exited with 0 +++
+2968436 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2968436 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2968440 +++ exited with 0 +++
+2968438 +++ exited with 0 +++
+2968439 +++ exited with 0 +++
+2968441 +++ exited with 0 +++
+2968437 +++ exited with 0 +++
+2968444 +++ exited with 0 +++
+2968447 +++ exited with 0 +++
+2968446 +++ exited with 0 +++
+2968445 +++ exited with 0 +++
+2968443 +++ exited with 0 +++
+2968436 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2968436, si_uid=0, si_status=0, si_utime=144 /* 1.44 s */, si_stime=55 /* 0.55 s */} ---
+2968449 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2968449, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2969374 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2969374, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2969375 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2969375, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2969388 +++ exited with 0 +++
+2969376 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2969376 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2969379 +++ exited with 0 +++
+2969377 +++ exited with 0 +++
+2969381 +++ exited with 0 +++
+2969378 +++ exited with 0 +++
+2969380 +++ exited with 0 +++
+2969387 +++ exited with 0 +++
+2969386 +++ exited with 0 +++
+2969385 +++ exited with 0 +++
+2969384 +++ exited with 0 +++
+2969383 +++ exited with 0 +++
+2969376 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2969376, si_uid=0, si_status=0, si_utime=137 /* 1.37 s */, si_stime=57 /* 0.57 s */} ---
+2969389 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2969389, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2970281 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2970281, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2970282 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2970282, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2970295 +++ exited with 0 +++
+2970283 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2970283 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2970288 +++ exited with 0 +++
+2970285 +++ exited with 0 +++
+2970284 +++ exited with 0 +++
+2970286 +++ exited with 0 +++
+2970287 +++ exited with 0 +++
+2970291 +++ exited with 0 +++
+2970292 +++ exited with 0 +++
+2970294 +++ exited with 0 +++
+2970293 +++ exited with 0 +++
+2970290 +++ exited with 0 +++
+2970283 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2970283, si_uid=0, si_status=0, si_utime=143 /* 1.43 s */, si_stime=55 /* 0.55 s */} ---
+2970296 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2970296, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2971211 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971211, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2971212 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971212, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2971225 +++ exited with 0 +++
+2971213 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2971213 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2971217 +++ exited with 0 +++
+2971216 +++ exited with 0 +++
+2971218 +++ exited with 0 +++
+2971214 +++ exited with 0 +++
+2971215 +++ exited with 0 +++
+2971224 +++ exited with 0 +++
+2971223 +++ exited with 0 +++
+2971222 +++ exited with 0 +++
+2971221 +++ exited with 0 +++
+2971220 +++ exited with 0 +++
+2971213 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971213, si_uid=0, si_status=0, si_utime=141 /* 1.41 s */, si_stime=55 /* 0.55 s */} ---
+2971226 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971226, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2971995 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971995, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2971996 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971996, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2972015 +++ exited with 0 +++
+2971997 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2971997 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2972001 +++ exited with 0 +++
+2971999 +++ exited with 0 +++
+2971998 +++ exited with 0 +++
+2972000 +++ exited with 0 +++
+2972002 +++ exited with 0 +++
+2972006 +++ exited with 0 +++
+2972005 +++ exited with 0 +++
+2972008 +++ exited with 0 +++
+2972007 +++ exited with 0 +++
+2972004 +++ exited with 0 +++
+2971997 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2971997, si_uid=0, si_status=0, si_utime=152 /* 1.52 s */, si_stime=66 /* 0.66 s */} ---
+2972162 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2972162, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2973080 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973080, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2973081 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973081, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2973094 +++ exited with 0 +++
+2973082 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2973082 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2973087 +++ exited with 0 +++
+2973086 +++ exited with 0 +++
+2973085 +++ exited with 0 +++
+2973084 +++ exited with 0 +++
+2973083 +++ exited with 0 +++
+2973092 +++ exited with 0 +++
+2973093 +++ exited with 0 +++
+2973091 +++ exited with 0 +++
+2973090 +++ exited with 0 +++
+2973089 +++ exited with 0 +++
+2973082 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973082, si_uid=0, si_status=0, si_utime=140 /* 1.40 s */, si_stime=55 /* 0.55 s */} ---
+2973095 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973095, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2973984 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973984, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2973985 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973985, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2973998 +++ exited with 0 +++
+2973986 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2973986 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2973991 +++ exited with 0 +++
+2973990 +++ exited with 0 +++
+2973987 +++ exited with 0 +++
+2973988 +++ exited with 0 +++
+2973989 +++ exited with 0 +++
+2973995 +++ exited with 0 +++
+2973994 +++ exited with 0 +++
+2973996 +++ exited with 0 +++
+2973997 +++ exited with 0 +++
+2973993 +++ exited with 0 +++
+2973986 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973986, si_uid=0, si_status=0, si_utime=140 /* 1.40 s */, si_stime=54 /* 0.54 s */} ---
+2973999 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2973999, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2974914 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2974914, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2974915 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2974915, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2974928 +++ exited with 0 +++
+2974916 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2974916 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2974919 +++ exited with 0 +++
+2974920 +++ exited with 0 +++
+2974918 +++ exited with 0 +++
+2974921 +++ exited with 0 +++
+2974917 +++ exited with 0 +++
+2974925 +++ exited with 0 +++
+2974926 +++ exited with 0 +++
+2974924 +++ exited with 0 +++
+2974927 +++ exited with 0 +++
+2974923 +++ exited with 0 +++
+2974916 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2974916, si_uid=0, si_status=0, si_utime=135 /* 1.35 s */, si_stime=52 /* 0.52 s */} ---
+2974929 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2974929, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2975555 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2975555, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2975556 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2975556, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2975569 +++ exited with 0 +++
+2975557 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2975557 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2975560 +++ exited with 0 +++
+2975561 +++ exited with 0 +++
+2975562 +++ exited with 0 +++
+2975559 +++ exited with 0 +++
+2975558 +++ exited with 0 +++
+2975567 +++ exited with 0 +++
+2975568 +++ exited with 0 +++
+2975566 +++ exited with 0 +++
+2975565 +++ exited with 0 +++
+2975564 +++ exited with 0 +++
+2975557 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2975557, si_uid=0, si_status=0, si_utime=141 /* 1.41 s */, si_stime=57 /* 0.57 s */} ---
+2975718 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2975718, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2976533 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2976533, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2976534 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2976534, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2976548 +++ exited with 0 +++
+2976535 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2976535 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2976539 +++ exited with 0 +++
+2976536 +++ exited with 0 +++
+2976540 +++ exited with 0 +++
+2976538 +++ exited with 0 +++
+2976537 +++ exited with 0 +++
+2976547 +++ exited with 0 +++
+2976544 +++ exited with 0 +++
+2976545 +++ exited with 0 +++
+2976546 +++ exited with 0 +++
+2976543 +++ exited with 0 +++
+2976535 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2976535, si_uid=0, si_status=0, si_utime=140 /* 1.40 s */, si_stime=58 /* 0.58 s */} ---
+2976549 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2976549, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2977448 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2977448, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2977449 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2977449, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2977462 +++ exited with 0 +++
+2977450 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2977450 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2977453 +++ exited with 0 +++
+2977452 +++ exited with 0 +++
+2977451 +++ exited with 0 +++
+2977455 +++ exited with 0 +++
+2977454 +++ exited with 0 +++
+2977459 +++ exited with 0 +++
+2977460 +++ exited with 0 +++
+2977461 +++ exited with 0 +++
+2977458 +++ exited with 0 +++
+2977457 +++ exited with 0 +++
+2977450 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2977450, si_uid=0, si_status=0, si_utime=134 /* 1.34 s */, si_stime=53 /* 0.53 s */} ---
+2977463 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2977463, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2978525 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2978525, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2978526 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2978526, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2978539 +++ exited with 0 +++
+2978527 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2978527 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2978530 +++ exited with 0 +++
+2978532 +++ exited with 0 +++
+2978529 +++ exited with 0 +++
+2978531 +++ exited with 0 +++
+2978528 +++ exited with 0 +++
+2978538 +++ exited with 0 +++
+2978537 +++ exited with 0 +++
+2978535 +++ exited with 0 +++
+2978536 +++ exited with 0 +++
+2978534 +++ exited with 0 +++
+2978527 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2978527, si_uid=0, si_status=0, si_utime=132 /* 1.32 s */, si_stime=54 /* 0.54 s */} ---
+2978540 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2978540, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2979457 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2979457, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2979458 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2979458, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2979471 +++ exited with 0 +++
+2979459 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2979459 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2979461 +++ exited with 0 +++
+2979462 +++ exited with 0 +++
+2979460 +++ exited with 0 +++
+2979463 +++ exited with 0 +++
+2979464 +++ exited with 0 +++
+2979469 +++ exited with 0 +++
+2979470 +++ exited with 0 +++
+2979468 +++ exited with 0 +++
+2979467 +++ exited with 0 +++
+2979466 +++ exited with 0 +++
+2979459 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2979459, si_uid=0, si_status=0, si_utime=147 /* 1.47 s */, si_stime=67 /* 0.67 s */} ---
+2979472 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2979472, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2980387 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2980387, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2980388 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2980388, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2980401 +++ exited with 0 +++
+2980389 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2980389 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2980394 +++ exited with 0 +++
+2980393 +++ exited with 0 +++
+2980390 +++ exited with 0 +++
+2980392 +++ exited with 0 +++
+2980391 +++ exited with 0 +++
+2980398 +++ exited with 0 +++
+2980397 +++ exited with 0 +++
+2980399 +++ exited with 0 +++
+2980400 +++ exited with 0 +++
+2980396 +++ exited with 0 +++
+2980389 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2980389, si_uid=0, si_status=0, si_utime=142 /* 1.42 s */, si_stime=52 /* 0.52 s */} ---
+2980408 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2980408, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2981304 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2981304, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2981305 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2981305, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2981318 +++ exited with 0 +++
+2981306 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2981306 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2981308 +++ exited with 0 +++
+2981309 +++ exited with 0 +++
+2981310 +++ exited with 0 +++
+2981311 +++ exited with 0 +++
+2981307 +++ exited with 0 +++
+2981314 +++ exited with 0 +++
+2981317 +++ exited with 0 +++
+2981315 +++ exited with 0 +++
+2981316 +++ exited with 0 +++
+2981313 +++ exited with 0 +++
+2981306 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2981306, si_uid=0, si_status=0, si_utime=130 /* 1.30 s */, si_stime=56 /* 0.56 s */} ---
+2981319 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2981319, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2982238 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2982238, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2982239 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2982239, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2982252 +++ exited with 0 +++
+2982240 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2982240 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2982242 +++ exited with 0 +++
+2982245 +++ exited with 0 +++
+2982244 +++ exited with 0 +++
+2982243 +++ exited with 0 +++
+2982241 +++ exited with 0 +++
+2982251 +++ exited with 0 +++
+2982248 +++ exited with 0 +++
+2982250 +++ exited with 0 +++
+2982249 +++ exited with 0 +++
+2982247 +++ exited with 0 +++
+2982240 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2982240, si_uid=0, si_status=0, si_utime=135 /* 1.35 s */, si_stime=55 /* 0.55 s */} ---
+2982253 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2982253, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2983173 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983173, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2983174 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983174, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2983187 +++ exited with 0 +++
+2983175 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2983175 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2983178 +++ exited with 0 +++
+2983177 +++ exited with 0 +++
+2983179 +++ exited with 0 +++
+2983180 +++ exited with 0 +++
+2983176 +++ exited with 0 +++
+2983184 +++ exited with 0 +++
+2983183 +++ exited with 0 +++
+2983186 +++ exited with 0 +++
+2983185 +++ exited with 0 +++
+2983182 +++ exited with 0 +++
+2983175 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983175, si_uid=0, si_status=0, si_utime=138 /* 1.38 s */, si_stime=53 /* 0.53 s */} ---
+2983188 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983188, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2983787 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983787, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2983788 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983788, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2983827 +++ exited with 0 +++
+2983789 connect(23, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2983789 connect(24, {sa_family=AF_INET, sin_port=htons(18081), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2983791 +++ exited with 0 +++
+2983794 +++ exited with 0 +++
+2983793 +++ exited with 0 +++
+2983792 +++ exited with 0 +++
+2983790 +++ exited with 0 +++
+2983824 +++ exited with 0 +++
+2983825 +++ exited with 0 +++
+2983826 +++ exited with 0 +++
+2983823 +++ exited with 0 +++
+2983796 +++ exited with 0 +++
+2983789 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983789, si_uid=0, si_status=0, si_utime=141 /* 1.41 s */, si_stime=56 /* 0.56 s */} ---
+2983974 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2983974, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2984719 +++ exited with 0 +++
+2958502 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2984719, si_uid=0, si_status=0, si_utime=0, si_stime=0} ---
+2958502 +++ exited with 0 +++

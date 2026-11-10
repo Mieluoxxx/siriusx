@@ -1,0 +1,5 @@
+{
+  "before": "Workspaces\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\napproved · medium\nacme/repo\nplease approve this UI card\nticket ticket-ui\nApprove\nReject\ngithub: send_email\npending · medium\nacme/repo\napprove from mobile viewport\nticket ticket-mobile\nApprove\nReject",
+  "after": "Workspaces\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\napproved · medium\nacme/repo\nplease approve this UI card\nticket ticket-ui\nApprove\nReject\ngithub: send_email\napproved · medium\nacme/repo\napprove from mobile viewport\nticket ticket-mobile\nApprove\nReject",
+  "errors": []
+}

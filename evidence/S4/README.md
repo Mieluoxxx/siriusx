@@ -40,11 +40,11 @@ errors=[]
 | 需要人处理的工单置顶 | **已实现排序**（UI 按 `person/*` 优先） |
 | 界面插件不改 `apps/desktop` 之外的上游文件 | **通过**（插件全在 `plugins/`） |
 | Bot 服务断开时不显示过期数据 | **已实现**：刷新失败清空列表并显示连接错误 |
-| 打断 / 审批卡片完整操作 | **部分**：API 与按钮在位；当前 mock kernel 立即结束，审批是占位 |
+| 打断 / 审批卡片完整操作 | **部分**：审批卡片已接 control-plane→tool-gateway 并在真实 Web UI 中批准（`02-approvals/`）；打断 UI 只有按钮，未用慢任务验证 |
 | 连续 10 个工作日真实使用 | **未完成**：需要真实时间与真实任务 |
 
 ## 已知边界
 
 - 目前是一个合并的 Team panel，而不是四个独立客户端 package；后续可按 Bot/工单/审批/Source 拆开。
 - Bot API 仍使用确定性 fake kernel；真实 DSH Host Executor 插件已在 S3 验证，S5 把两者合成企业链路。
-- 审批页是占位，真实审批在 S6 工具网关。
+- 审批页已接 control-plane `/v1/approvals` 代理与 tool-gateway；真实审批审计见 S6 证据。

@@ -54,7 +54,7 @@ DSH 插件必须是独立 package；能用插件或独立 package 完成的能�
 ## 当前实现状态（滚动更新）
 
 - S0：完成。
-- S1：fork、遥测关闭、源码构建、离线会话与网络审计完成；Desktop 实际启动受 Linux 不支持限制。
+- S1：fork、遥测关闭、源码构建、离线会话、10 分钟零外联抓包完成；Desktop 实际启动受 Linux 不支持限制，5 天使用待真实时间。
 - S2：契约、内核接口、DSH adapter、假内核、BG1 场景完成。
 - S3：本地 Executor、Host 插件、SQLite Bot 服务、真实 DSH AgentLoop 闭环完成；previews/TTL/真实进程 kill 待补。
 - S4：Team panel 客户端插件、应用契约、本地 Bot API 完成；审批/打断 UI 与 10 天自用待补。

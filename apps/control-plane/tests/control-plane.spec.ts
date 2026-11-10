@@ -175,4 +175,36 @@ describe('control plane', () => {
     expect(await new Promise<number>(resolve => bogus.once('close', code => resolve(code)))).toBe(4001)
   })
 
+  it('proxies approval cards to the tool gateway with tenant headers', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-control-tool-'))
+    roots.push(root)
+    const seen: Array<Record<string, string | string[] | undefined>> = []
+    const tool = createServer((request, response) => {
+      seen.push(request.headers)
+      if (request.method === 'GET') {
+        response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ approvals: [{ approvalId: 'a1', ticketId: 't1', title: 'github: send_email', detail: 'x', risk: 'medium', status: 'pending', expiresAt: new Date().toISOString() }] }))
+        return
+      }
+      response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ status: 'approved' }))
+    })
+    await new Promise<void>((resolve, reject) => { tool.once('error', reject); tool.listen(0, '127.0.0.1', () => resolve()) })
+    const address = tool.address()
+    const toolPort = typeof address === 'object' && address !== null ? address.port : 0
+    const server = await startControlPlaneServer({
+      dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret',
+      toolGatewayUrl: `http://127.0.0.1:${toolPort}`,
+    })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const list = await fetch(`${server.url}/v1/approvals`, { headers: auth(token) }).then(response => response.json()) as { approvals: unknown[] }
+    expect(list.approvals).toHaveLength(1)
+    const decided = await fetch(`${server.url}/v1/approvals/a1/decide`, { method: 'POST', headers: auth(token), body: JSON.stringify({ approved: true }) }).then(response => response.json()) as { status: string }
+    expect(decided.status).toBe('approved')
+    expect(seen[0]?.['x-tenant-id']).toBe(tenant.id)
+    expect(seen[0]?.['x-user-id']).toBe(admin.id)
+    await new Promise<void>((resolve, reject) => tool.close(error => { error === undefined ? resolve() : reject(error) }))
+  })
+
 })
