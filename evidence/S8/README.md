@@ -60,3 +60,17 @@
   - 开通租户、签发 token、读取 settings 成功
 - 证据：`05-native-install/`。
 - 未覆盖：DSH Web Host、web-gateway、Docker sandbox 镜像；完整单机仍需一并编排。
+
+## Docker 离线单机镜像
+
+- `deploy/offline/build-offline.sh` 生成 staging app；
+- `deploy/single-box/Dockerfile.offline` 用本机已有基础镜像构建 `siriusx/control-plane:offline2`；
+- `docker-compose.offline.yml` 同时启动 control-plane 与 tool-gateway；
+- 实测：
+  - control-plane `/health` OK
+  - tool-gateway `/health` OK
+  - 容器内开通租户、签发 token、读取 settings、创建 Bot 成功
+- 证据：`06-docker-offline/`。
+
+注意：本机测试镜像基于已有 `teams-bridge:0.2.0`（Node 22）以避开 Docker Hub
+下载阻塞；正式交付镜像仍需固定 Node 24 基础镜像 digest。

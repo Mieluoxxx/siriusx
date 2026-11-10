@@ -1,0 +1,30 @@
+services:
+  control-plane:
+    image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
+    restart: unless-stopped
+    environment:
+      SIRIUSX_SESSION_SECRET: ${SIRIUSX_SESSION_SECRET:?set SIRIUSX_SESSION_SECRET}
+      SIRIUSX_DB: /data/control.sqlite
+      SIRIUSX_DATA_DIR: /data
+    ports:
+      - "127.0.0.1:4320:4320"
+      - "127.0.0.1:4321:4321"
+      - "127.0.0.1:4322:4322"
+    volumes:
+      - siriusx-data:/data
+  tool-gateway:
+    image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
+    restart: unless-stopped
+    command: ["node", "--import", "tsx", "apps/tool-gateway/src/cli.ts"]
+    environment:
+      SIRIUSX_TOOL_GATEWAY_DB: /data/tool-gateway.sqlite
+      SIRIUSX_TOOL_GATEWAY_PORT: "4330"
+      SIRIUSX_TOOL_GATEWAY_HOST: 0.0.0.0
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITLAB_TOKEN: ${GITLAB_TOKEN:-}
+    ports:
+      - "127.0.0.1:4330:4330"
+    volumes:
+      - siriusx-data:/data
+volumes:
+  siriusx-data:

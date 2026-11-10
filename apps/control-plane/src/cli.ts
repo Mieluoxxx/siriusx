@@ -13,7 +13,7 @@ function usage(): never {
   control-plane tenant list
   control-plane user add --tenant <id> --email <email> [--role admin|member]
   control-plane token issue --tenant <id> --user <id> --role admin|member
-  control-plane serve [--port 4320] [--db <file>] [--data-dir <dir>]`)
+  control-plane serve [--port 4320] [--host 127.0.0.1] [--db <file>] [--data-dir <dir>]`)
   process.exit(2)
 }
 
@@ -69,22 +69,26 @@ try {
     console.log(control.issueSession({ tenantId, userId, role }))
   } else if (command === 'serve') {
     control.close()
+    const bindHost = flags.get('host') ?? process.env.SIRIUSX_BIND_HOST
     const server = await startControlPlaneServer({
       dbPath,
       dataDir,
       port: flags.get('port') === undefined ? 4320 : Number(flags.get('port')),
+      ...(bindHost === undefined ? {} : { host: bindHost }),
       ...(process.env.SIRIUSX_SESSION_SECRET === undefined ? {} : { sessionSecret: process.env.SIRIUSX_SESSION_SECRET }),
       ...(process.env.SIRIUSX_TOOL_GATEWAY_URL === undefined ? {} : { toolGatewayUrl: process.env.SIRIUSX_TOOL_GATEWAY_URL }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,
       port: Number(flags.get('gateway-port')),
+      ...(bindHost === undefined ? {} : { host: bindHost }),
       ...(process.env.SIRIUSX_UPSTREAM_MODEL_URL === undefined ? {} : { upstreamUrl: process.env.SIRIUSX_UPSTREAM_MODEL_URL }),
       ...(process.env.SIRIUSX_UPSTREAM_MODEL_KEY === undefined ? {} : { upstreamKey: process.env.SIRIUSX_UPSTREAM_MODEL_KEY }),
     })
     const deviceGateway = flags.get('device-port') === undefined ? undefined : await startDeviceGateway({
       control: server.control,
       port: Number(flags.get('device-port')),
+      ...(bindHost === undefined ? {} : { host: bindHost }),
     })
     if (deviceGateway !== undefined) server.setDeviceGateway(deviceGateway)
     console.log(JSON.stringify({

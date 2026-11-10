@@ -1,0 +1,9 @@
+{
+  "tenant": {
+    "id": "tenant-docker",
+    "name": "Docker",
+    "idpIssuer": "https://idp.example",
+    "createdAt": 1794329841880
+  },
+  "adminUserId": "6057e529-b7fa-4d0a-922a-aa0225c42392"
+}
