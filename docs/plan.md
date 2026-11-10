@@ -160,7 +160,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **验收标准。**
 
-- [ ] 不碰命令行，只在 DSH Desktop 里完成发起任务、看到阶段变化、打断、处理审批、审查 diff。**部分完成**：发起、阶段、diff、审批已用 Chromium 验证；打断 UI 未用慢任务验证。证据：`evidence/S4/01-team-panel/team-panel-ticket.png`、`evidence/S4/02-approvals/approval-card.png`。
+- [x] 不碰命令行，只在 DSH Desktop 里完成发起任务、看到阶段变化、打断、处理审批、审查 diff。证据：`evidence/S4/01-team-panel/`、`02-approvals/`、`03-interrupt/`（慢任务 Stop 后 idle/cancelled）。
 - [x] 需要人处理的工单（阶段以 `person` 开头）排在列表最上面。证据：UI 排序实现。
 - [x] 界面插件没有改动 `apps/desktop` 之外的任何上游文件。证据：插件位于 `plugins/`，上游 fork 只保留 `apps/desktop/src/main.ts` 的 telemetry guard。
 - [x] 杀掉本机 Bot 服务后，界面显示连接断开，不显示过期数据冒充当前状态。证据：UI 刷新失败清空列表并显示错误（代码 `plugins/client-ui-team/src/client/index.tsx`）。

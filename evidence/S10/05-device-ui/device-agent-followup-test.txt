@@ -1,0 +1,11 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/apps/device-agent
+
+ ✓ tests/device-agent.spec.ts (2 tests) 11208ms
+     ✓ cancels a running device ticket through the gateway  11065ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:03:34
+   Duration  11.55s (transform 121ms, setup 0ms, import 224ms, tests 11.21s, environment 0ms)

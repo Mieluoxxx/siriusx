@@ -8,6 +8,8 @@ export interface DeviceAgentOptions {
   readonly url: string
   readonly token: string
   readonly executor?: LocalExecutor
+  /** Demo/test mode: keep the local task running until cancelled. */
+  readonly slow?: boolean
   readonly onError?: (error: unknown) => void
 }
 
@@ -19,15 +21,16 @@ export interface DeviceAgent {
 
 export async function startDeviceAgent(options: DeviceAgentOptions): Promise<DeviceAgent> {
   const kernel = new FakeKernel({
-    defaultScenario: {
-      steps: [{ kind: 'delta', text: '```siriusx-report\n{"kind":"ready","summary":"device-local task finished","diffStats":{"filesChanged":0,"insertions":0,"deletions":0},"diffBasis":"ticketStart"}\n```' }],
-    },
+    defaultScenario: options.slow === true
+      ? { steps: [{ kind: 'wait', millis: 60_000 }] }
+      : { steps: [{ kind: 'delta', text: '```siriusx-report\n{"kind":"ready","summary":"device-local task finished","diffStats":{"filesChanged":0,"insertions":0,"deletions":0},"diffBasis":"ticketStart"}\n```' }] },
   })
   const socket = new WebSocket(`${options.url}?token=${encodeURIComponent(options.token)}`)
   let readyResolve: (() => void) | undefined
   let readyReject: ((error: Error) => void) | undefined
   const ready = new Promise<void>((resolve, reject) => { readyResolve = resolve; readyReject = reject })
   let queue = Promise.resolve()
+  const active = new Map<string, { executor: LocalExecutor; assignmentId: string }>()
 
   const handleAssign = async (message: Record<string, unknown>): Promise<void> => {
     if (typeof message.ticketId !== 'string' || typeof message.assignment !== 'object' || message.assignment === null) return
@@ -35,11 +38,13 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
     if (assignment.workspace.kind !== 'local_dir') throw new Error('device agent only accepts local_dir')
     const executor = options.executor ?? new LocalExecutor({ tenantId: assignment.tenantId, backend: kernel })
     const created = await executor.createAssignment(assignment)
+    active.set(assignment.ticketId, { executor, assignmentId: created.assignmentId })
     // Send lifecycle events early so the Team panel moves to working.
     for (const event of executor.streamEventsForBot(created.assignmentId, 0).events) {
       socket.send(JSON.stringify({ type: 'ticket.event', ticketId: assignment.ticketId, event }))
     }
     const done = await executor.wait(created.assignmentId)
+    active.delete(assignment.ticketId)
     for (const event of executor.streamEventsForBot(created.assignmentId, 0).events) {
       socket.send(JSON.stringify({ type: 'ticket.event', ticketId: assignment.ticketId, event }))
     }
@@ -49,6 +54,19 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
     try {
       const message = JSON.parse(raw.toString()) as Record<string, unknown>
       if (message.type === 'registered') readyResolve?.()
+      if (message.type === 'ticket.cancel' && typeof message.ticketId === 'string') {
+        const running = active.get(message.ticketId)
+        if (running !== undefined) {
+          void (async () => {
+            const cancelled = await running.executor.cancelAssignment(running.assignmentId, 'graceful')
+            for (const event of running.executor.streamEventsForBot(cancelled.assignmentId, 0).events) {
+              socket.send(JSON.stringify({ type: 'ticket.event', ticketId: message.ticketId, event }))
+            }
+            active.delete(message.ticketId as string)
+          })().catch(error => options.onError?.(error))
+        }
+        return
+      }
       if (message.type === 'ticket.assign') {
         queue = queue.then(() => handleAssign(message)).catch(error => {
           options.onError?.(error)

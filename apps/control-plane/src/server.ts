@@ -180,10 +180,28 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         if (request.method === 'POST' && parts[3] === 'input') {
           const body = await readJson(request)
           if (typeof body.text !== 'string' || body.text.trim() === '') throw new Error('text is required')
+          const deviceTicket = control.deviceTicketTarget(session.tenantId, ticketId)
+          if (deviceTicket !== undefined) {
+            if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')
+            const followUp = control.createDeviceFollowUp(session, ticketId, body.text)
+            const delivered = deviceGateway.sendToDevice(session.tenantId, deviceTicket.deviceId, {
+              type: 'ticket.assign', ticketId: followUp.ticketId, assignment: followUp.assignment,
+            })
+            if (delivered) control.markDeviceTicketDelivered(session.tenantId, followUp.ticketId)
+            write(response, 200, { ticketId, delivered })
+            return
+          }
           write(response, 200, await control.sendTicketInput(session, ticketId, body.text))
           return
         }
         if (request.method === 'POST' && parts[3] === 'cancel') {
+          const deviceTicket = control.deviceTicketTarget(session.tenantId, ticketId)
+          if (deviceTicket !== undefined) {
+            if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')
+            const delivered = deviceGateway.sendToDevice(session.tenantId, deviceTicket.deviceId, { type: 'ticket.cancel', ticketId })
+            write(response, 200, { ticketId, delivered, status: delivered ? 'cancel-requested' : 'offline' })
+            return
+          }
           write(response, 200, await control.cancelTicket(session, ticketId))
           return
         }

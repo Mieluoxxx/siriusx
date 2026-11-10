@@ -18,7 +18,9 @@ if (url === undefined || token === undefined) {
   console.error('usage: device-agent --url ws://... --token <device-token>')
   process.exit(2)
 }
-const agent = await startDeviceAgent({ url, token, onError: error => console.error('device-agent:', error) })
+const agent = await startDeviceAgent({
+  url, token, slow: flags.get('scenario') === 'slow', onError: error => console.error('device-agent:', error),
+})
 await agent.ready
 console.log(JSON.stringify({ ready: true, device: new URL(url).host }))
 const stop = (): void => { agent.close(); process.exit(0) }
