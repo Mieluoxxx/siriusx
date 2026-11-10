@@ -1,0 +1,11 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/packages/cloud-executor
+
+ ↓ tests/docker.integration.spec.ts (1 test | 1 skipped)
+ ✓ tests/cloud-executor.spec.ts (5 tests) 43ms
+
+ Test Files  1 passed | 1 skipped (2)
+      Tests  5 passed | 1 skipped (6)
+   Start at  15:41:53
+   Duration  300ms (transform 134ms, setup 0ms, import 270ms, tests 43ms, environment 0ms)

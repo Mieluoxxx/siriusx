@@ -4,6 +4,7 @@
 
 - `packages/cloud-executor`：
   - `CloudExecutor` 生命周期、取消、`recoverOrphans()` 与 Bot 上行投影；
+  - SQLite `AssignmentStore`：assignments/events/sandbox_id 持久化，进程重启后可按库恢复；
   - `SandboxProvider` 抽象 + `MemorySandboxProvider`；
   - `DockerSandboxProvider`：每 ticket 独立 home/workspace volume、`--network none`、
     `docker exec`/`docker cp`/stdio spawn；
@@ -32,7 +33,7 @@
 | 网络允许列表 | **未完成**：仅 `none` 与预配置 network | — |
 | agent 环境无连接器凭据 | **部分**：CloudExecutor 不注入 secretRefs；未做 env 扫描 | — |
 | 真 GitHub/GitLab issue → MR | **部分**：GitHub REST connector 与 mock 测试完成；未在真实仓库走 Issue→MR | `04-github-connector/` |
-| 崩溃恢复 | **部分**：`recoverOrphans()` 内存版通过 | `test.txt` |
+| 崩溃恢复 | **部分**：SQLite 跨进程恢复单测通过；真实进程 kill/重试未做 | `01-cloud-executor/store-test.txt` |
 
 ## 已知边界
 

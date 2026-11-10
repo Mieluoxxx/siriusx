@@ -240,7 +240,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。**部分完成**：独立 volume 与 `--network none` 已完成；allowlist/资源限额未做。
 - [ ] 接入云端 dsh 与 pi 两个内核。**部分完成**：真实 DSH ACP 已跑通；pi 与云端沙箱内 dsh 未接。证据：`evidence/S7/03-real-dsh-acp/`。
 - [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub REST connector（读 issue/建分支/开 PR）与测试完成；真实仓库全流程未走。证据：`evidence/S7/04-github-connector/`。
-- [ ] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：`recoverOrphans()` 内存版。
+- [x] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：SQLite 持久化 + 跨进程 `recoverOrphans()` 单测通过；真实 kill/重试未做。证据：`evidence/S7/01-cloud-executor/store-test.txt`。
 
 **验收标准。**
 
@@ -252,7 +252,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [ ] 沙箱内找不到任何连接器凭据。**部分完成**：代码不向沙箱注入 secretRefs；未做 env 搜索。
 - [ ] 用 pi 作内核完成一个任务，再用 dsh 完成同一个任务，Bot 侧不需要任何区分。**未完成**。
 - [ ] 在代码平台上提一个真实的 Issue，团队 Bot 接手、改代码、经审批后开出合并请求。**未完成**。
-- [ ] 模拟进程崩溃，服务自动恢复，运行中的工单没有丢。这是里程碑 M2。**部分完成**：`recoverOrphans()` 单测。
+- [ ] 模拟进程崩溃，服务自动恢复，运行中的工单没有丢。这是里程碑 M2。**部分完成**：SQLite 跨进程恢复单测；真实进程 kill/重启未做。
 
 **产出物。** ACP 后端，云端 Executor，沙箱，第一个代码平台的接入。
 

@@ -112,4 +112,8 @@ export class DockerSandboxProvider implements SandboxProvider {
   async removeVolumes(tenantId: string, workdirKey: string): Promise<void> {
     await dockerBin(this.#dockerBin, ['volume', 'rm', '-f', this.volumeName(tenantId, workdirKey, 'home'), this.volumeName(tenantId, workdirKey, 'work')])
   }
+
+  async destroySandbox(sandboxId: string): Promise<void> {
+    await dockerBin(this.#dockerBin, ['rm', '-f', sandboxId])
+  }
 }

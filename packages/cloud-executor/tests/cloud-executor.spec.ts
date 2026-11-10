@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { CreateAssignment } from '@siriusx/contracts/executor'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { CloudExecutor, MemorySandboxProvider, type CloudKernel } from '../src/index.ts'
 
 const assignment = (overrides: Partial<CreateAssignment> = {}): CreateAssignment => ({
@@ -95,4 +98,34 @@ describe('cloud executor', () => {
     })
     expect(cancelled.state).toBe('cancelled')
   })
+  it('recovers an in-flight assignment from a SQLite store after a process restart', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-cloud-store-'))
+    try {
+      const dbPath = join(root, 'cloud.sqlite')
+      const provider = new MemorySandboxProvider()
+      let release: (() => void) | undefined
+      const gate = new Promise<void>(resolve => { release = resolve })
+      const kernel: CloudKernel = {
+        async run() {
+          await gate
+          return { kind: 'ready', summary: 'late', diffStats: { filesChanged: 0, insertions: 0, deletions: 0 }, diffBasis: 'baseRef' }
+        },
+      }
+      const first = new CloudExecutor({ provider, kernel, dbPath })
+      await first.createAssignment(assignment())
+      await new Promise(resolve => setTimeout(resolve, 0))
+      const second = new CloudExecutor({ provider, kernel, dbPath })
+      expect(await second.recoverOrphans()).toEqual(['11111111-1111-4111-8111-111111111111'])
+      expect(second.getAssignment('11111111-1111-4111-8111-111111111111').state).toBe('lost')
+      expect(second.streamEvents('11111111-1111-4111-8111-111111111111', 0).events.at(-1)).toMatchObject({ type: 'state', state: 'lost' })
+      release?.()
+      await new Promise(resolve => setTimeout(resolve, 20))
+      expect(second.getAssignment('11111111-1111-4111-8111-111111111111').state).toBe('lost')
+      first.close()
+      second.close()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
 })

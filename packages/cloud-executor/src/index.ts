@@ -10,6 +10,7 @@ import {
   type CreateAssignment,
 } from '@siriusx/contracts/executor'
 import type { z } from 'zod'
+import { MemoryAssignmentStore, SqliteAssignmentStore, type AssignmentStore, type StoredAssignment } from './store.ts'
 
 export type AssignmentReport = z.infer<typeof AssignmentReportSchema>
 export type CancelAssignment = z.infer<typeof CancelAssignmentSchema>
@@ -54,6 +55,8 @@ export interface SandboxProvider {
   create(request: SandboxCreateRequest): Promise<Sandbox>
   /** Remove the durable home/workspace volumes for one ticket. */
   removeVolumes(tenantId: string, workdirKey: string): Promise<void>
+  /** Best-effort recovery hook; providers without it leave the container to Docker GC. */
+  destroySandbox?(sandboxId: string): Promise<void>
 }
 
 export interface CloudKernelContext {
@@ -72,12 +75,16 @@ export interface CloudExecutorOptions {
   readonly image?: string
   readonly network?: 'none' | 'allowlist'
   readonly now?: () => number
+  /** Durable store; when omitted the executor is process-local. */
+  readonly store?: AssignmentStore
+  readonly dbPath?: string
 }
 
 interface Entry {
   assignment: Assignment
   events: AssignmentEvent[]
   sandbox?: Sandbox
+  sandboxId?: string
   cancelled: boolean
   done: Promise<void>
 }
@@ -89,6 +96,7 @@ export class CloudExecutor {
   readonly #image: string
   readonly #network: 'none' | 'allowlist'
   readonly #now: () => number
+  readonly #store: AssignmentStore
 
   constructor(options: CloudExecutorOptions) {
     this.#provider = options.provider
@@ -96,6 +104,25 @@ export class CloudExecutor {
     this.#image = options.image ?? 'debian:bookworm-slim'
     this.#network = options.network ?? 'none'
     this.#now = options.now ?? Date.now
+    this.#store = options.store ?? (options.dbPath === undefined ? new MemoryAssignmentStore() : new SqliteAssignmentStore(options.dbPath))
+  }
+
+  close(): void { this.#store.close() }
+
+  #entry(assignmentId: string): Entry {
+    const existing = this.#entries.get(assignmentId)
+    if (existing !== undefined) return existing
+    const stored = this.#store.get(assignmentId)
+    if (stored === undefined) throw new Error(`assignment ${assignmentId} not found`)
+    const entry: Entry = {
+      assignment: stored.assignment,
+      events: [...stored.events],
+      ...(stored.sandboxId === undefined ? {} : { sandboxId: stored.sandboxId }),
+      cancelled: false,
+      done: Promise.resolve(),
+    }
+    this.#entries.set(assignmentId, entry)
+    return entry
   }
 
   async createAssignment(input: CreateAssignment): Promise<Assignment> {
@@ -110,9 +137,10 @@ export class CloudExecutor {
       state: 'preparing',
       lastSeq: 0,
     }
+    this.#store.create(assignment)
     const entry: Entry = { assignment, events: [], cancelled: false, done: Promise.resolve() }
-    this.#emit(entry, 'preparing')
     this.#entries.set(request.assignmentId, entry)
+    this.#emit(entry, 'preparing')
     entry.done = this.#run(entry, request)
     return this.getAssignment(request.assignmentId)
   }
@@ -126,6 +154,8 @@ export class CloudExecutor {
         image: this.#image,
       })
       entry.sandbox = sandbox
+      entry.sandboxId = sandbox.id
+      this.#store.update(entry.assignment, sandbox.id)
       if (entry.cancelled) { await sandbox.destroy(); return }
       entry.assignment.state = 'running'
       this.#emit(entry, 'running')
@@ -134,7 +164,7 @@ export class CloudExecutor {
         sandbox,
         emitActivity: event => this.#emitActivity(entry, event),
       })
-      if (entry.cancelled) return
+      if (entry.cancelled || this.#store.get(entry.assignment.assignmentId)?.assignment.state === 'lost') return
       entry.assignment.state = 'reported'
       entry.assignment.report = report
       this.#emit(entry, 'reported', report)
@@ -150,37 +180,35 @@ export class CloudExecutor {
     }
   }
 
+  #append(entry: Entry, event: AssignmentEvent): void {
+    entry.events.push(event)
+    entry.assignment.lastSeq = event.seq
+    this.#store.appendEvent(entry.assignment.assignmentId, event)
+    this.#store.update(entry.assignment)
+  }
+
   #emit(entry: Entry, state: Assignment['state'], report?: AssignmentReport): void {
-    entry.assignment.lastSeq = entry.events.length
-    entry.events.push({ type: 'state', seq: entry.assignment.lastSeq, at: new Date(this.#now()).toISOString(), state })
+    this.#append(entry, { type: 'state', seq: entry.events.length, at: new Date(this.#now()).toISOString(), state })
     if (report !== undefined) {
-      entry.events.push({ type: 'report', seq: entry.events.length, at: new Date(this.#now()).toISOString(), report })
+      this.#append(entry, { type: 'report', seq: entry.events.length, at: new Date(this.#now()).toISOString(), report })
     }
-    entry.assignment.lastSeq = entry.events.length - 1
   }
 
   #emitActivity(entry: Entry, event: Omit<Extract<AssignmentEvent, { type: 'activity' }>, 'seq' | 'at' | 'type'>): void {
-    entry.events.push({ type: 'activity', seq: entry.events.length, at: new Date(this.#now()).toISOString(), ...event })
-    entry.assignment.lastSeq = entry.events.length - 1
+    this.#append(entry, { type: 'activity', seq: entry.events.length, at: new Date(this.#now()).toISOString(), ...event })
   }
 
   getAssignment(assignmentId: string): Assignment {
-    const entry = this.#entries.get(assignmentId)
-    if (entry === undefined) throw new Error(`assignment ${assignmentId} not found`)
-    return AssignmentSchema.parse(entry.assignment)
+    return AssignmentSchema.parse(this.#entry(assignmentId).assignment)
   }
 
   async wait(assignmentId: string): Promise<Assignment> {
-    const entry = this.#entries.get(assignmentId)
-    if (entry === undefined) throw new Error(`assignment ${assignmentId} not found`)
-    await entry.done
+    await this.#entry(assignmentId).done
     return this.getAssignment(assignmentId)
   }
 
   streamEvents(assignmentId: string, fromSeq: number): { events: readonly AssignmentEvent[]; logsTruncated: boolean } {
-    const entry = this.#entries.get(assignmentId)
-    if (entry === undefined) throw new Error(`assignment ${assignmentId} not found`)
-    return { events: entry.events.filter(event => event.seq >= fromSeq), logsTruncated: false }
+    return { events: this.#entry(assignmentId).events.filter(event => event.seq >= fromSeq), logsTruncated: false }
   }
 
   streamEventsForBot(assignmentId: string, fromSeq: number): { events: readonly AssignmentEvent[]; logsTruncated: boolean } {
@@ -190,34 +218,42 @@ export class CloudExecutor {
 
   async cancelAssignment(input: CancelAssignment): Promise<Assignment> {
     const request = CancelAssignmentSchema.parse(input)
-    const entry = this.#entries.get(request.assignmentId)
-    if (entry === undefined) throw new Error(`assignment ${request.assignmentId} not found`)
+    const entry = this.#entry(request.assignmentId)
     if (entry.assignment.state === 'reported' || entry.assignment.state === 'cancelled' || entry.assignment.state === 'lost') return this.getAssignment(request.assignmentId)
     entry.cancelled = true
-    await entry.sandbox?.destroy()
+    await this.#destroySandbox(entry)
     entry.assignment.state = 'cancelled'
     this.#emit(entry, 'cancelled')
     return this.getAssignment(request.assignmentId)
   }
 
+  async #destroySandbox(entry: Entry): Promise<void> {
+    if (entry.sandbox !== undefined) {
+      await entry.sandbox.destroy()
+      return
+    }
+    if (entry.sandboxId !== undefined) await this.#provider.destroySandbox?.(entry.sandboxId)
+  }
+
   async recoverOrphans(): Promise<readonly string[]> {
     const recovered: string[] = []
-    for (const [assignmentId, entry] of this.#entries) {
+    for (const stored of this.#store.list()) {
+      const entry = this.#entry(stored.assignment.assignmentId)
       if (entry.assignment.state === 'preparing' || entry.assignment.state === 'running' || entry.assignment.state === 'backgrounded') {
         entry.cancelled = true
-        await entry.sandbox?.destroy()
+        await this.#destroySandbox(entry)
         entry.assignment.state = 'lost'
         this.#emit(entry, 'lost')
-        recovered.push(assignmentId)
+        recovered.push(entry.assignment.assignmentId)
       }
     }
     return recovered
   }
 
   async destroyWorkdir(tenantId: string, assignmentId: string): Promise<void> {
-    const entry = this.#entries.get(assignmentId)
-    if (entry === undefined || entry.assignment.tenantId !== tenantId) throw new Error('assignment not found')
-    await entry.sandbox?.destroy()
+    const entry = this.#entry(assignmentId)
+    if (entry.assignment.tenantId !== tenantId) throw new Error('assignment not found')
+    await this.#destroySandbox(entry)
   }
 
   async removeWorkdir(tenantId: string, workdirKey: string): Promise<void> {
@@ -259,6 +295,11 @@ export class MemorySandboxProvider implements SandboxProvider {
 
   async removeVolumes(tenantId: string, workdirKey: string): Promise<void> {
     this.#volumes.delete(`${tenantId}/${workdirKey}`)
+  }
+
+  async destroySandbox(sandboxId: string): Promise<void> {
+    const sandbox = this.#sandboxes.get(sandboxId)
+    if (sandbox !== undefined) sandbox.destroyed = true
   }
 
   volumeFor(tenantId: string, workdirKey: string): ReadonlyMap<string, string> | undefined {
