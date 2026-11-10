@@ -76,3 +76,11 @@
 - `destroyWorkdir()` 同时停止该 workdir 的所有预览；
 - 测试验证预览停止、TTL 清理与跟随 workdir 销毁。
 - 证据：`05-previews/test.txt`、`05-previews/schema-export.txt`。
+
+## 契约候选标签
+
+- 已创建 annotated tag `executor-v0.1.0-rc.1`；
+- 记录 22 个 JSON Schema 的 SHA-256；
+- 契约单测 25 个通过；
+- 正式冻结仍等 Electron Host 级 kill/restart 与真实断线。
+- 证据：`06-contract-tag/tag.txt`、`contracts-test.txt`、`schema-sha256.txt`。

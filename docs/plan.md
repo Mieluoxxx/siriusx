@@ -144,7 +144,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 回收 workdir 后，用户指定的目录还在，只有 Executor 自己建的 worktree 和临时目录被清掉。证据：`packages/executor-local/tests/executor.spec.ts`。
 - [ ] S2 的场景剧本里适用于 `local_dir` 的那些，对着真实 Executor 全部通过。**部分完成**：取消、resume、answer、文件、容量、workspace、ready、previews/TTL 已有覆盖；真实断线未覆盖。证据：`evidence/S3/05-previews/test.txt`。
 - [x] 界面开着的同时 Executor 在跑任务，两边互不干扰。证据：`evidence/S3/02-host-plugin/ui-open.png` 与同目录 `run.txt`。
-- [ ] 以上全部通过后，给契约打一个版本标签。此后改契约要走变更评审。这是里程碑 M1。**部分完成**：previews/TTL 与 Bot 进程级 process-loss 已补；Host 级 kill/真实断线未补，暂记 `executor-v0.1.0-rc.1`。
+- [ ] 以上全部通过后，给契约打一个版本标签。此后改契约要走变更评审。这是里程碑 M1。**部分完成**：已打 provisional tag `executor-v0.1.0-rc.1`（含 schema 哈希/测试证据），Host 级 kill/真实断线通过后再升级正式冻结。证据：`evidence/S3/06-contract-tag/`。
 
 **产出物。** Executor 插件，本机 Bot 服务，回归用的会话日志，契约版本标签。
 
