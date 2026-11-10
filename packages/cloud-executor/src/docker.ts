@@ -83,6 +83,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       '--memory', this.#memoryLimit,
       '--cpus', this.#cpuLimit,
       '--pids-limit', String(this.#pidsLimit),
+      '--label', 'siriusx.managed=true',
       '--label', `siriusx.tenant=${request.tenantId}`,
       '--label', `siriusx.workdir=${request.workdirKey}`,
       '-v', `${home}:/home/siriusx`,
@@ -127,6 +128,21 @@ export class DockerSandboxProvider implements SandboxProvider {
 
   async removeVolumes(tenantId: string, workdirKey: string): Promise<void> {
     await dockerBin(this.#dockerBin, ['volume', 'rm', '-f', this.volumeName(tenantId, workdirKey, 'home'), this.volumeName(tenantId, workdirKey, 'work')])
+  }
+
+  /** Remove managed containers older than maxAgeMs. Returns the number removed. */
+  async reapOrphans(maxAgeMs = 0): Promise<number> {
+    const listed = await dockerBin(this.#dockerBin, ['ps', '-aq', '--filter', 'label=siriusx.managed=true'])
+    if (listed.exitCode !== 0) throw new Error(`docker ps failed: ${listed.stderr}`)
+    let removed = 0
+    for (const id of listed.stdout.split('\n').map(value => value.trim()).filter(Boolean)) {
+      const created = await dockerBin(this.#dockerBin, ['inspect', '--format', '{{.Created}}', id])
+      const createdAt = Date.parse(created.stdout.trim())
+      if (created.exitCode !== 0 || Number.isNaN(createdAt) || Date.now() - createdAt < maxAgeMs) continue
+      const result = await dockerBin(this.#dockerBin, ['rm', '-f', id])
+      if (result.exitCode === 0) removed++
+    }
+    return removed
   }
 
   async destroySandbox(sandboxId: string): Promise<void> {

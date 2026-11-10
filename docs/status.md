@@ -5,7 +5,7 @@
 | S0 前提 | `docs/spike.md`、`evidence/S0/` | auth/tenant/coexist/agent-interface | **完成** |
 | S1 fork/遥测 | `deepseek-harness` 仅 `apps/desktop/src/main.ts` 改动；`plugins/telemetry-off*` | `evidence/S1/` | **部分**：Linux 构建、10 分钟零外联抓包通过；mac/win 启动与 5 天使用待补 |
 | S2 契约/内核 | `packages/contracts`、`kernel-api`、`kernel-dsh`、`fake-kernel` | `evidence/S2/` | **完成** |
-| S3 本机闭环 | `packages/executor-local`、`plugins/executor-local`、`apps/autobot` | `evidence/S3/` | **完成**：真实 DSH AgentLoop、Bot/DSH Web Host SIGKILL/重启、模型断线、previews/TTL、lost 自动 resume 重试通过；tag `executor-v0.1.0` |
+| S3 本机闭环 | `packages/executor-local`、`plugins/executor-local`、`apps/autobot` | `evidence/S3/` | **完成**：真实 DSH AgentLoop、Bot/DSH Web Host SIGKILL/重启、模型断线、previews/TTL、lost 自动 resume 重试、sandbox orphan sweep 通过；tag `executor-v0.1.0` |
 | S4 工单界面 | `plugins/client-ui-team`、`packages/app-contract`、`apps/autobot/src/server.ts` | `evidence/S4/` | **部分**：发起/阶段/diff/排序/断线清空/审批/慢任务打断通过；四插件拆分与 10 天自用待补 |
 | S5 登录/租户 | `plugins/account-sso`、`apps/control-plane`（含 device gateway/model gateway）、Desktop enterprise gate | `evidence/S5/` | **部分**：OIDC/隔离/配对/长连接/模型网关/隐私 badge/个人 Bot 派工/原生入口管理员开关通过；真实 IdP、KMS、单机安装待补 |
 | S6 工具网关 | `apps/tool-gateway`、`packages/analytics`、local_dir 上行过滤 | `evidence/S6/` | **部分**：审批/审计/fail-closed/分级/Bot 事件接线/Vault-style 凭据适配通过；真实 KMS/Vault、真实抓包待补 |

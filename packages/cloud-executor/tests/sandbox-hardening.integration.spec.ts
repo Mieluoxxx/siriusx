@@ -21,6 +21,9 @@ describe.skipIf(!enabled)('sandbox hardening', () => {
       expect(env.stdout).not.toContain('must-not-reach-sandbox')
       const net = await sandbox.exec('node -e "fetch(\'http://1.1.1.1\').then(()=>process.exit(0)).catch(()=>process.exit(7))"')
       expect(net.exitCode).not.toBe(0)
+      expect(await provider.reapOrphans(0)).toBe(1)
+      const gone = await sandbox.exec('true')
+      expect(gone.exitCode).not.toBe(0)
     } finally {
       await sandbox.destroy()
       await provider.removeVolumes('tenant-hardening', 'hardening')

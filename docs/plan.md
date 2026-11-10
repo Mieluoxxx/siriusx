@@ -252,7 +252,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 沙箱内找不到任何连接器凭据。证据：`evidence/S7/11-sandbox-hardening/test.txt`（容器 env 不含宿主 GITHUB_TOKEN）。
 - [x] 用 pi 作内核完成一个任务，再用 dsh 完成同一个任务，Bot 侧不需要任何区分。证据：`evidence/S7/07-kernel-parity/run.txt`（真实 DSH ACP 与真实 Pi CLI，stage/report/事件类型一致）。
 - [ ] 在代码平台上提一个真实的 Issue，团队 Bot 接手、改代码、经审批后开出合并请求。**未完成**。
-- [ ] 模拟进程崩溃，服务自动恢复，运行中的工单没有丢。这是里程碑 M2。**部分完成**：SQLite 跨进程恢复、真实 DSH Web Host SIGKILL/重启、`autoRetryLost` resume 重试测试通过；真实 sandbox/Zombie 巡检未做。证据：`evidence/S3/07-host-kill/`、`10-lost-retry/`。
+- [ ] 模拟进程崩溃，服务自动恢复，运行中的工单没有丢。这是里程碑 M2。**部分完成**：SQLite 跨进程恢复、真实 DSH Web Host SIGKILL/重启、`autoRetryLost` resume 重试、Docker orphan sweep 通过；Host 周期巡检调度未做。证据：`evidence/S3/07-host-kill/`、`10-lost-retry/`、`11-sandbox-reap/`。
 
 **产出物。** ACP 后端，云端 Executor，沙箱，第一个代码平台的接入。
 

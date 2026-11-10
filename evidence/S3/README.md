@@ -107,3 +107,9 @@
 - 测试验证：原 lost assignment 保留，新 assignment 为 `resume` 并达到 `reported`。
 - Host 插件通过 `SIRIUSX_AUTO_RETRY_LOST=1` 可选开启。
 - 证据：`10-lost-retry/test.txt`。
+
+## Sandbox 巡检
+
+- `DockerSandboxProvider.reapOrphans(maxAgeMs)` 按 `siriusx.managed=true` 标签清理过期容器。
+- 实测创建 sandbox 后 `reapOrphans(0)` 删除 1 个容器，随后 exec 失败。
+- 证据：`11-sandbox-reap/test.txt`。
