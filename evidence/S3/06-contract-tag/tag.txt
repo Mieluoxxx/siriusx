@@ -1,0 +1,10 @@
+tag executor-v0.1.0-rc.1
+
+Executor contract candidate; Host-level crash and real-disconnect acceptance still pending
+029f06b docs: mark executor contract candidate v0.1.0-rc.1
+ docs/contracts/executor.md                         | 10 ++++++++++
+ evidence/S3/06-contract-tag/contracts-test.txt     | 11 +++++++++++
+ .../S3/06-contract-tag/contracts-typecheck.txt     |  1 +
+ evidence/S3/06-contract-tag/schema-sha256.txt      | 23 ++++++++++++++++++++++
+ 4 files changed, 45 insertions(+)
+37d829548a767cfb9d2dc7e8de5bf728a64d151e
