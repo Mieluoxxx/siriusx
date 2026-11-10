@@ -1,0 +1,1558 @@
+[
+  {
+    "name": "siriusx",
+    "version": "0.0.0",
+    "path": "/root/siriusx",
+    "private": true,
+    "devDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "24.13.3",
+        "resolved": "https://registry.npmjs.org/@types/node/-/node-24.13.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/autobot",
+    "version": "0.0.0",
+    "path": "/root/siriusx/apps/autobot",
+    "private": true,
+    "dependencies": {
+      "@siriusx/analytics": {
+        "from": "@siriusx/analytics",
+        "version": "link:../../packages/analytics",
+        "path": "/root/siriusx/packages/analytics"
+      },
+      "@siriusx/app-contract": {
+        "from": "@siriusx/app-contract",
+        "version": "link:../../packages/app-contract",
+        "path": "/root/siriusx/packages/app-contract"
+      },
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../../packages/contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "@siriusx/executor-local": {
+        "from": "@siriusx/executor-local",
+        "version": "link:../../packages/executor-local",
+        "path": "/root/siriusx/packages/executor-local"
+      },
+      "@siriusx/fake-kernel": {
+        "from": "@siriusx/fake-kernel",
+        "version": "link:../../packages/fake-kernel",
+        "path": "/root/siriusx/packages/fake-kernel"
+      },
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../../packages/kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/control-plane",
+    "version": "0.0.0",
+    "path": "/root/siriusx/apps/control-plane",
+    "private": true,
+    "dependencies": {
+      "@siriusx/app-contract": {
+        "from": "@siriusx/app-contract",
+        "version": "link:../../packages/app-contract",
+        "path": "/root/siriusx/packages/app-contract"
+      },
+      "@siriusx/autobot": {
+        "from": "@siriusx/autobot",
+        "version": "link:../autobot",
+        "path": "/root/siriusx/apps/autobot"
+      },
+      "@siriusx/cloud-executor": {
+        "from": "@siriusx/cloud-executor",
+        "version": "link:../../packages/cloud-executor",
+        "path": "/root/siriusx/packages/cloud-executor"
+      },
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../../packages/contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "@siriusx/executor-local": {
+        "from": "@siriusx/executor-local",
+        "version": "link:../../packages/executor-local",
+        "path": "/root/siriusx/packages/executor-local"
+      },
+      "@siriusx/fake-kernel": {
+        "from": "@siriusx/fake-kernel",
+        "version": "link:../../packages/fake-kernel",
+        "path": "/root/siriusx/packages/fake-kernel"
+      },
+      "@siriusx/kernel-acp": {
+        "from": "@siriusx/kernel-acp",
+        "version": "link:../../packages/kernel-acp",
+        "path": "/root/siriusx/packages/kernel-acp"
+      },
+      "ws": {
+        "from": "ws",
+        "version": "8.18.3",
+        "resolved": "https://registry.npmjs.org/ws/-/ws-8.18.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/ws@8.18.3/node_modules/ws"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "@types/ws": {
+        "from": "@types/ws",
+        "version": "8.18.1",
+        "resolved": "https://registry.npmjs.org/@types/ws/-/ws-8.18.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+ws@8.18.1/node_modules/@types/ws"
+      },
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/device-agent",
+    "version": "0.0.0",
+    "path": "/root/siriusx/apps/device-agent",
+    "private": true,
+    "dependencies": {
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../../packages/contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "@siriusx/executor-local": {
+        "from": "@siriusx/executor-local",
+        "version": "link:../../packages/executor-local",
+        "path": "/root/siriusx/packages/executor-local"
+      },
+      "@siriusx/fake-kernel": {
+        "from": "@siriusx/fake-kernel",
+        "version": "link:../../packages/fake-kernel",
+        "path": "/root/siriusx/packages/fake-kernel"
+      },
+      "ws": {
+        "from": "ws",
+        "version": "8.18.3",
+        "resolved": "https://registry.npmjs.org/ws/-/ws-8.18.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/ws@8.18.3/node_modules/ws"
+      }
+    },
+    "devDependencies": {
+      "@siriusx/control-plane": {
+        "from": "@siriusx/control-plane",
+        "version": "link:../control-plane",
+        "path": "/root/siriusx/apps/control-plane"
+      },
+      "@types/ws": {
+        "from": "@types/ws",
+        "version": "8.18.1",
+        "resolved": "https://registry.npmjs.org/@types/ws/-/ws-8.18.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+ws@8.18.1/node_modules/@types/ws"
+      },
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/tool-gateway",
+    "version": "0.0.0",
+    "path": "/root/siriusx/apps/tool-gateway",
+    "private": true,
+    "dependencies": {
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/web-gateway",
+    "version": "0.0.0",
+    "path": "/root/siriusx/apps/web-gateway",
+    "private": true,
+    "dependencies": {
+      "http-proxy": {
+        "from": "http-proxy",
+        "version": "1.18.1",
+        "resolved": "https://registry.npmjs.org/http-proxy/-/http-proxy-1.18.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/http-proxy@1.18.1_debug@2.6.9/node_modules/http-proxy"
+      },
+      "jose": {
+        "from": "jose",
+        "version": "6.2.17",
+        "resolved": "https://registry.npmjs.org/jose/-/jose-6.2.17.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/jose@6.2.17/node_modules/jose"
+      }
+    },
+    "devDependencies": {
+      "@types/http-proxy": {
+        "from": "@types/http-proxy",
+        "version": "1.17.17",
+        "resolved": "https://registry.npmjs.org/@types/http-proxy/-/http-proxy-1.17.17.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+http-proxy@1.17.17/node_modules/@types/http-proxy"
+      },
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/analytics",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/analytics",
+    "private": true,
+    "dependencies": {
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../contracts",
+        "path": "/root/siriusx/packages/contracts"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/app-contract",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/app-contract",
+    "private": true,
+    "dependencies": {
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/client-ui-team-core",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/client-ui-team-core",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-layout": {
+        "from": "@deepseek-ai/dsh-client-ui-layout",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-layout/-/dsh-client-ui-layout-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-layout@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-layout"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@deepseek-ai/dsh-client-ui-slots": {
+        "from": "@deepseek-ai/dsh-client-ui-slots",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-slots/-/dsh-client-ui-slots-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-slots@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-slots"
+      },
+      "@siriusx/app-contract": {
+        "from": "@siriusx/app-contract",
+        "version": "link:../app-contract",
+        "path": "/root/siriusx/packages/app-contract"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/cloud-executor",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/cloud-executor",
+    "private": true,
+    "dependencies": {
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/contracts",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/contracts",
+    "private": true,
+    "dependencies": {
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "4.23.13",
+        "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.13.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/executor-local",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/executor-local",
+    "private": true,
+    "dependencies": {
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      }
+    },
+    "devDependencies": {
+      "@siriusx/fake-kernel": {
+        "from": "@siriusx/fake-kernel",
+        "version": "link:../fake-kernel",
+        "path": "/root/siriusx/packages/fake-kernel"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/fake-kernel",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/fake-kernel",
+    "private": true,
+    "dependencies": {
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/kernel-acp",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/kernel-acp",
+    "private": true,
+    "dependencies": {
+      "@agentclientprotocol/sdk": {
+        "from": "@agentclientprotocol/sdk",
+        "version": "1.4.0",
+        "resolved": "https://registry.npmjs.org/@agentclientprotocol/sdk/-/sdk-1.4.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@agentclientprotocol+sdk@1.4.0_zod@4.4.3/node_modules/@agentclientprotocol/sdk"
+      },
+      "@siriusx/cloud-executor": {
+        "from": "@siriusx/cloud-executor",
+        "version": "link:../cloud-executor",
+        "path": "/root/siriusx/packages/cloud-executor"
+      },
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.4.3",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/zod@4.4.3/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/kernel-api",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/kernel-api",
+    "private": true,
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/kernel-dsh",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/kernel-dsh",
+    "private": true,
+    "dependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-agent": {
+        "from": "@deepseek-ai/dsh-agent",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-agent/-/dsh-agent-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-agent@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0_@deepseek-ai+dsh-llm@0.2.2-_fa6b530c55693bf07839d6cf7ec20bf6/node_modules/@deepseek-ai/dsh-agent"
+      },
+      "@deepseek-ai/dsh-llm": {
+        "from": "@deepseek-ai/dsh-llm",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-llm/-/dsh-llm-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-llm@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-llm"
+      },
+      "@deepseek-ai/dsh-session": {
+        "from": "@deepseek-ai/dsh-session",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-session/-/dsh-session-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-session@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0_@deepseek-ai+dsh-scope@0._2c1eb9e8f9f716fa5ffcff871cbb2b70/node_modules/@deepseek-ai/dsh-session"
+      },
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/kernel-pi",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/kernel-pi",
+    "private": true,
+    "dependencies": {
+      "@siriusx/cloud-executor": {
+        "from": "@siriusx/cloud-executor",
+        "version": "link:../cloud-executor",
+        "path": "/root/siriusx/packages/cloud-executor"
+      },
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-account-sso",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/account-sso",
+    "private": true,
+    "dependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-credentials": {
+        "from": "@deepseek-ai/dsh-credentials",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-credentials/-/dsh-credentials-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-credentials@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-credentials"
+      },
+      "@deepseek-ai/dsh-deepseek-account": {
+        "from": "@deepseek-ai/dsh-deepseek-account",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-deepseek-account/-/dsh-deepseek-account-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-deepseek-account@0.2.2-rc.1_0a7900006174fd5c53621d09044873ee/node_modules/@deepseek-ai/dsh-deepseek-account"
+      },
+      "@deepseek-ai/dsh-host-webserver": {
+        "from": "@deepseek-ai/dsh-host-webserver",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-host-webserver/-/dsh-host-webserver-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-host-webserver@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-host-webserver"
+      },
+      "jose": {
+        "from": "jose",
+        "version": "6.2.17",
+        "resolved": "https://registry.npmjs.org/jose/-/jose-6.2.17.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/jose@6.2.17/node_modules/jose"
+      }
+    },
+    "devDependencies": {
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-client-brand",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/brand-siriusx",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-conversation": {
+        "from": "@deepseek-ai/dsh-client-ui-conversation",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-conversation/-/dsh-client-ui-conversation-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-conversation@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-conversation"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@deepseek-ai/dsh-client-ui-slots": {
+        "from": "@deepseek-ai/dsh-client-ui-slots",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-slots/-/dsh-client-ui-slots-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-slots@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-slots"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-client-ui-approvals",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/client-ui-approvals",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@siriusx/client-ui-team-core": {
+        "from": "@siriusx/client-ui-team-core",
+        "version": "link:../../packages/client-ui-team-core",
+        "path": "/root/siriusx/packages/client-ui-team-core"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-client-ui-bots",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/client-ui-bots",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@siriusx/client-ui-team-core": {
+        "from": "@siriusx/client-ui-team-core",
+        "version": "link:../../packages/client-ui-team-core",
+        "path": "/root/siriusx/packages/client-ui-team-core"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-client-ui-sessions",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/client-ui-sessions",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@siriusx/client-ui-team-core": {
+        "from": "@siriusx/client-ui-team-core",
+        "version": "link:../../packages/client-ui-team-core",
+        "path": "/root/siriusx/packages/client-ui-team-core"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-client-ui-team",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/client-ui-team",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-layout": {
+        "from": "@deepseek-ai/dsh-client-ui-layout",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-layout/-/dsh-client-ui-layout-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-layout@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-layout"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@deepseek-ai/dsh-client-ui-slots": {
+        "from": "@deepseek-ai/dsh-client-ui-slots",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-slots/-/dsh-client-ui-slots-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-slots@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-slots"
+      },
+      "@siriusx/app-contract": {
+        "from": "@siriusx/app-contract",
+        "version": "link:../../packages/app-contract",
+        "path": "/root/siriusx/packages/app-contract"
+      },
+      "@siriusx/client-ui-team-core": {
+        "from": "@siriusx/client-ui-team-core",
+        "version": "link:../../packages/client-ui-team-core",
+        "path": "/root/siriusx/packages/client-ui-team-core"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-client-ui-tickets",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/client-ui-tickets",
+    "private": true,
+    "devDependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-client-ui-renderer": {
+        "from": "@deepseek-ai/dsh-client-ui-renderer",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-renderer/-/dsh-client-ui-renderer-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-renderer@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-renderer"
+      },
+      "@deepseek-ai/dsh-client-ui-sidebar": {
+        "from": "@deepseek-ai/dsh-client-ui-sidebar",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar/-/dsh-client-ui-sidebar-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-client-ui-sidebar@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-client-ui-sidebar"
+      },
+      "@siriusx/client-ui-team-core": {
+        "from": "@siriusx/client-ui-team-core",
+        "version": "link:../../packages/client-ui-team-core",
+        "path": "/root/siriusx/packages/client-ui-team-core"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "18.3.31",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "react": {
+        "from": "react",
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@18.3.1/node_modules/react"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-executor-local",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/executor-local",
+    "private": true,
+    "dependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-agent": {
+        "from": "@deepseek-ai/dsh-agent",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-agent/-/dsh-agent-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-agent@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0_@deepseek-ai+dsh-llm@0.2.2-_fa6b530c55693bf07839d6cf7ec20bf6/node_modules/@deepseek-ai/dsh-agent"
+      },
+      "@deepseek-ai/dsh-host-webserver": {
+        "from": "@deepseek-ai/dsh-host-webserver",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-host-webserver/-/dsh-host-webserver-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-host-webserver@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-host-webserver"
+      },
+      "@deepseek-ai/dsh-llm": {
+        "from": "@deepseek-ai/dsh-llm",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-llm/-/dsh-llm-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-llm@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-llm"
+      },
+      "@siriusx/autobot": {
+        "from": "@siriusx/autobot",
+        "version": "link:../../apps/autobot",
+        "path": "/root/siriusx/apps/autobot"
+      },
+      "@siriusx/contracts": {
+        "from": "@siriusx/contracts",
+        "version": "link:../../packages/contracts",
+        "path": "/root/siriusx/packages/contracts"
+      },
+      "@siriusx/executor-local": {
+        "from": "@siriusx/executor-local",
+        "version": "link:../../packages/executor-local",
+        "path": "/root/siriusx/packages/executor-local"
+      },
+      "@siriusx/kernel-api": {
+        "from": "@siriusx/kernel-api",
+        "version": "link:../../packages/kernel-api",
+        "path": "/root/siriusx/packages/kernel-api"
+      },
+      "@siriusx/kernel-dsh": {
+        "from": "@siriusx/kernel-dsh",
+        "version": "link:../../packages/kernel-dsh",
+        "path": "/root/siriusx/packages/kernel-dsh"
+      }
+    },
+    "devDependencies": {
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-telemetry-off",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/telemetry-off",
+    "private": true,
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "link:../../node_modules/.pnpm/typescript@6.0.3/node_modules/typescript",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/dsh-telemetry-off-desktop",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/telemetry-off-desktop",
+    "private": true,
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "link:../../node_modules/.pnpm/typescript@6.0.3/node_modules/typescript",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  }
+]

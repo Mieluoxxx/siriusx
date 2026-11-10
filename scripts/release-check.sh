@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Local release gate: static checks, tests, install coverage, plugin bundle and feed syntax.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+echo '== typecheck'
+pnpm typecheck
+echo '== tests'
+pnpm test
+echo '== fork discipline'
+./scripts/check-fork-discipline.sh
+echo '== install coverage'
+./scripts/check-install-coverage.sh
+echo '== plugin bundle'
+OUT="$(mktemp -d)" ./deploy/release/build-plugin-bundle.sh
+echo '== update feed syntax'
+bash -n deploy/release/update-feed/build-feed.sh
+node --check deploy/release/update-feed/server.mjs
+echo '== sbom'
+mkdir -p artifacts/release
+pnpm list -r --depth 0 --json > artifacts/release/dependencies.json
+echo 'release checks OK'

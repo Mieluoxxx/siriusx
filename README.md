@@ -82,6 +82,14 @@ pnpm test
 ./scripts/smoke-pi-conversation.sh
 ```
 
+## 发布前本地门禁
+
+```bash
+./scripts/release-check.sh
+```
+
+会依次跑 typecheck、test、fork discipline、安装覆盖、插件 bundle、更新 feed 语法检查和依赖清单。
+
 ## 魔改纪律
 
 - 只 fork 桌面外壳（`apps/desktop`），不改 agent 内核。
