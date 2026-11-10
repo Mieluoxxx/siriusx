@@ -245,7 +245,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **验收标准。**
 
 - [x] ACP 后端对着 S2 的场景剧本全部通过。证据：`02-acp-backend/test.txt`、`cloud-acp-docker.txt`、`03-real-dsh-acp/run.txt`（真实 dsh ACP）；不是完整 S2 剧本。
-- [ ] 同一组场景分别在本地直调的 dsh 和云端经 ACP 的 dsh 上运行，两边产生的契约事件序列一致。**未完成**。
+- [x] 同一组场景分别在本地直调的 dsh 和云端经 ACP 的 dsh 上运行，两边产生的契约事件序列一致。证据：`evidence/S7/15-dsh-local-cloud-sequences/run.txt`（两边均为 `user.message, turn.start, assistant.attempt.start, assistant.delta, assistant.attempt.end, assistant.message, turn.end`）。
 - [x] 两个任务的沙箱互相看不到进程和文件。证据：`evidence/S7/01-cloud-executor/docker-isolation.txt`（文件隔离；进程隔离由独立容器保证）。
 - [x] 沙箱内访问白名单以外的地址被拒绝。证据：`--network none` 下 fetch 失败。
 - [x] 沙箱销毁后 workdir 还在，`resume` 在新沙箱里续上了同一个会话。**部分完成**：volume 持久化已验；ACP resume 未实现。证据：`docker-isolation.txt`。

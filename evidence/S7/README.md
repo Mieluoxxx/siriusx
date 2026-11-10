@@ -85,3 +85,10 @@
 - 本地 mock GitLab API 串通 issue → branch → file → MR；写操作经 tool-gateway 审批，审计无 token。
 - 证据：`14-gitlab-issue-mr/test.txt`。
 - 仍未接真实 GitLab 仓库凭据。
+
+## Local vs Cloud DSH 事件序列
+
+- 同一 prompt 分别由本地 `AcpBackend` 与 Docker `AcpCloudKernel` 跑真实 DSH ACP；
+- `AcpCloudKernel` 新增 `onEvent`；
+- 两边事件类型序列一致。
+- 证据：`15-dsh-local-cloud-sequences/run.txt`。

@@ -1,0 +1,32 @@
+{
+  "localTypes": [
+    "user.message",
+    "turn.start",
+    "assistant.attempt.start",
+    "assistant.delta",
+    "assistant.attempt.end",
+    "assistant.message",
+    "turn.end"
+  ],
+  "cloudTypes": [
+    "user.message",
+    "turn.start",
+    "assistant.attempt.start",
+    "assistant.delta",
+    "assistant.attempt.end",
+    "assistant.message",
+    "turn.end"
+  ],
+  "localReport": "assistant.message",
+  "cloudReport": {
+    "kind": "ready",
+    "summary": "SiriusX offline mock reply: S1 conversation OK.",
+    "diffStats": {
+      "filesChanged": 0,
+      "insertions": 0,
+      "deletions": 0
+    },
+    "diffBasis": "baseRef"
+  },
+  "same": true
+}

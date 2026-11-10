@@ -299,6 +299,7 @@ export interface AcpCloudKernelOptions {
   readonly startDelayMs?: number
   /** Copy one local executable/script into the sandbox before spawning it. */
   readonly copyIn?: { readonly localPath: string; readonly remotePath: string }
+  readonly onEvent?: (event: AgentEvent) => void
 }
 
 function parseDiffStats(output: string): { filesChanged: number; insertions: number; deletions: number } {
@@ -332,6 +333,7 @@ export class AcpCloudKernel {
     const unsubscribe = session.subscribe(batch => {
       events.push(...batch)
       for (const event of batch) {
+        this.#options.onEvent?.(event)
         if (event.type === 'permission.request') {
           session.capabilities.permissions?.respond(event.request.requestId, { kind: this.#options.permission ?? 'allow-once' })
         }
