@@ -153,5 +153,6 @@
 
 - 新增 feed 生成脚本与静态服务；
 - 本地生成 `stable.yml`，包含 artifact sha512/size；
-- `/health`、manifest、artifact 下载通过。
+- `/health`、manifest、artifact 下载通过；
+- Desktop builder 支持 `SIRIUSX_UPDATE_URL` / `SIRIUSX_UPDATE_CHANNEL`。
 - 证据：`16-update-feed/`。

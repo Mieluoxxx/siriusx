@@ -1,0 +1,21 @@
+{
+  "stable": {
+    "environment": "production",
+    "channel": "stable",
+    "target": "mac-arm64",
+    "origin": "https://updates.siriusx.example",
+    "keyPrefix": "",
+    "binaryKeyPrefix": "",
+    "publicUrl": "https://updates.siriusx.example/desktop/"
+  },
+  "nightly": {
+    "environment": "production",
+    "channel": "nightly",
+    "target": "win-x64",
+    "origin": "https://updates.siriusx.example",
+    "keyPrefix": "",
+    "binaryKeyPrefix": "",
+    "publicUrl": "https://updates.siriusx.example/desktop/"
+  },
+  "rejected": true
+}
