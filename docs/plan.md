@@ -221,7 +221,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [ ] 在 agent 进程的环境变量和日志里搜索连接器凭据，找不到。**部分完成**：审计/结果无 token；真实 sandbox env 未验。
 - [x] 用一个 `ticketId` 能查出这张工单的完整轨迹。证据：`GET /v1/tickets/:id/trace` 合并 ticket 事件 + tool-gateway 审计 + analytics `.l0l1.jsonl`；`evidence/S6/04-trace/test.txt`。
 - [x] 停掉事件总线，任务照常执行完。**SDK 级**证据：`packages/analytics` sink 故障不抛出。
-- [ ] 跑一个本地任务并抓包，上行的数据里没有提示词、代码和命令输出的原文。**部分完成**：`streamEventsForBot` 过滤 log；device agent 额外过滤 assistant/tool 内容，含本地 secret 的测试通过；真实抓包未做。证据：`evidence/S10/09-uplink-redaction/`。
+- [x] 跑一个本地任务并抓包，上行的数据里没有提示词、代码和命令输出的原文。证据：`streamEventsForBot` 过滤 log；device agent 只上行 lifecycle/report；主机 tcpdump 27 packets 中不含 `LOCAL_SECRET_CODE_42`。`evidence/S10/09-uplink-redaction/`、`10-packet-capture/`、`11-tcpdump-capture/`。
 
 **产出物。** 工具网关，审计库，分析事件采集。
 
@@ -317,7 +317,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 - [ ] 在手机上批准一个审批，电脑上等待中的任务随即继续。**部分完成**：390×844 手机 viewport 审批 + tool-gateway callback + waiting BotService `resume` 全链路通过；真实 iOS/Android 真机与真实等待 agent 未验。证据：`evidence/S10/07-approval-resume/`、`08-mobile-approval-resume/`。
 - [x] 在手机上选择公司电脑的一个本地目录发起任务，任务在那台电脑上执行，手机上能看到状态和报告摘要。**浏览器仿真通过**：`evidence/S10/05-device-ui/`。
-- [ ] 手机发起本地任务期间在云端抓包，经过云端的只有状态与摘要，没有日志和文件内容。**部分完成**：设备代理现在只上行 state/report/activity/turn 边界/permission，assistant 文本与 tool 输出被过滤；用含本地 secret 的仓库测试，control-plane 轨迹不含 secret；device-agent→gateway 透明 WebSocket 帧级抓包也不含 secret。真实主机网络抓包未做。证据：`evidence/S10/09-uplink-redaction/`、`10-packet-capture/`。
+- [ ] 手机发起本地任务期间在云端抓包，经过云端的只有状态与摘要，没有日志和文件内容。**部分完成**：设备代理现在只上行 state/report/activity/turn 边界/permission，assistant 文本与 tool 输出被过滤；用含本地 secret 的仓库测试，control-plane 轨迹不含 secret；device-agent→gateway 透明 WebSocket 帧级抓包也不含 secret；主机 tcpdump 27 packets 也不含 secret。真实手机/云端网络环境仍未验。证据：`evidence/S10/09-uplink-redaction/`、`10-packet-capture/`、`11-tcpdump-capture/`。
 - [x] 电脑离线时发起任务，工单停在 `person/delivery`，电脑上线后自动重试。证据：`evidence/S10/05-device-ui/offline-retry-test.txt`。
 - [ ] iOS 和 Android 各一台真机上，以上四条都通过。
 

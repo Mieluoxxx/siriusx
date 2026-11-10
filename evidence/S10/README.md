@@ -64,4 +64,4 @@ Team panel 自动变为单列，工单列表、详情、diff 和事件流均可�
 - device agent 只上行 state/report/activity/turn 边界/permission，不上行 assistant.delta、assistant.message、tool.*、log；
 - 测试用包含 `LOCAL_SECRET_CODE_42` 的本地仓库和 fake kernel 输出，control-plane 事件轨迹中不含该内容；
 - 工单仍正常到 `person/review`。
-- 证据：`09-uplink-redaction/test.txt`、`10-packet-capture/run.txt`（WebSocket 帧级抓包）。
+- 证据：`09-uplink-redaction/test.txt`、`10-packet-capture/run.txt`（WebSocket 帧级抓包）、`11-tcpdump-capture/`（主机 tcpdump）。

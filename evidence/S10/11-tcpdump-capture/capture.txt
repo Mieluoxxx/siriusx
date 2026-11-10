@@ -1,0 +1,4 @@
+WIRE_BYTES=8472
+LEAK_DETECTED=false
+27 packets captured
+54 packets received by filter
