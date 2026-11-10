@@ -1,0 +1,6 @@
+{
+  "attr": "disabled",
+  "newSessionVisible": false,
+  "sendVisible": false,
+  "errors": []
+}

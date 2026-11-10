@@ -1,0 +1,13 @@
+import { chromium } from '/root/siriusx/deepseek-harness/node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs'
+const browser=await chromium.launch({headless:true,executablePath:'/root/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome',args:['--no-sandbox']})
+const context=await browser.newContext({viewport:{width:1400,height:900}})
+await context.addInitScript(({token})=>{try{localStorage.setItem('siriusx.controlToken',token);localStorage.setItem('siriusx.controlApi','http://127.0.0.1:4320')}catch{}},{token:process.env.TOKEN})
+const page=await context.newPage(); const errors=[]; page.on('console',m=>{if(m.type()==='error') errors.push(m.text())}); page.on('pageerror',e=>errors.push(String(e)))
+await page.goto(process.env.DSH_URL,{waitUntil:'domcontentloaded'}); await page.waitForTimeout(5000)
+const cont=page.getByRole('button',{name:'Continue'}); if(await cont.count()) await cont.click(); await page.waitForTimeout(1200)
+const attr=await page.evaluate(()=>document.documentElement.dataset.siriusxNativeConversation ?? null)
+const newSessionVisible=await page.locator('[aria-label="New session"]').first().isVisible().catch(()=>false)
+const sendVisible=await page.locator('[aria-label="Send message"]').first().isVisible().catch(()=>false)
+console.log(JSON.stringify({attr,newSessionVisible,sendVisible,errors},null,2))
+await page.screenshot({path:process.env.SHOT,fullPage:true})
+await browser.close()

@@ -35,7 +35,37 @@ function PrivacyBadge(): ReactNode {
   )
 }
 
+function installNativeConversationGate(ctx: ClientContext): void {
+  if (typeof document === 'undefined') return
+  const style = document.createElement('style')
+  style.dataset.plugin = 'siriusx-native-conversation-gate'
+  style.textContent = `
+    html[data-siriusx-native-conversation="disabled"] [aria-label="New session"],
+    html[data-siriusx-native-conversation="disabled"] [aria-label="Send message"],
+    html[data-siriusx-native-conversation="disabled"] [aria-label="Add files or run commands"],
+    html[data-siriusx-native-conversation="disabled"] [aria-label="Choose workspace"] {
+      display: none !important;
+    }
+    html[data-siriusx-native-conversation="disabled"] textarea[placeholder="Choose a workspace to start"] {
+      display: none !important;
+    }
+  `
+  document.head.append(style)
+  ctx.effect(() => () => style.remove(), 'siriusx-brand: native conversation gate')
+  try {
+    const token = localStorage.getItem('siriusx.controlToken')
+    if (token === null || token === '') return
+    void fetch(`${apiBase()}/v1/settings`, { headers: { authorization: `Bearer ${token}` } })
+      .then(response => response.json())
+      .then((settings: { nativeConversationEnabled?: boolean }) => {
+        document.documentElement.dataset.siriusxNativeConversation = settings.nativeConversationEnabled === false ? 'disabled' : 'enabled'
+      })
+      .catch(() => undefined)
+  } catch { /* no persisted session */ }
+}
+
 export function apply(ctx: ClientContext): void {
+  installNativeConversationGate(ctx)
   if (typeof document !== 'undefined') {
     document.title = 'SiriusX'
     const enforceTitle = (): void => { if (document.title !== 'SiriusX') document.title = 'SiriusX' }

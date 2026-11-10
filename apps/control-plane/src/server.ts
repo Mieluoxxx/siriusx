@@ -139,6 +139,18 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         write(response, upstream.status, await upstream.json())
         return
       }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'bots' && parts[2] !== undefined && parts[3] === 'tickets') {
+        if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')
+        const body = await readJson(request)
+        if (typeof body.deviceId !== 'string' || typeof body.path !== 'string' || typeof body.prompt !== 'string') throw new Error('deviceId, path and prompt are required')
+        const ticket = control.createPersonalBotTicket(session, parts[2], body.deviceId, { path: body.path, prompt: body.prompt })
+        const delivered = deviceGateway.sendToDevice(session.tenantId, body.deviceId, {
+          type: 'ticket.assign', ticketId: ticket.ticketId, assignment: ticket.assignment,
+        })
+        if (delivered) control.markDeviceTicketDelivered(session.tenantId, ticket.ticketId)
+        write(response, 202, { ticketId: ticket.ticketId, delivered })
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/bots') {
         write(response, 200, { bots: control.listBots(session) })
         return

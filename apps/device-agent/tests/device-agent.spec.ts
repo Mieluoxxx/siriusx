@@ -43,10 +43,14 @@ describe('device agent', () => {
     const gateway = await startDeviceGateway({ control: server.control, port: 0 })
     gateways.push(gateway)
     server.setDeviceGateway(gateway)
+    const bot = await fetch(`${server.url}/v1/bots`, {
+      method: 'POST', headers: auth, body: JSON.stringify({ name: 'Personal Dev Bot' }),
+    }).then(response => response.json()) as { id: string }
 
     // The device is offline: the ticket waits in person/delivery.
-    const created = await fetch(`${server.url}/v1/devices/${paired.deviceId}/tickets`, {
-      method: 'POST', headers: auth, body: JSON.stringify({ path: root, prompt: 'device task' }),
+    const created = await fetch(`${server.url}/v1/bots/${bot.id}/tickets`, {
+      method: 'POST', headers: auth,
+      body: JSON.stringify({ deviceId: paired.deviceId, path: root, prompt: 'device task' }),
     })
     expect(created.status).toBe(202)
     const assigned = await created.json() as { ticketId: string; delivered: boolean }

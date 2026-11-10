@@ -207,4 +207,18 @@ describe('control plane', () => {
     await new Promise<void>((resolve, reject) => tool.close(error => { error === undefined ? resolve() : reject(error) }))
   })
 
+  it('lets only a personal bot owned by the member dispatch to that member\'s device', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
+    const member = plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
+    const adminSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
+    const memberSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: member.userId, role: 'member' }))
+    const bot = plane.createBot(adminSession, 'Admin Bot')
+    const memberPair = plane.startPairing(memberSession, 'Member Mac')
+    const memberDevice = plane.confirmPairing(memberSession, memberPair.code)
+    expect(() => plane.createPersonalBotTicket(memberSession, bot.id, memberDevice.deviceId, { path: '/tmp', prompt: 'x' })).toThrow(expect.objectContaining({ code: 'BOT_NOT_FOUND' }))
+    expect(() => plane.createPersonalBotTicket(adminSession, bot.id, memberDevice.deviceId, { path: '/tmp', prompt: 'x' })).toThrow(/own device/u)
+  })
+
 })

@@ -330,7 +330,7 @@ export class ControlPlane {
     return row
   }
 
-  createDeviceTicket(session: Session, deviceId: string, input: { path: string; prompt: string }): {
+  createDeviceTicket(session: Session, deviceId: string, input: { path: string; prompt: string; botId?: string }): {
     ticketId: string
     assignment: Record<string, unknown>
   } {
@@ -355,6 +355,7 @@ export class ControlPlane {
       secretRefs: [],
       traceId: ticketId,
       clientContext: { operatorId: `app:${session.userId}`, channel: 'app', platform: 'web', deviceId },
+      ...(input.botId === undefined ? {} : { botId: input.botId }),
     }
     this.#db.prepare('INSERT INTO device_tickets (ticket_id, tenant_id, device_id, path, prompt, stage, delivery_failing, assignment_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)')
       .run(ticketId, session.tenantId, deviceId, input.path, input.prompt, stage, JSON.stringify(assignment), this.#now(), this.#now())
@@ -405,6 +406,20 @@ export class ControlPlane {
     })
     this.#db.prepare('UPDATE device_tickets SET latest_state = ?, report_kind = ?, report_json = ?, stage = ?, updated_at = ? WHERE ticket_id = ?')
       .run(latestState, reportKind, reportJson, stage, this.#now(), ticketId)
+  }
+
+  createPersonalBotTicket(session: Session, botId: string, deviceId: string, input: { path: string; prompt: string }): {
+    ticketId: string
+    assignment: Record<string, unknown>
+  } {
+    const bot = this.#db.prepare('SELECT id FROM bots WHERE id = ? AND tenant_id = ? AND owner_user_id = ?').get(botId, session.tenantId, session.userId)
+    if (bot === undefined) throw new ControlPlaneError(404, 'BOT_NOT_FOUND', botId)
+    const device = this.#db.prepare('SELECT id, user_id, revoked FROM devices WHERE id = ? AND tenant_id = ?').get(deviceId, session.tenantId) as
+      | { id: string; user_id: string; revoked: number } | undefined
+    if (device === undefined) throw new ControlPlaneError(404, 'DEVICE_NOT_FOUND', deviceId)
+    if (device.user_id !== session.userId) throw new ControlPlaneError(403, 'DEVICE_NOT_OWNED', 'personal Bot can only use the member\'s own device')
+    if (device.revoked === 1) throw new ControlPlaneError(410, 'DEVICE_REVOKED', deviceId)
+    return this.createDeviceTicket(session, deviceId, { ...input, botId })
   }
 
   private listDeviceTickets(tenantId: string): Array<{

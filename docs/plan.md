@@ -186,15 +186,15 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 做入口网关的最小版：本机 Executor 主动建立长连接，网关按租户路由。**最小版完成**：`apps/control-plane/src/device-gateway.ts`；任务协议与重连待接。
 - [x] 做租户模型网关的最小版：本机 dsh 用 SSO 短期令牌访问，上游密钥留在服务端。证据：`apps/control-plane/src/model-gateway.ts`、`evidence/S5/03-control-plane/run.txt`。
 - [x] 做设备配对：桌面端显示配对码，成员在已登录的界面里确认。**服务端完成**；桌面配对 UI 待接入。证据：`03-control-plane/run.txt`。
-- [ ] 做个人 Bot 的最小版：成员能创建一个个人 Bot，它能派工给该成员已配对的电脑。本地执行只给个人 Bot（#51）。**部分完成**：创建/列出 personal bot 与每租户 runtime 已有；派工到已配对设备的长连接未实现。
-- [x] 登录后给原生对话标上「个人、不审计」，并提供租户管理员关闭它的开关。**部分完成**：侧栏 badge 已接入，管理员关闭后 badge 消失；原生对话入口本身未禁用。证据：`evidence/S5/04-native-label/`。
+- [x] 做个人 Bot 的最小版：成员能创建一个个人 Bot，它能派工给该成员已配对的电脑。本地执行只给个人 Bot（#51）。证据：`evidence/S5/05-personal-bot/`。
+- [x] 登录后给原生对话标上「个人、不审计」，并提供租户管理员关闭它的开关。证据：`evidence/S5/04-native-label/`（关闭后 New Session/发送/工作区入口不可见）。
 - [ ] 写单机一体的安装脚本，把以上服务装到一台机器上。**骨架完成**：`deploy/single-box/`；镜像构建受当前 Docker 网络阻塞，干净机器复验未完成。
 
 **验收标准。**
 
 - [x] 用命令行开通两个租户；两个租户的 token 互相看不到 bot/ticket。证据：`evidence/S5/03-control-plane/run.txt`。真实 SSO 浏览器双租户截图待补。
 - [x] 不登录时直接请求 Bot 服务的接口，服务端拒绝（401）。证据：`03-control-plane/run.txt` 与单测。
-- [ ] 登录后原生对话带有「个人、不审计」标识。管理员关掉开关后，登录状态下原生对话入口不可用。**部分完成**：badge 显示/隐藏已验；入口禁用未做。证据：`evidence/S5/04-native-label/`。
+- [x] 登录后原生对话带有「个人、不审计」标识。管理员关掉开关后，登录状态下原生对话入口不可用。证据：`evidence/S5/04-native-label/native-disabled.png`、`gate-off.txt`。
 - [x] 未配对的设备和已吊销的设备都建立不了长连接。证据：`apps/control-plane/tests/control-plane.spec.ts`、`evidence/S5/03-control-plane/device-gateway-test.txt`。
 - [ ] 在本机抓包并搜索磁盘，找不到模型上游密钥。**部分完成**：gateway 单测证明上游 key 只在 gateway env；真实抓包未做。
 - [ ] 断网后 15 分钟内恢复，本地任务的状态对账正确。断网超过 15 分钟，工单被结算为 `lost`。**未完成**。
