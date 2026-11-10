@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <style>
+    .b{fill:#f8fafc;stroke:#334155;stroke-width:2;rx:12}
+    .g{fill:#e2e8f0;stroke:#64748b;stroke-width:2;rx:10}
+    .t{font:600 18px DejaVu Sans,sans-serif;fill:#0f172a}
+    .s{font:14px DejaVu Sans,sans-serif;fill:#334155}
+    .a{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#m)}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker></defs>
+  <text x="40" y="45" class="t" font-size="24">SiriusX 当前实现总览（2026-11）</text>
+  <rect x="40" y="90" width="250" height="120" class="b"/><text x="60" y="125" class="t">Web Browser</text><text x="60" y="155" class="s">Team panel / 工单 / 审批</text><text x="60" y="180" class="s">无原生对话、无本地目录入口</text>
+  <rect x="40" y="260" width="250" height="120" class="b"/><text x="60" y="295" class="t">Desktop (DSH thin fork)</text><text x="60" y="325" class="s">原生对话 + Team panel</text><text x="60" y="350" class="s">enterprise SSO gate</text>
+  <rect x="40" y="430" width="250" height="120" class="b"/><text x="60" y="465" class="t">Mobile / Responsive</text><text x="60" y="495" class="s">工单 / 审批 / follow-up</text><text x="60" y="520" class="s">远程已配对设备</text>
+  <rect x="360" y="90" width="300" height="130" class="b"/><text x="380" y="125" class="t">Web Gateway</text><text x="380" y="155" class="s">HttpOnly session cookie</text><text x="380" y="180" class="s">/v1 + DSH upstream cookie</text>
+  <rect x="360" y="260" width="300" height="130" class="b"/><text x="380" y="295" class="t">Control Plane</text><text x="380" y="325" class="s">tenants / SSO / bots / devices</text><text x="380" y="350" class="s">model gateway / tenant isolation</text>
+  <rect x="360" y="430" width="300" height="130" class="b"/><text x="380" y="465" class="t">Tool Gateway</text><text x="380" y="495" class="s">policy / approval / audit</text><text x="380" y="520" class="s">credential provider</text>
+  <rect x="720" y="90" width="430" height="130" class="b"/><text x="740" y="125" class="t">DSH Web Host + Plugins</text><text x="740" y="155" class="s">brand / Team / executor-local</text><text x="740" y="180" class="s">upstream-cookie auth</text>
+  <rect x="720" y="260" width="430" height="130" class="b"/><text x="740" y="295" class="t">Cloud Executor</text><text x="740" y="325" class="s">per-ticket volumes / ACP kernel</text><text x="740" y="350" class="s">Docker sandbox, network none</text>
+  <rect x="720" y="430" width="430" height="130" class="b"/><text x="740" y="465" class="t">Device Gateway + Agent</text><text x="740" y="495" class="s">paired device token / ticket.assign</text><text x="740" y="520" class="s">local_dir follow-up / cancel</text>
+  <rect x="720" y="600" width="430" height="70" class="g"/><text x="740" y="630" class="t">Source Connectors</text><text x="960" y="630" class="s">GitHub / GitLab</text>
+  <path d="M290 150 C320 150 330 150 360 150" class="a"/><path d="M290 320 C320 320 330 320 360 320" class="a"/><path d="M290 490 C320 490 330 490 360 490" class="a"/>
+  <path d="M660 325 C690 325 690 150 720 150" class="a"/><path d="M660 325 C690 325 690 325 720 325" class="a"/><path d="M660 490 C690 490 690 490 720 490" class="a"/>
+  <path d="M510 390 C510 410 510 420 510 430" class="a"/><path d="M720 635 C690 635 660 500 660 490" class="a"/>
+</svg>

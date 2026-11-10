@@ -9,7 +9,7 @@
 
 ## 执行顺序（当前版本）
 
-> **S0 完成；S1–S6 已实现可运行纵切并留下 evidence，仍有人工/真机验收项。下一步 S7。** S0 结论与施工图见 [spike.md](./spike.md)。
+> **S0 完成；S1–S10 已实现可运行纵切并留下 evidence；M1 已以 `executor-v0.1.0` 冻结。仍有人工/真机验收项（签名、真实 IdP/KMS、真实代码平台、客户使用、移动真机）。** S0 结论与施工图见 [spike.md](./spike.md)，当前状态见 [status.md](./status.md)。
 >
 > roadmap #61。#56–#60 之后的顺序，**取代**下面「依赖图」「按人手排期」里的先后关系；节点详情里的内容与验收仍可参考，W1、W2 待 W0/BOT1 定型后按 S0 结论重写。
 
@@ -85,8 +85,8 @@ flowchart LR
 
   subgraph WEB["Web / APP"]
     W0["W0 Bot ⇄ 应用契约"]
-    W1["W1 Web 应用 MVP<br/>云端项目空间 / 工作台 / 控制台核心"]
-    W2["W2 桌面端：同一应用 + 本地 Executor<br/>移动端评估"]
+    W1["W1 Web 应用 MVP（当前）<br/>DSH Web Host 复用同一客户端插件<br/>web-gateway HttpOnly 会话 + Team 工单/审批<br/>云端项目空间仍待接"]
+    W2["W2 桌面端（当前）<br/>DSH Desktop 薄 fork + enterprise SSO gate<br/>Host 内 local Executor + 配对设备远程 local_dir<br/>移动端采用响应式 Web + 远程设备控制"]
     W3["W3 云端个人 Bot<br/>成员自行创建，使用自己的家目录卷"]
     W4["W4 专家<br/>Bot 模板"]
   end

@@ -39,3 +39,10 @@
 
 - 本环境无法运行 macOS notarization / Windows Authenticode。
 - `build-desktop.sh` 必须在目标 OS 上执行；Linux 只验证了配置解析。
+
+## 当前架构图与 roadmap 重写
+
+- `docs/images/01-overview-current.png`：当前总览；
+- `docs/images/04-app-current.png`：Web / Desktop / Mobile 当前形态；
+- `docs/roadmap.md` 的 W1/W2 已按实际实现重写；
+- 证据副本：`04-brand-release-docs/`。

@@ -34,14 +34,14 @@
 
 ## 架构图
 
-图 1–10 使用同一套名称；每张详图把相邻部分画成灰色方块，对应总览图中的同名区块。图 11–15 对应 roadmap #56–#61 的新决议。**图 4 与图 1 中的桌面端部分画于 #56 之前，已过期**，以图 11、图 12 为准。
+图 1–10 使用同一套名称；每张详图把相邻部分画成灰色方块，对应总览图中的同名区块。图 11–15 对应 roadmap #56–#61 的新决议。**图 1 与图 4 已在 2026-11 按当前实现重画，旧图不再用于实现说明**；当前图见下方 `*-current.png`。
 
 | 图 | 内容 | 文件 |
 | --- | --- | --- |
-| 图 1 | 总览：各部分的位置与之间的契约 | [images/01-overview.png](./images/01-overview.png) |
+| 图 1 | 总览：各部分的位置与之间的契约（当前实现） | [images/01-overview-current.png](./images/01-overview-current.png) |
 | 图 2 | Bot：接入、准入、Engine、回复 | [images/02-bot.png](./images/02-bot.png) |
 | 图 3 | 云端执行：每任务沙箱与家目录卷 | [images/03-cloud-executor.png](./images/03-cloud-executor.png) |
-| 图 4 | 应用：Web / 桌面端 / 移动端 | [images/04-app.png](./images/04-app.png) |
+| 图 4 | 应用：Web / 桌面端 / 移动端（当前实现） | [images/04-app-current.png](./images/04-app-current.png) |
 | 图 5 | 管理后台：管理面 | [images/05-admin.png](./images/05-admin.png) |
 | 图 6 | 任务生命周期 | [images/06-task-lifecycle.png](./images/06-task-lifecycle.png) |
 | 图 7 | 部署与信任边界 | [images/07-deployment-trust.png](./images/07-deployment-trust.png) |

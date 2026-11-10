@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640">
+  <style>
+    .b{fill:#f8fafc;stroke:#334155;stroke-width:2;rx:12}
+    .g{fill:#e2e8f0;stroke:#64748b;stroke-width:2;rx:10}
+    .t{font:600 19px DejaVu Sans,sans-serif;fill:#0f172a}.s{font:14px DejaVu Sans,sans-serif;fill:#334155}
+  </style>
+  <text x="40" y="45" class="t" font-size="24">SiriusX 应用形态（当前）</text>
+  <rect x="40" y="90" width="340" height="460" class="b"/><text x="60" y="130" class="t">Web</text>
+  <rect x="60" y="155" width="300" height="100" class="g"/><text x="75" y="190" class="t">Team panel</text><text x="75" y="218" class="s">Bot / 工单 / 七阶段 / 审批</text>
+  <rect x="60" y="275" width="300" height="100" class="g"/><text x="75" y="310" class="t">Web Gateway</text><text x="75" y="338" class="s">SSO HttpOnly + /v1 proxy</text>
+  <rect x="60" y="395" width="300" height="100" class="g"/><text x="75" y="430" class="t">不提供</text><text x="75" y="458" class="s">原生对话 / 本地目录表单</text>
+  <rect x="430" y="90" width="340" height="460" class="b"/><text x="450" y="130" class="t">Desktop</text>
+  <rect x="450" y="155" width="300" height="100" class="g"/><text x="465" y="190" class="t">DSH 原生对话</text><text x="465" y="218" class="s">个人 / 企业登录 gate</text>
+  <rect x="450" y="275" width="300" height="100" class="g"/><text x="465" y="310" class="t">Team panel + 品牌插件</text><text x="465" y="338" class="s">工单 / 审批 / 会话事件</text>
+  <rect x="450" y="395" width="300" height="100" class="g"/><text x="465" y="430" class="t">Local Executor Host 插件</text><text x="465" y="458" class="s">真实 DSH / workdir / diff</text>
+  <rect x="820" y="90" width="340" height="460" class="b"/><text x="840" y="130" class="t">Mobile</text>
+  <rect x="840" y="155" width="300" height="100" class="g"/><text x="855" y="190" class="t">响应式 Team panel</text><text x="855" y="218" class="s">390×844 / 审批 / follow-up</text>
+  <rect x="840" y="275" width="300" height="100" class="g"/><text x="855" y="310" class="t">远程设备控制</text><text x="855" y="338" class="s">已配对设备 / local_dir / Stop</text>
+  <rect x="840" y="395" width="300" height="100" class="g"/><text x="855" y="430" class="t">无原生 App</text><text x="855" y="458" class="s">先验证响应式 Web；真机待验</text>
+  <rect x="40" y="575" width="1120" height="45" class="g"/><text x="60" y="604" class="s">共享：app-contract · control-plane · bot/device/tool gateways · DSH plugin layer（plugins/ 与 deepseek-harness 同级）</text>
+</svg>

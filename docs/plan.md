@@ -326,8 +326,8 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 ## 收尾
 
 - [ ] 上面每个方框都已打勾，每个勾都有对应的证据文件。
-- [ ] roadmap 里 W1、W2 两个节点已按实际做法重写。
-- [ ] [architecture.md](./architecture.md) 的图 1 与图 4 已重画。
+- [x] roadmap 里 W1、W2 两个节点已按实际做法重写。证据：`docs/roadmap.md`。
+- [x] [architecture.md](./architecture.md) 的图 1 与图 4 已重画。证据：`docs/images/01-overview-current.png`、`docs/images/04-app-current.png`。
 
 ## 附录 A. 还没验证的前提
 
