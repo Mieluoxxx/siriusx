@@ -1,0 +1,11 @@
+$ vitest run tests/docker.integration.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/packages/cloud-executor
+
+ ✓ tests/docker.integration.spec.ts (1 test) 1394ms
+     ✓ isolates workdirs, persists volumes across sandbox destruction and blocks network  1392ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:51:22
+   Duration  1.65s (transform 66ms, setup 0ms, import 133ms, tests 1.39s, environment 0ms)

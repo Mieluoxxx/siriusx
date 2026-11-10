@@ -120,11 +120,20 @@ function TicketPanel(): ReactNode {
   }
 
   return (
-    <div style={styles.page} data-testid="siriusx-team-panel">
-      <div style={styles.header}>
+    <div style={styles.page} data-testid="siriusx-team-panel" className="sx-team-page">
+      <style>{`
+        @media (max-width: 760px) {
+          .sx-team-header { flex-wrap: wrap; }
+          .sx-team-header .sx-team-tabs { margin-left: 0; width: 100%; overflow-x: auto; }
+          .sx-team-body { grid-template-columns: 1fr !important; }
+          .sx-team-list { border-right: 0 !important; max-height: 48vh; }
+          .sx-team-detail { border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+        }
+      `}</style>
+      <div style={styles.header} className="sx-team-header">
         <span style={styles.title}>SiriusX Team</span>
         <span style={{ ...styles.stage, fontSize: 12 }}>{bots.length} bot · {tickets.length} ticket</span>
-        <div style={styles.tabs}>
+        <div style={styles.tabs} className="sx-team-tabs">
           {(['tickets', 'bots', 'approvals'] as const).map(item => (
             <button key={item} style={{ ...styles.button, fontWeight: tab === item ? 700 : 400 }} onClick={() => setTab(item)}>{item}</button>
           ))}
@@ -133,8 +142,8 @@ function TicketPanel(): ReactNode {
       </div>
       {error !== undefined ? <div style={{ padding: '8px 16px', color: '#d33' }}>Bot API: {error}</div> : null}
       {tab === 'tickets' ? (
-        <div style={styles.body}>
-          <div style={{ ...styles.list, display: 'flex', flexDirection: 'column' }}>
+        <div style={styles.body} className="sx-team-body">
+          <div style={{ ...styles.list, display: 'flex', flexDirection: 'column' }} className="sx-team-list">
             <div style={styles.form}>
               <input style={styles.input} placeholder="Local repository path (absolute)" value={repo} onChange={event => setRepo(event.target.value)} />
               <textarea style={{ ...styles.input, minHeight: 54 }} placeholder="What should the bot do?" value={prompt} onChange={event => setPrompt(event.target.value)} />
@@ -158,7 +167,7 @@ function TicketPanel(): ReactNode {
               ))}
             </div>
           </div>
-          <div style={styles.detail}>
+          <div style={styles.detail} className="sx-team-detail">
             {selectedTicket === undefined ? <p style={{ opacity: 0.65 }}>Select a ticket to inspect its report and events.</p> : (
               <>
                 <div style={styles.row}>

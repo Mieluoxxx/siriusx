@@ -1,0 +1,98 @@
+Workspaces
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+[
+  {
+    "text": "DSH Local Build0.2.2-rc.1-fcc0ad4",
+    "aria": "New session",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Open sidebar",
+    "visible": true
+  },
+  {
+    "text": "New Session",
+    "aria": "New session",
+    "visible": true
+  },
+  {
+    "text": "Plugins",
+    "aria": "Plugins",
+    "visible": true
+  },
+  {
+    "text": "Automation tasks",
+    "aria": "Automation tasks",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Unpin Automation tasks from sidebar",
+    "visible": true
+  },
+  {
+    "text": "▣Team",
+    "aria": "Team",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Unpin Team from sidebar",
+    "visible": true
+  },
+  {
+    "text": "More",
+    "aria": "More",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Search sessions",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "View options",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Add workspace",
+    "visible": true
+  },
+  {
+    "text": "More",
+    "aria": "Account menu",
+    "visible": true
+  },
+  {
+    "text": "Choose workspace",
+    "aria": "Choose workspace",
+    "visible": true
+  },
+  {
+    "text": "Standard mode",
+    "aria": null,
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Add files or run commands",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Send message",
+    "visible": true
+  },
+  {
+    "text": "",
+    "aria": "Open sidebar",
+    "visible": true
+  }
+]

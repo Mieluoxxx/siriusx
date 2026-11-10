@@ -1,0 +1,26 @@
+{
+  "name": "@siriusx/kernel-acp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ACP v1 client backend for SiriusX cloud Executor (dsh/pi/third-party agents over stdio).",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "1.4.0",
+    "@siriusx/kernel-api": "workspace:*",
+    "zod": "4.4.3",
+    "@siriusx/cloud-executor": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "@siriusx/contracts": "workspace:*"
+  }
+}

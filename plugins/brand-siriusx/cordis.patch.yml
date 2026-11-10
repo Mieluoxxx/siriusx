@@ -1,0 +1,6 @@
+- id: ui-brand-official
+  disabled: true
+
+- insert:
+    - id: siriusx-brand
+      name: '@siriusx/dsh-client-brand'

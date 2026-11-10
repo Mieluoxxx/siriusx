@@ -1,0 +1,5 @@
+{
+  "panel": 1,
+  "body": "Workspaces\nSiriusX Team\n1 bot · 2 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\nperson/review\nopen\n67b072f7-f78b · reported\nlocal fake kernel finished\nperson/review\nopen\nf1f5594f-519e · reported\nlocal fake kernel finished\nperson/review\nreported\nf1f5594f-519e-4e35-b141-4cfba14962ab\nlocal fake kernel finished\n{\n  \"filesChanged\": 1,\n  \"insertions\": 1,\n  \"deletions\": 0\n}\nSend\nStop\nEvents\n{\"type\":\"state\",\"seq\":0,\"at\":\"2026-11-10T15:04:31.332Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":1,\"at\":\"2026-11-10T15:04:31.332Z\",\"state\":\"running\"}\n{\"type\":\"report\",\"seq\":2,\"at\":\"2026-11-10T15:04:31.339Z\",\"report\":{\"kind\":\"ready\",\"summary\":\"local fake kernel finished\",\"diffStats\":{\"filesChanged\":1,\"insertions\":1,\"deletions\":0},\"diffBasis\":\"ticketStart\"}}\n{\"type\":\"state\",\"seq\":3,\"at\":\"2026-11-10T15:04:31.339Z\",\"state\":\"reported\"}",
+  "errors": []
+}

@@ -1,0 +1,30 @@
+{
+  "platform": "darwin",
+  "productName": "SiriusX",
+  "artifactName": "siriusx-${version}-${os}-${arch}-unsigned.${ext}",
+  "protocols": [
+    {
+      "name": "SiriusX",
+      "schemes": [
+        "dsh"
+      ]
+    }
+  ],
+  "macIcon": "/root/siriusx/deploy/release/brand/siriusx-icon-macos.png",
+  "winIcon": "/root/siriusx/deploy/release/brand/siriusx-icon-windows.ico"
+}
+{
+  "platform": "win32",
+  "productName": "SiriusX",
+  "artifactName": "siriusx-${version}-${os}-${arch}-unsigned.${ext}",
+  "protocols": [
+    {
+      "name": "SiriusX",
+      "schemes": [
+        "dsh"
+      ]
+    }
+  ],
+  "macIcon": "/root/siriusx/deploy/release/brand/siriusx-icon-macos.png",
+  "winIcon": "/root/siriusx/deploy/release/brand/siriusx-icon-windows.ico"
+}

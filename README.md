@@ -58,6 +58,10 @@ DSH 插件必须是独立 package；能用插件或独立 package 完成的能�
 - S4：Team panel 客户端插件、应用契约、本地 Bot API 完成；审批/打断 UI 与 10 天自用待补。
 - S5：OIDC Host provider、租户控制面、设备配对、模型网关、Desktop 企业 gate 完成；长连接网关/真实安装待补。
 - S6：工具网关、审批/审计、analytics SDK、local_dir 上行过滤完成；KMS/真实抓包待补。
+- S7：CloudExecutor、Docker 沙箱隔离/卷持久化、ACP v1 后端、Docker 内 ACP 任务完成；真实 dsh/pi 与代码平台待补。
+- S8：SiriusX 品牌插件/图标、electron-builder 品牌参数、离线包与冻结条款骨架完成；签名/真机安装待补。
+- S9：DSH Web Host 复用同一 Team 工单插件；SSO/鉴权反向代理待补。
+- S10：390×844 响应式 Web 评估通过；真机、移动审批、远程本地目录待补。
 
 ## 魔改纪律
 
