@@ -39,8 +39,8 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 这四条对每一步都生效，每一步的验收都默认包含它们。
 
-- [ ] **fork 只动外壳。** 对上游的改动只落在 `apps/desktop` 下。证据：`git diff --stat <上游标签>` 的输出，改动文件数是个位数。
-- [ ] **只 rebase 不 merge。** 上游是单独一个 remote，我方分支每季度 rebase 一次。证据：分支历史是线性的。
+- [x] **fork 只动外壳。** 对上游的改动只落在 `apps/desktop` 下。证据：`scripts/check-fork-discipline.sh`，当前 9 个文件，全部在 `apps/desktop/`；`evidence/S1/05-fork-discipline/check.txt`。
+- [x] **只 rebase 不 merge。** 上游是单独一个 remote，我方分支每季度 rebase 一次。证据：`check-fork-discipline.sh` 校验 `siriusx-s1-base..HEAD` 无 merge commit；`evidence/S1/05-fork-discipline/check.txt`。
 - [ ] **从 S5 起始终能单机一体安装。** 每加一个服务，安装脚本同步更新。证据：安装脚本在一台干净机器上跑通的日志。
 - [ ] **权限只在服务端判定。** 界面插件只负责显示。证据：改掉本机插件的启用状态后，服务端仍然拒绝请求的记录。
 

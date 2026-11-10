@@ -35,3 +35,12 @@
 | `02-conversation/` | 本地 mock LLM 与离线对话脚本 |
 | `03-build/` | Desktop 构建日志与 Linux 启动阻塞日志 |
 | `04-rebase/` | rebase 演练 |
+
+## Fork 纪律自动检查
+
+- `scripts/check-fork-discipline.sh`；
+- 校验相对 `siriusx-s1-base` 的改动全部在 `apps/desktop/` 下；
+- 改动文件数必须小于 10；
+- 历史中不得有 merge commit；
+- 当前结果：9 个文件，全部在 `apps/desktop/`，无 merge。
+- 证据：`05-fork-discipline/check.txt`、`desktop-typecheck.txt`。

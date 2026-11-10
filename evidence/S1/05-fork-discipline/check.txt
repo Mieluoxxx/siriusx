@@ -1,0 +1,11 @@
+base=siriusx-s1-base head=dfe724634d files=9
+apps/desktop/resources/enterprise.json
+apps/desktop/scripts/electron-builder-config.mjs
+apps/desktop/scripts/siriusx-update-config.mjs
+apps/desktop/src/client/WelcomePage.tsx
+apps/desktop/src/enterprise.ts
+apps/desktop/src/main.ts
+apps/desktop/src/preload-welcome.ts
+apps/desktop/src/welcome-api.ts
+apps/desktop/src/welcome-window.ts
+fork discipline OK
