@@ -1,0 +1,17 @@
+{
+  "before": "Workspaces\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\npending · medium\nacme/repo\napprove from mobile\nticket 8ee37368-61fd-46a7-84c0-5e32fee32b81\nApprove\nReject",
+  "after": "Workspaces\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\napproved · medium\nacme/repo\napprove from mobile\nticket 8ee37368-61fd-46a7-84c0-5e32fee32b81\nApprove\nReject",
+  "errors": []
+}
+{
+  "assignments": [
+    {
+      "kind": "start",
+      "state": "reported"
+    },
+    {
+      "kind": "resume",
+      "state": "reported"
+    }
+  ]
+}

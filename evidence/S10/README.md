@@ -48,3 +48,13 @@ Team panel 自动变为单列，工单列表、详情、diff 和事件流均可�
 - 证据：`07-approval-resume/run.txt`。
 
 仍缺：真实手机 UI 审批与真实等待中 agent 的同一条链路联调。
+
+## 手机审批唤醒等待任务（浏览器仿真）
+
+- control-plane 以 `SIRIUSX_BOT_SCENARIO=waiting` 创建一条等待工单；
+- tool-gateway 产生与 ticketId 绑定的审批卡；
+- 390×844 手机 viewport 经 web-gateway 打开 approvals，点击 Approve；
+- tool-gateway callback 唤醒工单，数据库出现 `start → resume` 两个 assignment。
+- 证据：`08-mobile-approval-resume/run.txt`、`mobile-approval-resume.png`。
+
+仍缺：真实 iOS/Android 真机与真实等待中 agent 的同链路联调。
