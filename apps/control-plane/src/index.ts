@@ -447,6 +447,21 @@ export class ControlPlane {
       .run(this.#now(), stage, this.#now(), ticketId)
   }
 
+  /** Settle delivered-but-unreported device assignments after an offline grace period. */
+  markDeviceOffline(tenantId: string, deviceId: string): number {
+    const rows = this.#db.prepare("SELECT ticket_id, event_count FROM device_tickets WHERE tenant_id = ? AND device_id = ? AND delivered_at IS NOT NULL AND latest_state IN ('preparing','running','backgrounded')")
+      .all(tenantId, deviceId) as Array<{ ticket_id: string; event_count: number }>
+    for (const row of rows) {
+      const event = { type: 'state', seq: row.event_count, at: new Date(this.#now()).toISOString(), state: 'lost' }
+      this.#db.prepare('INSERT OR REPLACE INTO device_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
+        .run(row.ticket_id, row.event_count, JSON.stringify(event))
+      const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false, latest: { state: 'lost' } })
+      this.#db.prepare('UPDATE device_tickets SET latest_state = ?, stage = ?, event_count = ?, updated_at = ? WHERE ticket_id = ?')
+        .run('lost', stage, row.event_count + 1, this.#now(), row.ticket_id)
+    }
+    return rows.length
+  }
+
   pendingDeviceAssignments(tenantId: string, deviceId: string): Array<{ ticketId: string; assignment: unknown }> {
     const rows = this.#db.prepare('SELECT ticket_id, assignment_json FROM device_tickets WHERE tenant_id = ? AND device_id = ? AND delivered_at IS NULL')
       .all(tenantId, deviceId) as Array<{ ticket_id: string; assignment_json: string | null }>

@@ -14,6 +14,7 @@ export interface ControlPlaneServerOptions {
   readonly analyticsPath?: string
   readonly ssoServiceToken?: string
   readonly botScenario?: 'ready' | 'waiting'
+  readonly deviceOfflineLostMs?: number
 }
 
 export interface ControlPlaneServer {
@@ -59,6 +60,8 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   const toolGatewayUrl = options.toolGatewayUrl
   const analyticsPath = options.analyticsPath
   const ssoServiceToken = options.ssoServiceToken
+  const offlineTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const offlineLostMs = options.deviceOfflineLostMs ?? 15 * 60 * 1000
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, CORS).end()
@@ -291,6 +294,9 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         }
       })
       gateway.setConnectHandler(auth => {
+        const key = `${auth.tenantId}/${auth.deviceId}`
+        const timer = offlineTimers.get(key)
+        if (timer !== undefined) { clearTimeout(timer); offlineTimers.delete(key) }
         for (const pending of control.pendingDeviceAssignments(auth.tenantId, auth.deviceId)) {
           const delivered = gateway.sendToDevice(auth.tenantId, auth.deviceId, {
             type: 'ticket.assign',
@@ -300,9 +306,22 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
           if (delivered) control.markDeviceTicketDelivered(auth.tenantId, pending.ticketId)
         }
       })
+      gateway.setDisconnectHandler(auth => {
+        const key = `${auth.tenantId}/${auth.deviceId}`
+        const previous = offlineTimers.get(key)
+        if (previous !== undefined) clearTimeout(previous)
+        const timer = setTimeout(() => {
+          offlineTimers.delete(key)
+          if (!gateway.connectedDevices(auth.tenantId).includes(auth.deviceId)) control.markDeviceOffline(auth.tenantId, auth.deviceId)
+        }, offlineLostMs)
+        timer.unref?.()
+        offlineTimers.set(key, timer)
+      })
     },
     close: async () => {
       await new Promise<void>((resolve, reject) => server.close(error => { error === undefined ? resolve() : reject(error) }))
+      for (const timer of offlineTimers.values()) clearTimeout(timer)
+      offlineTimers.clear()
       control.close()
     },
   }

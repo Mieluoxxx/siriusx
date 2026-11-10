@@ -191,4 +191,48 @@ describe('device agent', () => {
     expect(detail?.stage).toBe('person/review')
   })
 
+  it('settles a running device assignment as lost after the offline grace period', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-device-offline-lost-'))
+    roots.push(root)
+    await execFileAsync('git', ['init', '-q'], { cwd: root })
+    await execFileAsync('git', ['config', 'user.email', 'test@example.com'], { cwd: root })
+    await execFileAsync('git', ['config', 'user.name', 'Test'], { cwd: root })
+    await writeFile(join(root, 'app.txt'), 'one\n')
+    await execFileAsync('git', ['add', '.'], { cwd: root })
+    await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret', deviceOfflineLostMs: 100 })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
+    const pair = await fetch(`${server.url}/v1/devices/pair/start`, { method: 'POST', headers: auth, body: JSON.stringify({ name: 'Offline Device' }) }).then(r => r.json()) as { code: string }
+    const paired = await fetch(`${server.url}/v1/devices/pair/confirm`, { method: 'POST', headers: auth, body: JSON.stringify({ code: pair.code }) }).then(r => r.json()) as { deviceId: string; token: string }
+    const bot = await fetch(`${server.url}/v1/bots`, { method: 'POST', headers: auth, body: JSON.stringify({ name: 'Offline Bot' }) }).then(r => r.json()) as { id: string }
+    const gateway = await startDeviceGateway({ control: server.control, port: 0 })
+    gateways.push(gateway)
+    server.setDeviceGateway(gateway)
+    const executor = new LocalExecutor({ tenantId: tenant.id, backend: new FakeKernel({ defaultScenario: { steps: [{ kind: 'wait', millis: 60_000 }] } }) })
+    const agent = await startDeviceAgent({ url: gateway.url, token: paired.token, executor })
+    await agent.ready
+    const created = await fetch(`${server.url}/v1/bots/${bot.id}/tickets`, {
+      method: 'POST', headers: auth, body: JSON.stringify({ deviceId: paired.deviceId, path: root, prompt: 'run then disconnect' }),
+    }).then(r => r.json()) as { ticketId: string; delivered: boolean }
+    expect(created.delivered).toBe(true)
+    for (let index = 0; index < 100; index++) {
+      const detail = await fetch(`${server.url}/v1/tickets/${created.ticketId}`, { headers: auth }).then(r => r.json()) as { stage: string }
+      if (detail.stage === 'working') break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    agent.close()
+    let final: { stage: string; latestAssignment?: { state: string } } | undefined
+    for (let index = 0; index < 100; index++) {
+      final = await fetch(`${server.url}/v1/tickets/${created.ticketId}`, { headers: auth }).then(r => r.json()) as typeof final
+      if (final?.latestAssignment?.state === 'lost') break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    expect(final?.latestAssignment?.state).toBe('lost')
+    expect(final?.stage).toBe('idle')
+  }, 15_000)
+
 })

@@ -87,6 +87,7 @@ try {
       ...(process.env.SIRIUSX_ANALYTICS_PATH === undefined ? {} : { analyticsPath: process.env.SIRIUSX_ANALYTICS_PATH }),
       ...(process.env.SIRIUSX_SSO_SERVICE_TOKEN === undefined ? {} : { ssoServiceToken: process.env.SIRIUSX_SSO_SERVICE_TOKEN }),
       ...(process.env.SIRIUSX_BOT_SCENARIO === 'waiting' ? { botScenario: 'waiting' as const } : {}),
+      ...(process.env.SIRIUSX_DEVICE_OFFLINE_LOST_MS === undefined ? {} : { deviceOfflineLostMs: Number(process.env.SIRIUSX_DEVICE_OFFLINE_LOST_MS) }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,

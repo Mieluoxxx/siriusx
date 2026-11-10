@@ -15,6 +15,7 @@ export interface DeviceGateway {
   sendToDevice(tenantId: string, deviceId: string, message: unknown): boolean
   setMessageHandler(handler: (auth: { tenantId: string; userId: string; deviceId: string }, message: Record<string, unknown>) => void): void
   setConnectHandler(handler: (auth: { tenantId: string; userId: string; deviceId: string }) => void): void
+  setDisconnectHandler(handler: (auth: { tenantId: string; userId: string; deviceId: string }) => void): void
   closeDevice(deviceId: string): void
   close(): Promise<void>
 }
@@ -32,6 +33,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
   const messages = new Map<string, Array<Record<string, unknown>>>()
   let messageHandler: ((auth: { tenantId: string; userId: string; deviceId: string }, message: Record<string, unknown>) => void) | undefined
   let connectHandler: ((auth: { tenantId: string; userId: string; deviceId: string }) => void) | undefined
+  let disconnectHandler: ((auth: { tenantId: string; userId: string; deviceId: string }) => void) | undefined
   const server = new WebSocketServer({ port: options.port ?? 4322, host: options.host ?? '127.0.0.1' })
   await new Promise<void>((resolve, reject) => {
     server.once('listening', resolve)
@@ -75,7 +77,12 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
         socket.close(4001, 'device token revoked')
       }
     })
-    socket.on('close', () => { if (connections.get(auth.deviceId)?.socket === socket) connections.delete(auth.deviceId) })
+    socket.on('close', () => {
+      if (connections.get(auth.deviceId)?.socket === socket) {
+        connections.delete(auth.deviceId)
+        disconnectHandler?.(auth)
+      }
+    })
   })
   const address = server.address()
   const port = typeof address === 'object' && address !== null ? address.port : options.port ?? 4322
@@ -91,6 +98,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
     },
     setMessageHandler: handler => { messageHandler = handler },
     setConnectHandler: handler => { connectHandler = handler },
+    setDisconnectHandler: handler => { disconnectHandler = handler },
     closeDevice: deviceId => { connections.get(deviceId)?.socket.close(4001, 'device revoked') },
     close: async () => {
       for (const connection of connections.values()) connection.socket.terminate()

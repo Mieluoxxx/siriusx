@@ -78,3 +78,9 @@
 - connector 凭据只在 tool-gateway 进程；
 - Docker agent 进程 env 与 audit 均无 secret。
 - 证据：`08-agent-credential-isolation/run.txt`。
+
+## Device offline grace
+
+- 设备断开后按宽限期结算未完成 assignment 为 `lost`；
+- 宽限期内重连会清除定时器；
+- 证据：`09-offline-timeout/`。
