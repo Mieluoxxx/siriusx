@@ -1,8 +1,9 @@
-$ git diff --stat siriusx-s1-base..HEAD
- apps/desktop/src/main.ts | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-$ git diff --name-only siriusx-s1-base..HEAD
-apps/desktop/src/main.ts
-
-changed_files=1
+ apps/desktop/resources/enterprise.json           |  3 +
+ apps/desktop/scripts/electron-builder-config.mjs | 15 +++--
+ apps/desktop/src/client/WelcomePage.tsx          |  6 +-
+ apps/desktop/src/enterprise.ts                   | 84 ++++++++++++++++++++++++
+ apps/desktop/src/main.ts                         | 21 ++++--
+ apps/desktop/src/preload-welcome.ts              |  2 +
+ apps/desktop/src/welcome-api.ts                  |  7 +-
+ apps/desktop/src/welcome-window.ts               |  8 +--
+ 8 files changed, 127 insertions(+), 19 deletions(-)

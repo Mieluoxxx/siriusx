@@ -1,0 +1,2 @@
+commit=702469a6302936fe690902f7b9fe14d469e9efd8
+subject=feat(desktop): add enterprise SSO gate and SiriusX release branding

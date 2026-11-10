@@ -15,7 +15,7 @@
 - **[x] 10 分钟抓包**：27 轮离线对话，`nonloopback_inet_connects=0`
   （`01-telemetry/network-soak-10min.txt` / `.trace`）
 - **[x] rebase 演练**：对 `upstream/master` 无冲突完成；但上游暂无新 tag
-- **[x] fork 改动个位数**：`00-fork/diff-stat.txt`，1 个文件
+- **[x] fork 改动个位数**：`00-fork/diff-stat.txt`，8 个文件，全部在 `apps/desktop/`
 
 ## 阻塞/待复验
 
