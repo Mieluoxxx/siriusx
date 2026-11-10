@@ -49,4 +49,4 @@
   - 返回 ticket + 事件流
   - 若配置 tool-gateway，则合并该 ticket 的审计记录
 - 证据：`04-trace/test.txt`。
-- 仍缺：把 analytics JSONL 也合并进同一查询。
+- 已合并 analytics `.l0l1.jsonl`，按 `ticketId` 过滤。

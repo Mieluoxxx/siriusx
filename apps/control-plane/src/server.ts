@@ -1,5 +1,6 @@
 /** HTTP entry for the single-box control plane. Production terminates SSO at a gateway. */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import { readFile } from 'node:fs/promises'
 import { ControlPlane, ControlPlaneError, type Session } from './index.ts'
 import type { DeviceGateway } from './device-gateway.ts'
 
@@ -10,6 +11,7 @@ export interface ControlPlaneServerOptions {
   readonly host?: string
   readonly sessionSecret?: string
   readonly toolGatewayUrl?: string
+  readonly analyticsPath?: string
 }
 
 export interface ControlPlaneServer {
@@ -53,6 +55,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }) })
   let deviceGateway: DeviceGateway | undefined
   const toolGatewayUrl = options.toolGatewayUrl
+  const analyticsPath = options.analyticsPath
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, CORS).end()
@@ -195,7 +198,13 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
               audit = body.audit ?? []
             }
           }
-          write(response, 200, { ticket, audit })
+          const analytics = analyticsPath === undefined ? [] : (await readFile(analyticsPath, 'utf8')).split('\n').filter(Boolean).flatMap(line => {
+            try {
+              const event = JSON.parse(line) as Record<string, unknown>
+              return event.ticketId === ticketId ? [event] : []
+            } catch { return [] }
+          })
+          write(response, 200, { ticket, audit, analytics })
           return
         }
         if (request.method === 'GET' && parts.length === 3) {

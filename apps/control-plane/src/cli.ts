@@ -77,6 +77,7 @@ try {
       ...(bindHost === undefined ? {} : { host: bindHost }),
       ...(process.env.SIRIUSX_SESSION_SECRET === undefined ? {} : { sessionSecret: process.env.SIRIUSX_SESSION_SECRET }),
       ...(process.env.SIRIUSX_TOOL_GATEWAY_URL === undefined ? {} : { toolGatewayUrl: process.env.SIRIUSX_TOOL_GATEWAY_URL }),
+      ...(process.env.SIRIUSX_ANALYTICS_PATH === undefined ? {} : { analyticsPath: process.env.SIRIUSX_ANALYTICS_PATH }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,

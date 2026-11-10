@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -228,6 +228,27 @@ describe('control plane', () => {
     const memberDevice = plane.confirmPairing(memberSession, memberPair.code)
     expect(() => plane.createPersonalBotTicket(memberSession, bot.id, memberDevice.deviceId, { path: '/tmp', prompt: 'x' })).toThrow(expect.objectContaining({ code: 'BOT_NOT_FOUND' }))
     expect(() => plane.createPersonalBotTicket(adminSession, bot.id, memberDevice.deviceId, { path: '/tmp', prompt: 'x' })).toThrow(/own device/u)
+  })
+
+  it('merges analytics events into a ticket trace', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-trace-analytics-'))
+    roots.push(root)
+    const analyticsPath = join(root, 'analytics.l0l1.jsonl')
+    const server = await startControlPlaneServer({
+      dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret', analyticsPath,
+    })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
+    const session = server.control.verifySession(server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
+    const ticket = server.control.createTicket(session, { path: root, prompt: 'trace analytics' })
+    await writeFile(analyticsPath, [
+      JSON.stringify({ ticketId: ticket.ticketId, schema: 'report.produced', payload: { reportKind: 'ready' } }),
+      JSON.stringify({ ticketId: 'other', schema: 'report.produced', payload: { reportKind: 'ready' } }),
+    ].join('\n') + '\n')
+    const trace = await fetch(`${server.url}/v1/tickets/${ticket.ticketId}/trace`, { headers: auth(server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })) }).then(response => response.json()) as { analytics: Array<{ ticketId: string }> }
+    expect(trace.analytics).toHaveLength(1)
+    expect(trace.analytics[0]?.ticketId).toBe(ticket.ticketId)
   })
 
 })

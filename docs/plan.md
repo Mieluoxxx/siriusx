@@ -219,7 +219,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 一个写入类动作在未批准时没有执行。批准后执行，审计里有这条记录。证据：`evidence/S6/01-tool-gateway/run.txt`。
 - [x] 停掉策略判定服务，所有外部调用被拒绝。证据：`policyEnabled:false` 测试。
 - [ ] 在 agent 进程的环境变量和日志里搜索连接器凭据，找不到。**部分完成**：审计/结果无 token；真实 sandbox env 未验。
-- [ ] 用一个 `ticketId` 能查出这张工单的完整轨迹。**部分完成**：新增 `/v1/tickets/:id/trace`，合并 ticket 事件 + tool-gateway 审计；analytics 文件仍未合并。证据：`evidence/S6/04-trace/test.txt`。
+- [x] 用一个 `ticketId` 能查出这张工单的完整轨迹。证据：`GET /v1/tickets/:id/trace` 合并 ticket 事件 + tool-gateway 审计 + analytics `.l0l1.jsonl`；`evidence/S6/04-trace/test.txt`。
 - [x] 停掉事件总线，任务照常执行完。**SDK 级**证据：`packages/analytics` sink 故障不抛出。
 - [ ] 跑一个本地任务并抓包，上行的数据里没有提示词、代码和命令输出的原文。**部分完成**：`streamEventsForBot` 过滤 log；真实抓包未做。
 
