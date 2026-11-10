@@ -46,3 +46,17 @@
 - `docs/images/04-app-current.png`：Web / Desktop / Mobile 当前形态；
 - `docs/roadmap.md` 的 W1/W2 已按实际实现重写；
 - 证据副本：`04-brand-release-docs/`。
+
+## 原生单机安装
+
+- `deploy/single-box/install-native.sh` 支持：
+  - 复制 control-plane / tool-gateway / autobot / packages / node_modules
+  - 生成 `siriusx.env`（0600）
+  - 生成 systemd unit 或 `--no-systemd --start` 前台启动
+  - 启动后检查 4320/4330 健康
+- 实测（临时 prefix）：
+  - control-plane 健康
+  - tool-gateway 健康
+  - 开通租户、签发 token、读取 settings 成功
+- 证据：`05-native-install/`。
+- 未覆盖：DSH Web Host、web-gateway、Docker sandbox 镜像；完整单机仍需一并编排。

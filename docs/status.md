@@ -10,7 +10,7 @@
 | S5 登录/租户 | `plugins/account-sso`、`apps/control-plane`（含 device gateway/model gateway）、Desktop enterprise gate | `evidence/S5/` | **部分**：OIDC/隔离/配对/长连接/模型网关/隐私 badge/个人 Bot 派工/原生入口管理员开关通过；真实 IdP、KMS、单机安装待补 |
 | S6 工具网关 | `apps/tool-gateway`、`packages/analytics`、local_dir 上行过滤 | `evidence/S6/` | **部分**：审批/审计/fail-closed/分级/Bot 事件接线/Vault-style 凭据适配通过；真实 KMS/Vault、真实抓包待补 |
 | S7 云执行 | `packages/cloud-executor`、`packages/kernel-acp` | `evidence/S7/` | **部分**：Docker/ACP/真实 dsh/SQLite 恢复/GitHub+gateway 审批写通过；真实 pi、真实 Issue→MR、M2 真崩溃待补 |
-| S8 发布 | `plugins/brand-siriusx`、`deploy/release`、`deploy/offline` | `evidence/S8/` | **部分**：品牌/图标/打包参数、Linux control-plane 离线包通过；mac/win 签名安装与真机验收待补 |
+| S8 发布 | `plugins/brand-siriusx`、`deploy/release`、`deploy/offline` | `evidence/S8/` | **部分**：品牌/图标/打包参数、Linux control-plane 离线包、native 单机安装（control-plane+tool-gateway）通过；mac/win 签名安装与全服务干净机验收待补 |
 | S9 Web | DSH Web Host + Team panel control-plane 模式 | `evidence/S9/` | **部分**：同插件复用、两租户隔离、HttpOnly cookie 同源网关、无原生对话/本地目录入口、Web 审批通过；真实 OIDC/云端项目/Web 打断待补 |
 | S10 手机 | Team panel 响应式 | `evidence/S10/` | **部分通过**：390×844 响应式、手机审批、配对设备远程 `local_dir` 发起/跟进/打断/离线补发/报告与 follow-up UI 已验；真机待补 |
 

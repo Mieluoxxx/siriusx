@@ -1,0 +1,9 @@
+{
+  "tenant": {
+    "id": "tenant-native",
+    "name": "Native",
+    "idpIssuer": "https://idp.example",
+    "createdAt": 1794329171032
+  },
+  "adminUserId": "7334e433-032b-4af8-9a74-fe9cefd9cdbb"
+}

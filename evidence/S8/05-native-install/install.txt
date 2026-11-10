@@ -1,0 +1,3 @@
+started control-plane pid 3224892 and tool-gateway pid 3224893
+SiriusX native single-box services are healthy
+prefix=/tmp/s8-native-prefix data=/tmp/s8-native-data env=/tmp/s8-native-prefix/siriusx.env
