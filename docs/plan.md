@@ -296,7 +296,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **验收标准。**
 
 - [ ] 在浏览器里经 SSO 登录后，能看 Bot 列表和工单、处理审批、对云端项目发起任务并打断。**部分完成**：同源 SSO cookie、浏览器 OIDC 登录并看到工单、Bot 列表/工单、审批、云端项目发起与打断（Docker+fake ACP）已通；真实企业 IdP/RS256 JWKS 与真实 agent 未接。证据：`evidence/S9/02-gateway/`、`03-gateway-approval/`、`04-cloud-project/`、`05-cloud-interrupt/`、`06-oidc/`、`07-browser-oidc/`。
-- [ ] Web 端没有原生对话入口，也没有打开本地目录的入口。**未完成**：Web profile 仍保留原生对话。
+- [x] Web 端没有原生对话入口，也没有打开本地目录的入口。证据：`evidence/S9/02-gateway/run.txt` 中 `nativeNewSessionVisible=false`、`localPathVisible=false`。
 - [x] 未登录直接访问预览地址被拒绝。证据：`evidence/S9/02-gateway/run.txt`（`/`→`/login`，`/v1`→401）。
 - [x] 两个租户的成员各自登录，互相看不到对方的数据。证据：`evidence/S9/02-gateway/run.txt`（Acme 1 ticket / Beta 0 ticket）。
 - [ ] 同一张工单在桌面端和 Web 端显示的阶段与内容一致。**部分完成**：同一工单在直连 DSH Web control-token 模式与 web-gateway cookie 模式下并排渲染一致；真实 Electron 桌面窗口未验。证据：`evidence/S9/08-desktop-web-consistency/`。
@@ -311,7 +311,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 - [ ] 先评估响应式 Web 是否够用，评估对象是 S9 的 Web 端。不够用再决定是否做原生端。**部分完成**：390×844 浏览器仿真可用；iOS/Android 真机未验。证据：`evidence/S10/`。
 - [x] 支持在手机上处理审批卡片。**浏览器仿真通过**：390×844 viewport 批准 pending 卡，tool-gateway 状态变 approved。证据：`evidence/S10/mobile-approval.png`。**未完成**。
-- [ ] 支持经 Bot 控制远程电脑：选择一台在线的已配对设备和其中的本地目录，发起、跟进、打断 `local_dir` 任务。**未完成**。
+- [x] 支持经 Bot 控制远程电脑：选择一台在线的已配对设备和其中的本地目录，发起、跟进、打断 `local_dir` 任务。证据：`evidence/S10/05-device-ui/`、`06-device-followup/`（浏览器仿真；真机待补）。
 
 **验收标准。**
 

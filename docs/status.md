@@ -16,16 +16,15 @@
 
 ## 下一步优先级（不需要人工等待的）
 
-1. 把 S9 的 control-plane token 注入改成带鉴权的反向代理 + HttpOnly 会话。
-2. 把 tool-gateway 审批卡接入 Team panel。
-3. 用真实 `dsh` / `pi` 二进制替换 S7 的 fake ACP agent。
-4. 把 CloudExecutor 状态持久化到 SQLite，并接 Bot 服务的 `lost` 重试。
+1. 用本地 OIDC provider 验证 RS256/JWKS，而不是只测 HS256。
+2. 增加 Vault/KMS 的本地 mock 接口与轮换/失败测试。
+3. 把 Azure/GitLab 真实 connector 补齐到与 GitHub 相同的 issue→branch→PR 路径。
+4. 完成全栈 Compose + 离线 bundle 的干净机器一键安装演练。
 5. 准备 mac/win 构建机与签名/公证凭据，完成 S8 真机安装。
 
 ## 必须人工等待/外部条件的
 
-- S1 的 macOS/Windows 启动、10 分钟抓包、5 天使用；
-- S3 的 15 分钟 Host kill/restart；
+- S1 的 macOS/Windows 启动、5 天使用；
 - S4 的 10 个工作日真实使用；
 - S5 的干净机器安装、真实 SSO IdP、KMS；
 - S7 的真实 GitHub/GitLab issue→MR、M2 真崩溃恢复；

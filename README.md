@@ -54,16 +54,16 @@ DSH 插件必须是独立 package；能用插件或独立 package 完成的能�
 ## 当前实现状态（滚动更新）
 
 - S0：完成。
-- S1：fork、遥测关闭、源码构建、离线会话、10 分钟零外联抓包完成；Desktop 实际启动受 Linux 不支持限制，5 天使用待真实时间。
+- S1：fork、遥测关闭、源码构建、离线会话、10 分钟零外联抓包、clean clone install/typecheck/test 完成；Desktop 实际启动需 mac/win，5 天使用待真实时间。
 - S2：契约、内核接口、DSH adapter、假内核、BG1 场景完成。
-- S3：本地 Executor、Host 插件、SQLite Bot 服务、真实 DSH AgentLoop 闭环完成；previews/TTL/真实进程 kill 待补。
-- S4：Team panel 客户端插件、应用契约、本地 Bot API 完成；审批/打断 UI 与 10 天自用待补。
-- S5：OIDC Host provider、租户控制面、设备配对、模型网关、Desktop 企业 gate 完成；长连接网关/真实安装待补。
-- S6：工具网关、审批/审计、analytics SDK、local_dir 上行过滤完成；KMS/真实抓包待补。
-- S7：CloudExecutor、Docker 沙箱隔离/卷持久化、ACP v1 后端、Docker 内 ACP 任务完成；真实 dsh/pi 与代码平台待补。
-- S8：SiriusX 品牌插件/图标、electron-builder 品牌参数、离线包与冻结条款骨架完成；签名/真机安装待补。
-- S9：DSH Web Host 复用同一 Team 工单插件；SSO/鉴权反向代理待补。
-- S10：390×844 响应式 Web 评估通过；真机、移动审批、远程本地目录待补。
+- S3：本地 Executor、Host 插件、SQLite Bot 服务、真实 DSH AgentLoop、previews/TTL、真实进程 kill、lost resume、sandbox reaper 完成。
+- S4：四个独立 Team UI package、审批/打断 UI、同工单阶段/报告完成；10 天真实使用待补。
+- S5：OIDC Host provider、租户控制面、设备配对、长连接网关、模型网关、Desktop 企业 gate、native/Docker/断网容器安装完成；真实 IdP/KMS 与全服务干净机待补。
+- S6：工具网关、审批/审计、analytics、local_dir 上行过滤、Vault KV v1/v2、完整 ticket trace 完成；真实 KMS/Vault、真实抓包待补。
+- S7：CloudExecutor、Docker 沙箱隔离/卷/资源限额/allowlist、真实 dsh+pi（含 sandbox）、内核对齐、repo clone、GitHub connector/mock Issue→MR 完成；真实平台 Issue→MR 与 M2 真实 crash 待补。
+- S8：SiriusX 品牌/图标、electron-builder 参数、离线 tar、DSH Web 离线镜像、全栈 Compose、internal 网络与断网容器安装、patch backport 完成；mac/win 签名安装、自动更新与真实客户 30 天待补。
+- S9：DSH Web + Team 插件、HttpOnly Web Gateway、浏览器 OIDC（本地 IdP）、Web 审批、云端项目发起/打断、同工单跨接入模式一致完成；真实企业 IdP/真实 agent 待补。
+- S10：390×844 响应式 Team、手机审批→等待 task resume、配对设备远程 local_dir 发起/跟进/打断完成；iOS/Android 真机、真实 agent 联调待补。
 
 ## 本地开发与验证
 
