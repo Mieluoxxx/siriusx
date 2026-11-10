@@ -28,13 +28,15 @@
   stage/report/事件类型序列（`idle`、`ready`、`state,state,report,state`）。证据：`07-kernel-parity/run.txt`。
 - CloudExecutor 仓库准备：`GitClonePreparer` 在 Docker sandbox 内 clone，ACP 在 clone 目录运行；
   真实本地 bare repo + Python ACP agent 测试通过。证据：`08-repo-clone/test.txt`。
+- 真实 DSH ACP server 在 Docker sandbox 内运行：挂载 DSH 源码 + Node 24 + DSH profile，
+  本地 mock 模型返回真实 assistant 文本。证据：`09-real-dsh-docker/run.txt`。
 
 ## 验收对照
 
 | 验收项 | 状态 | 证据 |
 | --- | --- | --- |
 | ACP 会话能跑通 | **通过（fake ACP、真实 Docker、真实 DSH ACP）** | `02-acp-backend/test.txt`、`cloud-acp-docker.txt`、`03-real-dsh-acp/run.txt` |
-| pi 与 dsh 跑同一任务、事件一致 | **部分**：真实 dsh ACP 与真实 pi CLI 两轮均跑通；同一工单/Bot 侧并排未做 | `03-real-dsh-acp/run.txt`、`06-pi-backend/test.txt` |
+| pi 与 dsh 跑同一任务、事件一致 | **通过（本地）**：真实 dsh ACP 与真实 pi CLI 同一 local_dir 工单结果一致 | `07-kernel-parity/run.txt` |
 | 两个任务文件互不可见 | **通过** | `01-cloud-executor/docker-isolation.txt` |
 | 沙箱断网 | **通过** | 同上 |
 | 沙箱删掉后 workdir 还在 | **通过** | 同上 |
