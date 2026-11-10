@@ -134,3 +134,10 @@
   - 开通租户、签发 token、读取 settings 通过。
 - 这是 Linux 干净环境的安装 smoke；macOS/Windows 与完整 Web Gateway 仍需另验。
 - 证据：`13-clean-machine/`。
+
+## 全栈离线一键包
+
+- `deploy/offline/build-full-bundle.sh` 打包 control-plane、DSH Web、sandbox 镜像与 compose；
+- `install-full.sh` 本地 load + compose up + health wait；
+- 实测 health 全通过、web-gateway 登录 `/v1/me` 通过。
+- 证据：`14-full-bundle/`。

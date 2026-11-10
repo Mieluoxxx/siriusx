@@ -1,0 +1,9 @@
+{
+  "tenant": {
+    "id": "tenant-full",
+    "name": "Full",
+    "idpIssuer": "https://idp.example",
+    "createdAt": 1794336718167
+  },
+  "adminUserId": "a25b7633-567b-455c-bb1b-1865df6287b9"
+}

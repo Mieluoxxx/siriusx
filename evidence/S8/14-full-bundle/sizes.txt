@@ -1,0 +1,4 @@
+-rw------- 1 root root 371M Nov 10 18:48 /root/s8-full-bundle/images/control-plane.tar
+-rw------- 1 root root 2.9G Nov 10 18:48 /root/s8-full-bundle/images/dsh-web.tar
+-rw------- 1 root root 275M Nov 10 18:48 /root/s8-full-bundle/images/sandbox.tar
+-rw-r--r-- 1 root root 1.1G Nov 10 18:50 /root/s8-full-bundle/siriusx-full-offline.tar.gz

@@ -1,0 +1,3 @@
+{"ok":true,"service":"siriusx-control-plane"}
+{"ok":true,"service":"siriusx-tool-gateway"}
+{"ok":true,"service":"siriusx-web-gateway"}
