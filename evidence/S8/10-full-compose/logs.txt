@@ -1,0 +1,20 @@
+dsh-web-1  | dsh web: listening on 172.21.0.4 over plain HTTP; restrict this port to a trusted proxy or network
+dsh-web-1       | dsh web: http://172.21.0.4:3000/?token=iW_2zKN5wRyPfA5_JhbeYO6HiI5L3ck1CanhjDVoL0w
+tool-gateway-1  | (node:1) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+tool-gateway-1  | (Use `node --trace-warnings ...` to show where the warning was created)
+tool-gateway-1  | {
+tool-gateway-1  |   "ready": true,
+tool-gateway-1  |   "url": "http://0.0.0.0:4330"
+tool-gateway-1  | }
+control-plane-1  | (node:1) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+control-plane-1  | (Use `node --trace-warnings ...` to show where the warning was created)
+control-plane-1  | {
+control-plane-1  |   "ready": true,
+control-plane-1  |   "controlPlaneUrl": "http://0.0.0.0:4320",
+control-plane-1  |   "modelGatewayUrl": "http://0.0.0.0:4321",
+control-plane-1  |   "deviceGatewayUrl": "ws://0.0.0.0:4322"
+control-plane-1  | }
+web-gateway-1    | {
+web-gateway-1    |   "ready": true,
+web-gateway-1    |   "url": "http://0.0.0.0:8080"
+web-gateway-1    | }

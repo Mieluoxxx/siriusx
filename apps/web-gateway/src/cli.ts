@@ -31,6 +31,7 @@ const oidc = oidcIssuer === undefined || oidcClientId === undefined || oidcClien
 const gateway = await startWebGateway({
   controlPlaneUrl, dshWebUrl,
   port: flags.get('port') === undefined ? 8080 : Number(flags.get('port')),
+  host: flags.get('host') ?? process.env.SIRIUSX_WEB_HOST ?? '127.0.0.1',
   ...(process.env.SIRIUSX_SSO_SERVICE_TOKEN === undefined ? {} : { controlPlaneServiceToken: process.env.SIRIUSX_SSO_SERVICE_TOKEN }),
   ...(oidc === undefined ? {} : { oidc }),
 })

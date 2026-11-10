@@ -95,3 +95,18 @@
 - 新增 Dockerfile/构建脚本，把 Node 24、DSH 源码、SiriusX 插件和预生成 profile 打进镜像；
 - 容器启动无需 pnpm/网络，能输出 token URL 并加载 SiriusX/Team 插件。
 - 证据：`09-dsh-web-image/`。
+
+## 全栈 Compose
+
+- `docker-compose.offline.yml --profile full` 同时启动：
+  - control-plane
+  - tool-gateway
+  - DSH Web Host
+  - web-gateway
+- DSH Web 容器写 token URL 到共享卷，web-gateway 读取并代理；
+- 实测：
+  - 三个健康端点通过
+  - `/auth/session` 204
+  - `/v1/me` 返回租户用户
+  - `/` 经 web-gateway 返回 DSH Web 200
+- 证据：`10-full-compose/`。

@@ -1,0 +1,55 @@
+services:
+  control-plane:
+    image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
+    restart: unless-stopped
+    environment:
+      SIRIUSX_SESSION_SECRET: ${SIRIUSX_SESSION_SECRET:?set SIRIUSX_SESSION_SECRET}
+      SIRIUSX_DB: /data/control.sqlite
+      SIRIUSX_DATA_DIR: /data
+    ports:
+      - "127.0.0.1:4320:4320"
+      - "127.0.0.1:4321:4321"
+      - "127.0.0.1:4322:4322"
+    volumes:
+      - siriusx-data:/data
+  dsh-web:
+    image: ${SIRIUSX_DSH_WEB_IMAGE:-siriusx/dsh-web:offline}
+    profiles: ["full"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - dsh-web-data:/data
+  web-gateway:
+    image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
+    profiles: ["full"]
+    restart: unless-stopped
+    depends_on: [control-plane, dsh-web]
+    command:
+      - sh
+      - -c
+      - |
+        for _ in $(seq 1 120); do [ -s /data/dsh-web-url ] && break; sleep 1; done
+        URL=$(cat /data/dsh-web-url)
+        exec node --import tsx apps/web-gateway/src/cli.ts --control-plane http://control-plane:4320 --dsh-web "$$URL" --host 0.0.0.0 --port 8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - dsh-web-data:/data
+  tool-gateway:
+    image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
+    restart: unless-stopped
+    command: ["node", "--import", "tsx", "apps/tool-gateway/src/cli.ts"]
+    environment:
+      SIRIUSX_TOOL_GATEWAY_DB: /data/tool-gateway.sqlite
+      SIRIUSX_TOOL_GATEWAY_PORT: "4330"
+      SIRIUSX_TOOL_GATEWAY_HOST: 0.0.0.0
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITLAB_TOKEN: ${GITLAB_TOKEN:-}
+    ports:
+      - "127.0.0.1:4330:4330"
+    volumes:
+      - siriusx-data:/data
+volumes:
+  siriusx-data:
+  dsh-web-data:

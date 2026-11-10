@@ -188,7 +188,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 做设备配对：桌面端显示配对码，成员在已登录的界面里确认。**服务端完成**；桌面配对 UI 待接入。证据：`03-control-plane/run.txt`。
 - [x] 做个人 Bot 的最小版：成员能创建一个个人 Bot，它能派工给该成员已配对的电脑。本地执行只给个人 Bot（#51）。证据：`evidence/S5/05-personal-bot/`。
 - [x] 登录后给原生对话标上「个人、不审计」，并提供租户管理员关闭它的开关。证据：`evidence/S5/04-native-label/`（关闭后 New Session/发送/工作区入口不可见）。
-- [ ] 写单机一体的安装脚本，把以上服务装到一台机器上。**部分完成**：`install-native.sh` 可安装并启动 control-plane + tool gateway，健康检查/租户/Token/settings 通过；DSH Web Host、web-gateway、Docker sandbox 未纳入同一脚本。证据：`evidence/S8/05-native-install/`。
+- [ ] 写单机一体的安装脚本，把以上服务装到一台机器上。**部分完成**：`install-native.sh` 可安装 control-plane + tool gateway；`docker-compose.offline.yml --profile full` 已把 control-plane、tool-gateway、DSH Web、web-gateway 一起启动并完成登录/页面访问。Docker sandbox 镜像与 native 单脚本仍未统一。证据：`evidence/S8/05-native-install/`、`10-full-compose/`。
 
 **验收标准。**
 
@@ -266,7 +266,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [ ] 配置我方的更新源与签名。macOS 做公证，Windows 做代码签名。**未完成**：配置项已留，证书/公证环境不在本机。
 - [ ] 把企业插件打进安装包，登录只是启用。**部分完成**：插件 bundle 已有；安装包资源清单未接。
 - [ ] 出 macOS 与 Windows 两个平台的安装包。**未完成**：Linux 环境不能产 mac/win 包。
-- [ ] 做离线安装包：全部镜像与依赖，不需要联网。**部分完成**：Linux 离线 tar 包已包含 cloud-executor/kernel-acp/web-gateway，解包 control-plane health/租户/token/settings 与 cloud_project Docker sandbox 任务通过；DSH Web 离线镜像也能启动并加载 SiriusX/Team 插件。剩余：把镜像与 Web Gateway 编排成一套一键 install，及真正隔离网络验证。证据：`evidence/S8/03-offline-run/`、`06-docker-offline/`、`08-offline-full/`、`09-dsh-web-image/`。
+- [ ] 做离线安装包：全部镜像与依赖，不需要联网。**部分完成**：Linux 离线 tar 包、DSH Web 离线镜像、control-plane+tool-gateway+DSH Web+web-gateway 全栈 Compose 均通过；剩余：sandbox 镜像纳入同一离线包、真正隔离网络验证。证据：`evidence/S8/03-offline-run/`、`06-docker-offline/`、`08-offline-full/`、`09-dsh-web-image/`、`10-full-compose/`。
 - [x] 拉出冻结分支，写下版本冻结期、安全补丁的处理时限、升级窗口，这三项进交付合同。**模板完成**：`deploy/release/README.md`；实际分支/合同未签。
 - [x] 做一次补丁回移演练：把主分支上的一个修复移到冻结分支并发出更新。**通过**：`release/executor-0.1` cherry-pick `8553c8c`，契约 25 测试通过，标签 `executor-v0.1.1`，patch 见 `evidence/S8/07-backport/`。
 

@@ -1,0 +1,9 @@
+{
+  "tenant": {
+    "id": "tenant-compose",
+    "name": "Compose",
+    "idpIssuer": "https://idp.example",
+    "createdAt": 1794335947885
+  },
+  "adminUserId": "5ef04864-7793-4754-8a9f-bc6611b56b38"
+}
