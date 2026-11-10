@@ -2,6 +2,7 @@
 /** Run the tool gateway with a demo GitHub/GitLab connector that never performs a real external write. */
 import { startToolGatewayServer } from './server.ts'
 import { GitHubConnector } from './github.ts'
+import { GitLabConnector } from './gitlab.ts'
 import { HttpCredentialProvider, StaticCredentialProvider } from './credentials.ts'
 
 const port = process.env.SIRIUSX_TOOL_GATEWAY_PORT === undefined ? 4330 : Number(process.env.SIRIUSX_TOOL_GATEWAY_PORT)
@@ -29,7 +30,9 @@ const server = await startToolGatewayServer({
     github: process.env.SIRIUSX_GITHUB_REAL === '1'
       ? new GitHubConnector(process.env.SIRIUSX_GITHUB_API_BASE === undefined ? {} : { apiBase: process.env.SIRIUSX_GITHUB_API_BASE })
       : { execute: async (request, credential) => ({ result: { system: 'github', action: request.actionClass, target: request.target, credentialPresent: credential !== undefined && credential !== 'not-configured' } }) },
-    gitlab: { execute: async (request, credential) => ({ result: { system: 'gitlab', action: request.actionClass, target: request.target, credentialPresent: credential !== undefined && credential !== 'not-configured' } }) },
+    gitlab: process.env.SIRIUSX_GITLAB_REAL === '1'
+      ? new GitLabConnector(process.env.SIRIUSX_GITLAB_API_BASE === undefined ? {} : { apiBase: process.env.SIRIUSX_GITLAB_API_BASE })
+      : { execute: async (request, credential) => ({ result: { system: 'gitlab', action: request.actionClass, target: request.target, credentialPresent: credential !== undefined && credential !== 'not-configured' } }) },
   },
 })
 console.log(JSON.stringify({ ready: true, url: server.url }, undefined, 2))

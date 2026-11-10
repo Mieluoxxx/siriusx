@@ -239,7 +239,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel/仓库 clone 已实现；真实 dsh/pi 镜像与真实代码平台认证未接。证据：`packages/cloud-executor`、`evidence/S7/08-repo-clone/`。
 - [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。证据：独立 volume、`--network none`、`--memory/--cpus/--pids-limit`、宿主 env 隔离、internal network + allowlist proxy 均通过；`evidence/S7/11-sandbox-hardening/`、`12-egress-allowlist/`。
 - [x] 接入云端 dsh 与 pi 两个内核。证据：真实 DSH ACP 与真实 Pi CLI 都已在 Docker sandbox 内跑通；同一 local_dir 工单内核一致性通过。`evidence/S7/03-real-dsh-acp/`、`09-real-dsh-docker/`、`10-real-pi-docker/`、`07-kernel-parity/`。
-- [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub connector + tool-gateway 审批已串通 Issue→branch→file→PR（本地 mock API）；真实仓库/凭据全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`、`13-github-issue-mr/`。
+- [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub 与 GitLab connector 均串通 Issue→branch→file→PR/MR（本地 mock API）；真实仓库/凭据全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`、`13-github-issue-mr/`、`14-gitlab-issue-mr/`。
 - [x] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：SQLite 持久化 + 跨进程 `recoverOrphans()` 单测通过；真实 kill/重试未做。证据：`evidence/S7/01-cloud-executor/store-test.txt`。
 
 **验收标准。**

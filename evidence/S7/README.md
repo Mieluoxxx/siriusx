@@ -74,3 +74,14 @@
 - 每个写操作都经过 tool-gateway 审批，审计链完整；最终 PR 内容正确。
 - 证据：`13-github-issue-mr/run.txt`。
 - 仍未接真实 GitHub/GitLab 仓库凭据。
+
+## GitLab Issue → MR
+
+- 新增 `GitLabConnector`：
+  - `read_issue`
+  - `create_branch`
+  - `create_or_update_file`
+  - `open_pull_request` → GitLab merge request
+- 本地 mock GitLab API 串通 issue → branch → file → MR；写操作经 tool-gateway 审批，审计无 token。
+- 证据：`14-gitlab-issue-mr/test.txt`。
+- 仍未接真实 GitLab 仓库凭据。
