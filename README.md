@@ -76,6 +76,12 @@ pnpm test
 
 `deepseek-harness/` 是独立 Git checkout，不随本仓库提交；需要验证 DSH 集成时单独 clone 并安装依赖。
 
+可选 headless 对话 smoke（需要本机安装 `pi`）：
+
+```bash
+./scripts/smoke-pi-conversation.sh
+```
+
 ## 魔改纪律
 
 - 只 fork 桌面外壳（`apps/desktop`），不改 agent 内核。
