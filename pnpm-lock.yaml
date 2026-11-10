@@ -63,6 +63,9 @@ importers:
       '@siriusx/autobot':
         specifier: workspace:*
         version: link:../autobot
+      '@siriusx/cloud-executor':
+        specifier: workspace:*
+        version: link:../../packages/cloud-executor
       '@siriusx/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -72,6 +75,9 @@ importers:
       '@siriusx/fake-kernel':
         specifier: workspace:*
         version: link:../../packages/fake-kernel
+      '@siriusx/kernel-acp':
+        specifier: workspace:*
+        version: link:../../packages/kernel-acp
       ws:
         specifier: 8.18.3
         version: 8.18.3

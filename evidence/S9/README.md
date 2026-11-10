@@ -64,3 +64,13 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 浏览器 cookie 登录后，Team panel 看到真实审批卡；
 - 点击 Approve 后，tool-gateway 状态变为 `approved`；
 - 证据：`03-gateway-approval/run.txt`、`gateway-approval.png`。
+
+## 云端项目（Docker + ACP）
+
+- Web 模式表单改为云端项目：仓库 URL / baseRef / prompt；
+- control-plane 调用 `CloudExecutor`，Docker 沙箱内启动 fake ACP agent；
+- 工单阶段从 `working/queued` → `person/review`，报告含 `diffStats` 和 `diffBasis=baseRef`；
+- 浏览器通过 web-gateway HttpOnly 会话发起，控制台无错误。
+- 证据：`04-cloud-project/run.txt`、`cloud-project.png`、`direct-api-detail.json`。
+
+注意：ACP agent 仍是 fake agent，用于验证云执行/UI 链路；真实仓库 clone 与 dsh/pi 镜像待接。

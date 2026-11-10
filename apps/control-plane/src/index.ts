@@ -8,6 +8,9 @@ import { FakeKernel } from '@siriusx/fake-kernel'
 import { LocalExecutor } from '@siriusx/executor-local'
 import { AssignmentEventSchema, type AssignmentEvent } from '@siriusx/contracts/executor'
 import { deriveTicketStage, type TicketStage } from '@siriusx/contracts/ticket-stage'
+import { CloudExecutor, DockerSandboxProvider, type CancelAssignment } from '@siriusx/cloud-executor'
+import { AcpCloudKernel } from '@siriusx/kernel-acp'
+import { fileURLToPath } from 'node:url'
 
 export type Role = 'admin' | 'member'
 
@@ -127,6 +130,25 @@ CREATE TABLE IF NOT EXISTS device_ticket_events (
   event_json TEXT NOT NULL,
   PRIMARY KEY (ticket_id, seq)
 );
+CREATE TABLE IF NOT EXISTS cloud_tickets (
+  ticket_id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  assignment_id TEXT NOT NULL,
+  repo_url TEXT NOT NULL,
+  base_ref TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  stage TEXT NOT NULL,
+  state TEXT NOT NULL,
+  report_json TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS cloud_ticket_events (
+  ticket_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  event_json TEXT NOT NULL,
+  PRIMARY KEY (ticket_id, seq)
+);
 `
 
 function tokenHash(token: string): string {
@@ -145,6 +167,7 @@ export class ControlPlane {
   readonly #secret: string
   readonly #now: () => number
   readonly #runtimes = new Map<string, BotService>()
+  readonly #cloudExecutors = new Map<string, CloudExecutor>()
 
   constructor(options: ControlPlaneOptions) {
     mkdirSync(options.dataDir, { recursive: true })
@@ -157,7 +180,9 @@ export class ControlPlane {
 
   close(): void {
     for (const runtime of this.#runtimes.values()) runtime.close()
+    for (const executor of this.#cloudExecutors.values()) executor.close()
     this.#runtimes.clear()
+    this.#cloudExecutors.clear()
     this.#db.close()
   }
 
@@ -446,6 +471,131 @@ export class ControlPlane {
     return row === undefined ? undefined : { deviceId: row.device_id }
   }
 
+  createCloudTicket(session: Session, input: { repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
+    if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
+    const ticketId = randomUUID()
+    const assignmentId = randomUUID()
+    const baseRef = input.baseRef.trim() === '' ? 'main' : input.baseRef.trim()
+    const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false })
+    this.#db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(ticketId, session.tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
+    const image = process.env.SIRIUSX_SANDBOX_IMAGE ?? 'teams-bridge:0.2.0'
+    const fixture = fileURLToPath(new URL('./fixtures/fake-acp-raw.mjs', import.meta.url))
+    const executor = new CloudExecutor({
+      provider: new DockerSandboxProvider({ image }),
+      image,
+      network: 'none',
+      kernel: new AcpCloudKernel({
+        command: 'node',
+        args: ['/workspace/fake-acp.mjs'],
+        copyIn: { localPath: fixture, remotePath: '/workspace/fake-acp.mjs' },
+        allowTools: true,
+        timeoutMs: 2 * 60 * 1000,
+      } as never),
+    })
+    this.#cloudExecutors.set(ticketId, executor)
+    const repoUrl = new URL(input.repoUrl)
+    const repo = {
+      provider: repoUrl.hostname.includes('gitlab') ? 'gitlab' as const : 'github' as const,
+      host: repoUrl.hostname,
+      projectPath: repoUrl.pathname.replace(/^\//u, '').replace(/\.git$/u, ''),
+      cloneUrl: input.repoUrl,
+    }
+    const assignmentInput = {
+      tenantId: session.tenantId,
+      assignmentId,
+      ticketId,
+      kind: 'start' as const,
+      priority: 'human' as const,
+      workspace: { kind: 'cloud_project' as const, projectId: repo.projectPath, repo, baseRef },
+      kernel: 'dsh' as const,
+      model: { source: 'tenant' as const, id: 'tenant-default' },
+      workdirKey: ticketId,
+      input: { prompt: input.prompt, followUps: [] },
+      secretRefs: [],
+      traceId: ticketId,
+      clientContext: { operatorId: `app:${session.userId}`, channel: 'app' as const, platform: 'web' as const },
+    }
+    void (async () => {
+      try {
+        await executor.createAssignment(assignmentInput)
+        const done = await executor.wait(assignmentId)
+        const events = executor.streamEventsForBot(assignmentId, 0).events
+        this.recordCloudAssignment(ticketId, done.state, done.report, events)
+      } catch (error) {
+        this.recordCloudAssignment(ticketId, 'reported', {
+          kind: 'failed', summary: 'cloud executor failed', reason: error instanceof Error ? error.message : String(error),
+        }, [])
+      } finally {
+        executor.close()
+        this.#cloudExecutors.delete(ticketId)
+      }
+    })()
+    return { ticketId }
+  }
+
+  private recordCloudAssignment(ticketId: string, state: string, report: unknown, events: readonly unknown[]): void {
+    const row = this.#db.prepare('SELECT tenant_id FROM cloud_tickets WHERE ticket_id = ?').get(ticketId) as { tenant_id: string } | undefined
+    if (row === undefined) return
+    const reportKind = typeof report === 'object' && report !== null && 'kind' in report ? String(report.kind) : undefined
+    const stage = deriveTicketStage({
+      deliveryFailing: false,
+      pendingInput: false,
+      latest: { state: state as 'preparing', ...(reportKind === undefined ? {} : { reportKind: reportKind as 'ready' }) },
+    })
+    this.#db.prepare('INSERT OR REPLACE INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, report_json, created_at, updated_at) VALUES (?, ?, (SELECT assignment_id FROM cloud_tickets WHERE ticket_id = ?), (SELECT repo_url FROM cloud_tickets WHERE ticket_id = ?), (SELECT base_ref FROM cloud_tickets WHERE ticket_id = ?), (SELECT prompt FROM cloud_tickets WHERE ticket_id = ?), ?, ?, ?, (SELECT created_at FROM cloud_tickets WHERE ticket_id = ?), ?)')
+      .run(ticketId, row.tenant_id, ticketId, ticketId, ticketId, ticketId, stage, state, report === undefined ? null : JSON.stringify(report), ticketId, this.#now())
+    const insert = this.#db.prepare('INSERT OR REPLACE INTO cloud_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
+    for (const event of events) {
+      const seq = typeof event === 'object' && event !== null && 'seq' in event && typeof event.seq === 'number' ? event.seq : 0
+      insert.run(ticketId, seq, JSON.stringify(event))
+    }
+  }
+
+  private listCloudTickets(tenantId: string): Array<{
+    ticketId: string; title: string; stage: TicketStage; closed: boolean; pendingInputs: number;
+    latestAssignment?: { assignmentId: string; state: string; report?: unknown }
+  }> {
+    const rows = this.#db.prepare('SELECT * FROM cloud_tickets WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as Array<{
+      ticket_id: string; assignment_id: string; prompt: string; stage: string; state: string; report_json: string | null
+    }>
+    return rows.map(row => ({
+      ticketId: row.ticket_id,
+      title: row.prompt.slice(0, 120),
+      stage: row.stage as TicketStage,
+      closed: row.stage === 'idle',
+      pendingInputs: 0,
+      latestAssignment: { assignmentId: row.assignment_id, state: row.state, ...(row.report_json === null ? {} : { report: JSON.parse(row.report_json) as unknown }) },
+    }))
+  }
+
+  private getCloudTicket(tenantId: string, ticketId: string): unknown {
+    const ticket = this.listCloudTickets(tenantId).find(item => item.ticketId === ticketId)
+    if (ticket === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
+    const events = (this.#db.prepare('SELECT event_json FROM cloud_ticket_events WHERE ticket_id = ? ORDER BY seq').all(ticketId) as Array<{ event_json: string }>)
+      .map(row => JSON.parse(row.event_json) as unknown)
+    return { ...ticket, events }
+  }
+
+  cloudTicketTarget(tenantId: string, ticketId: string): { ticketId: string } | undefined {
+    const row = this.#db.prepare('SELECT ticket_id FROM cloud_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, tenantId) as { ticket_id: string } | undefined
+    return row === undefined ? undefined : { ticketId: row.ticket_id }
+  }
+
+  cancelCloudTicket(session: Session, ticketId: string): void {
+    const row = this.#db.prepare('SELECT tenant_id, assignment_id FROM cloud_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, session.tenantId) as { tenant_id: string; assignment_id: string } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
+    const executor = this.#cloudExecutors.get(ticketId)
+    if (executor !== undefined) {
+      const input: CancelAssignment = {
+        tenantId: session.tenantId, assignmentId: row.assignment_id, mode: 'kill', reason: 'user_stop',
+        clientContext: { operatorId: `app:${session.userId}`, channel: 'app', platform: 'web' },
+      }
+      void executor.cancelAssignment(input).catch(() => undefined)
+    }
+    this.recordCloudAssignment(ticketId, 'cancelled', undefined, [])
+  }
+
   createPersonalBotTicket(session: Session, botId: string, deviceId: string, input: { path: string; prompt: string }): {
     ticketId: string
     assignment: Record<string, unknown>
@@ -523,7 +673,7 @@ export class ControlPlane {
   }
 
   listTickets(session: Session): unknown[] {
-    return [...this.botRuntime(session.tenantId).listTickets(), ...this.listDeviceTickets(session.tenantId)]
+    return [...this.botRuntime(session.tenantId).listTickets(), ...this.listDeviceTickets(session.tenantId), ...this.listCloudTickets(session.tenantId)]
   }
 
   ticketDetail(session: Session, ticketId: string): unknown {
@@ -531,7 +681,7 @@ export class ControlPlane {
     try {
       return { ...runtime.getTicket(ticketId), events: runtime.eventsForTicket(ticketId) }
     } catch {
-      return this.getDeviceTicket(session.tenantId, ticketId)
+      try { return this.getDeviceTicket(session.tenantId, ticketId) } catch { return this.getCloudTicket(session.tenantId, ticketId) }
     }
   }
 

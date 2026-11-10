@@ -171,6 +171,16 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         write(response, 202, control.createTicket(session, { path: body.path, prompt: body.prompt }))
         return
       }
+      if (request.method === 'POST' && url.pathname === '/v1/cloud-projects/tickets') {
+        const body = await readJson(request)
+        if (typeof body.repoUrl !== 'string' || typeof body.prompt !== 'string') throw new Error('repoUrl and prompt are required')
+        write(response, 202, control.createCloudTicket(session, {
+          repoUrl: body.repoUrl,
+          baseRef: typeof body.baseRef === 'string' ? body.baseRef : 'main',
+          prompt: body.prompt,
+        }))
+        return
+      }
       if (parts[0] === 'v1' && parts[1] === 'tickets' && parts[2] !== undefined) {
         const ticketId = parts[2]
         if (request.method === 'GET' && parts.length === 3) {
@@ -195,6 +205,11 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
           return
         }
         if (request.method === 'POST' && parts[3] === 'cancel') {
+          if (control.cloudTicketTarget(session.tenantId, ticketId) !== undefined) {
+            control.cancelCloudTicket(session, ticketId)
+            write(response, 200, { ticketId, status: 'cancelled' })
+            return
+          }
           const deviceTicket = control.deviceTicketTarget(session.tenantId, ticketId)
           if (deviceTicket !== undefined) {
             if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')

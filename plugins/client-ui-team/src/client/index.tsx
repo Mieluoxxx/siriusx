@@ -77,6 +77,8 @@ function TicketPanel(): ReactNode {
   const [approvals, setApprovals] = useState<ApprovalCard[]>([])
   const [devices, setDevices] = useState<DeviceSummary[]>([])
   const [deviceId, setDeviceId] = useState('')
+  const [cloudRepo, setCloudRepo] = useState('')
+  const [cloudBase, setCloudBase] = useState('main')
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selected, setSelected] = useState<TicketDetail | undefined>()
   const [repo, setRepo] = useState('')
@@ -132,6 +134,22 @@ function TicketPanel(): ReactNode {
     try {
       const endpoint = deviceId === '' ? '/api/tickets' : `/api/devices/${deviceId}/tickets`
       const created = await json<TicketSummary>(endpoint, { method: 'POST', body: JSON.stringify({ path: repo.trim(), prompt: prompt.trim() }) })
+      setSelectedId(created.ticketId)
+      setPrompt('')
+      await refresh()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally { setBusy(false) }
+  }
+
+  const createCloudTicket = async (): Promise<void> => {
+    if (cloudRepo.trim() === '' || prompt.trim() === '') return
+    setBusy(true)
+    try {
+      const created = await json<{ ticketId: string }>('/api/cloud-projects/tickets', {
+        method: 'POST',
+        body: JSON.stringify({ repoUrl: cloudRepo.trim(), baseRef: cloudBase.trim() || 'main', prompt: prompt.trim() }),
+      })
       setSelectedId(created.ticketId)
       setPrompt('')
       await refresh()
@@ -200,7 +218,11 @@ function TicketPanel(): ReactNode {
           <div style={{ ...styles.list, display: 'flex', flexDirection: 'column' }} className="sx-team-list">
             {gatewayMode() ? (
               <div style={styles.form}>
-                <p style={{ margin: 0, opacity: 0.7 }}>Web 端只展示租户工单；本地目录请使用桌面端或已配对手机发起，云端项目入口待接入。</p>
+                <p style={{ margin: 0, opacity: 0.7 }}>Web 端只使用云端项目；本地目录请使用桌面端或已配对手机。</p>
+                <input style={styles.input} placeholder="Cloud repository URL" value={cloudRepo} onChange={event => setCloudRepo(event.target.value)} />
+                <input style={styles.input} placeholder="Base ref" value={cloudBase} onChange={event => setCloudBase(event.target.value)} />
+                <textarea style={{ ...styles.input, minHeight: 54 }} placeholder="What should the bot do?" value={prompt} onChange={event => setPrompt(event.target.value)} />
+                <button style={styles.button} disabled={busy || cloudRepo.trim() === '' || prompt.trim() === ''} onClick={() => { void createCloudTicket() }}>Dispatch cloud ticket</button>
               </div>
             ) : (
               <div style={styles.form}>
