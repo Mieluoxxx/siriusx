@@ -183,3 +183,88 @@ export class PiJsonBackend implements AgentBackend {
     return new PiSession(target.cwd, this.#options, this.id)
   }
 }
+
+export interface PiCloudKernelOptions {
+  readonly command: string
+  readonly args?: readonly string[]
+  readonly env?: Readonly<Record<string, string>>
+  /** Set this env name to the assignment prompt; useful for shell wrappers. */
+  readonly promptEnv?: string
+  /** Append `--print <prompt>` for a direct Pi CLI invocation. */
+  readonly appendPrompt?: boolean
+  readonly timeoutMs?: number
+}
+
+function parseCloudDiff(output: string): { filesChanged: number; insertions: number; deletions: number } {
+  let filesChanged = 0
+  let insertions = 0
+  let deletions = 0
+  for (const line of output.split('\n')) {
+    const [, added, removed, file] = line.split('\t')
+    if (file === undefined || added === undefined) continue
+    filesChanged++
+    if (added !== '-' && added !== undefined) insertions += Number(added)
+    if (removed !== '-' && removed !== undefined) deletions += Number(removed)
+  }
+  return { filesChanged, insertions, deletions }
+}
+
+/** Run a Pi JSON-mode process inside a CloudExecutor sandbox and return a report. */
+export class PiCloudKernel {
+  readonly #options: PiCloudKernelOptions
+  constructor(options: PiCloudKernelOptions) { this.#options = options }
+
+  async run(context: import('@siriusx/cloud-executor').CloudKernelContext): Promise<import('@siriusx/cloud-executor').AssignmentReport> {
+    const args = [...(this.#options.args ?? [])]
+    if (this.#options.appendPrompt === true) args.push('--print', context.assignment.input.prompt)
+    const env = {
+      ...this.#options.env,
+      ...(this.#options.promptEnv === undefined ? {} : { [this.#options.promptEnv]: context.assignment.input.prompt }),
+    }
+    const process = await context.sandbox.spawn(this.#options.command, args, { env })
+    // Pi --print does not consume stdin; closing it lets the CLI exit.
+    await process.writable.close().catch(() => undefined)
+    const reader = process.readable.getReader()
+    const decoder = new TextDecoder()
+    let output = ''
+    let finalText = ''
+    const consume = (text: string): void => {
+      output += text
+      let index = output.indexOf('\n')
+      while (index >= 0) {
+        const line = output.slice(0, index).trim()
+        output = output.slice(index + 1)
+        if (line !== '') this.#consumeEvent(JSON.parse(line) as Record<string, unknown>, value => { finalText = value })
+        index = output.indexOf('\n')
+      }
+    }
+    const readLoop = (async () => {
+      for (;;) {
+        const chunk = await reader.read()
+        if (chunk.done) return
+        consume(decoder.decode(chunk.value, { stream: true }))
+      }
+    })()
+    const timeoutMs = this.#options.timeoutMs ?? 30 * 60 * 1000
+    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Pi cloud turn timed out')), timeoutMs))
+    await Promise.race([process.exited, timeout])
+    // The Docker exec stdout may stay open for a moment after the wrapper
+    // exits; let the reader drain briefly, then continue with the report.
+    await Promise.race([readLoop, new Promise(resolve => setTimeout(resolve, 1000))]).catch(() => undefined)
+    if (output.trim() !== '') { try { this.#consumeEvent(JSON.parse(output.trim()) as Record<string, unknown>, value => { finalText = value }) } catch { /* partial */ } }
+    const diff = await context.sandbox.exec(`git -C ${context.cwd} diff --numstat`)
+    return {
+      kind: 'ready',
+      summary: finalText || 'Pi cloud turn finished without a final message',
+      diffStats: diff.exitCode === 0 ? parseCloudDiff(diff.stdout) : { filesChanged: 0, insertions: 0, deletions: 0 },
+      diffBasis: 'baseRef',
+    }
+  }
+
+  #consumeEvent(event: Record<string, unknown>, setFinal: (text: string) => void): void {
+    if (event.type === 'turn_end') {
+      const message = event.message as { content?: unknown } | undefined
+      if (message !== undefined) setFinal(textFromMessage(message))
+    }
+  }
+}

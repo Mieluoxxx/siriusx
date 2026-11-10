@@ -312,6 +312,9 @@ importers:
 
   packages/kernel-pi:
     dependencies:
+      '@siriusx/cloud-executor':
+        specifier: workspace:*
+        version: link:../cloud-executor
       '@siriusx/kernel-api':
         specifier: workspace:*
         version: link:../kernel-api

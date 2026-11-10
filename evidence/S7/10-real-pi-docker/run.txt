@@ -1,0 +1,48 @@
+{
+  "state": "reported",
+  "report": {
+    "kind": "ready",
+    "summary": "SiriusX offline mock reply: S1 conversation OK.",
+    "diffStats": {
+      "filesChanged": 0,
+      "insertions": 0,
+      "deletions": 0
+    },
+    "diffBasis": "baseRef"
+  },
+  "events": [
+    {
+      "type": "state",
+      "seq": 0,
+      "at": "2026-11-10T17:25:33.342Z",
+      "state": "preparing"
+    },
+    {
+      "type": "state",
+      "seq": 1,
+      "at": "2026-11-10T17:25:33.578Z",
+      "state": "running"
+    },
+    {
+      "type": "state",
+      "seq": 2,
+      "at": "2026-11-10T17:25:35.628Z",
+      "state": "reported"
+    },
+    {
+      "type": "report",
+      "seq": 3,
+      "at": "2026-11-10T17:25:35.628Z",
+      "report": {
+        "kind": "ready",
+        "summary": "SiriusX offline mock reply: S1 conversation OK.",
+        "diffStats": {
+          "filesChanged": 0,
+          "insertions": 0,
+          "deletions": 0
+        },
+        "diffBasis": "baseRef"
+      }
+    }
+  ]
+}
