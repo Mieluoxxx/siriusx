@@ -1,0 +1,16 @@
+{
+  "start": 302,
+  "authorize": 302,
+  "callback": 302,
+  "me": 200,
+  "meBody": {
+    "tenantId": "tenant-oidc",
+    "userId": "26fcc853-0970-43a4-9930-16c633c37ae5",
+    "role": "admin"
+  },
+  "logout": 302,
+  "endSession": 302,
+  "endSessionBody": "",
+  "cleared": true,
+  "after": 401
+}

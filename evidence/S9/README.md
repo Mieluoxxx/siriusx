@@ -122,5 +122,5 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 ## Web Gateway logout
 
 - `/auth/logout` 清除 HttpOnly session cookie；
-- 登出后 `/v1/me` 返回 401。
+- 登出后 `/v1/me` 返回 401；配置 OIDC 时还会跳到 IdP `end_session_endpoint`。
 - 证据：`10-logout/run.txt`。

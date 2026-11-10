@@ -36,6 +36,7 @@ interface OidcMetadata {
   readonly authorizationEndpoint: string
   readonly tokenEndpoint: string
   readonly jwksUri?: string
+  readonly endSessionEndpoint?: string
 }
 
 interface PendingOidc {
@@ -71,6 +72,7 @@ async function discoverOidc(options: OidcOptions): Promise<OidcMetadata> {
     authorizationEndpoint: value.authorization_endpoint,
     tokenEndpoint: value.token_endpoint,
     ...(typeof value.jwks_uri === 'string' ? { jwksUri: value.jwks_uri } : {}),
+    ...(typeof value.end_session_endpoint === 'string' ? { endSessionEndpoint: value.end_session_endpoint } : {}),
   }
 }
 
@@ -201,9 +203,16 @@ document.getElementById('f').onsubmit = async (event) => {
         return
       }
       if ((request.method === 'GET' || request.method === 'POST') && url.pathname === '/auth/logout') {
+        let location = '/login'
+        if (oidcEnabled && oidc !== undefined && oidcMetadata?.endSessionEndpoint !== undefined) {
+          const endSession = new URL(oidcMetadata.endSessionEndpoint)
+          endSession.searchParams.set('client_id', oidc.clientId)
+          endSession.searchParams.set('post_logout_redirect_uri', `${new URL(oidc.redirectUri).origin}/login`)
+          location = endSession.toString()
+        }
         response.writeHead(302, {
           'set-cookie': `${cookieName}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`,
-          location: '/login', 'cache-control': 'no-store',
+          location, 'cache-control': 'no-store',
         }).end()
         return
       }
