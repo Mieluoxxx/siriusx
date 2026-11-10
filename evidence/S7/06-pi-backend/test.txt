@@ -2,10 +2,10 @@ $ vitest run
 
  RUN  v4.1.11 /root/siriusx/packages/kernel-pi
 
- ✓ tests/pi.spec.ts (1 test) 941ms
-     ✓ runs two turns through a real pi CLI and keeps the session  939ms
+ ✓ tests/pi.spec.ts (1 test) 943ms
+     ✓ runs two turns through a real pi CLI and keeps the session  941ms
 
  Test Files  1 passed (1)
       Tests  1 passed (1)
-   Start at  16:49:31
-   Duration  1.10s (transform 35ms, setup 0ms, import 54ms, tests 941ms, environment 0ms)
+   Start at  17:31:16
+   Duration  1.11s (transform 36ms, setup 0ms, import 57ms, tests 943ms, environment 0ms)

@@ -181,6 +181,10 @@ describe('control plane', () => {
     const seen: Array<Record<string, string | string[] | undefined>> = []
     const tool = createServer((request, response) => {
       seen.push(request.headers)
+      if (request.method === 'GET' && (request.url ?? '').startsWith('/v1/audit')) {
+        response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ audit: [{ id: 'audit-1', ticket_id: 't1', decision: 'approved:human' }] }))
+        return
+      }
       if (request.method === 'GET') {
         response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ approvals: [{ approvalId: 'a1', ticketId: 't1', title: 'github: send_email', detail: 'x', risk: 'medium', status: 'pending', expiresAt: new Date().toISOString() }] }))
         return
@@ -202,6 +206,11 @@ describe('control plane', () => {
     expect(list.approvals).toHaveLength(1)
     const decided = await fetch(`${server.url}/v1/approvals/a1/decide`, { method: 'POST', headers: auth(token), body: JSON.stringify({ approved: true }) }).then(response => response.json()) as { status: string }
     expect(decided.status).toBe('approved')
+    // A Bot ticket trace combines ticket events with tool-gateway audit.
+    const ticket = server.control.createTicket({ tenantId: tenant.id, userId: admin.id, role: 'admin' } as never, { path: root, prompt: 'trace me' })
+    const trace = await fetch(`${server.url}/v1/tickets/${ticket.ticketId}/trace`, { headers: auth(token) }).then(response => response.json()) as { ticket: { ticketId: string }; audit: unknown[] }
+    expect(trace.ticket.ticketId).toBe(ticket.ticketId)
+    expect(trace.audit).toHaveLength(1)
     expect(seen[0]?.['x-tenant-id']).toBe(tenant.id)
     expect(seen[0]?.['x-user-id']).toBe(admin.id)
     await new Promise<void>((resolve, reject) => tool.close(error => { error === undefined ? resolve() : reject(error) }))

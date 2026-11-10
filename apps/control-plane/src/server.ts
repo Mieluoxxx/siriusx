@@ -183,6 +183,21 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       }
       if (parts[0] === 'v1' && parts[1] === 'tickets' && parts[2] !== undefined) {
         const ticketId = parts[2]
+        if (request.method === 'GET' && parts.length === 4 && parts[3] === 'trace') {
+          const ticket = control.ticketDetail(session, ticketId) as Record<string, unknown>
+          let audit: unknown[] = []
+          if (toolGatewayUrl !== undefined) {
+            const upstream = await fetch(`${toolGatewayUrl}/v1/audit?ticketId=${encodeURIComponent(ticketId)}`, {
+              headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role },
+            })
+            if (upstream.ok) {
+              const body = await upstream.json() as { audit?: unknown[] }
+              audit = body.audit ?? []
+            }
+          }
+          write(response, 200, { ticket, audit })
+          return
+        }
         if (request.method === 'GET' && parts.length === 3) {
           write(response, 200, control.ticketDetail(session, ticketId))
           return

@@ -104,19 +104,21 @@ export class PiSession implements AgentSession {
     child.stderr.on('data', chunk => { this.#stderr += chunk.toString() })
     let output = ''
     let finalText = ''
+    let ended = false
+    const stdoutClosed = new Promise<void>(resolve => child.stdout.once('end', resolve))
     child.stdout.on('data', chunk => {
       output += chunk.toString()
       let index = output.indexOf('\n')
       while (index >= 0) {
         const line = output.slice(0, index).trim()
         output = output.slice(index + 1)
-        if (line !== '') this.#handleEvent(JSON.parse(line) as PiEvent, turn, event => { finalText = event })
+        if (line !== '') this.#handleEvent(JSON.parse(line) as PiEvent, turn, event => { finalText = event; ended = true })
         index = output.indexOf('\n')
       }
     })
-    await new Promise<void>(resolve => child.once('exit', () => resolve()))
-    if (output.trim() !== '') { try { this.#handleEvent(JSON.parse(output.trim()) as PiEvent, turn, event => { finalText = event }) } catch { /* partial line */ } }
-    if (this.#status === 'running') {
+    await Promise.all([new Promise<void>(resolve => child.once('exit', () => resolve())), stdoutClosed])
+    if (output.trim() !== '') { try { this.#handleEvent(JSON.parse(output.trim()) as PiEvent, turn, event => { finalText = event; ended = true }) } catch { /* partial line */ } }
+    if (!ended && this.#status === 'running') {
       this.#seq++
       this.#emit([
         { type: 'assistant.attempt.end', attemptId: this.#attempt, outcome: 'aborted' },

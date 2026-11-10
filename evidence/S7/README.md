@@ -54,3 +54,9 @@
 - CloudExecutor 状态尚未持久化到 SQLite；真实崩溃后需由 Bot/控制面重放。
 - Docker 集成测试使用本机已有的 `teams-bridge:0.2.0` 镜像；产品镜像需要固定 digest。
 - `AcpCloudKernel` 只把最终文本作为 `ready` 报告；正式实现要解析结构化 `siriusx-report` 并校验。
+
+## Pi JSON 输出时序修复
+
+- `PiSession` 现在等待 **进程 exit + stdout end** 后才决定是否补发 fallback turn.end；
+- 避免真实 Pi 两轮测试出现重复 `turn.end`。
+- 证据：`06-pi-backend/test.txt`。

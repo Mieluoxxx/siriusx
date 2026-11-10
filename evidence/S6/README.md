@@ -42,3 +42,11 @@
 - `01-tool-gateway/run.txt` 里 connector 只返回 `credentialPresent: true`，证明
   gateway 持有凭据；审计与审批卡都没有 token 原文。
 - 策略当前是内置纯函数；下一步应把租户策略库与审批人规则接入 control-plane。
+
+## 工单轨迹查询
+
+- 新增 `GET /v1/tickets/:id/trace`：
+  - 返回 ticket + 事件流
+  - 若配置 tool-gateway，则合并该 ticket 的审计记录
+- 证据：`04-trace/test.txt`。
+- 仍缺：把 analytics JSONL 也合并进同一查询。
