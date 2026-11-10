@@ -1,0 +1,6 @@
+{
+  "status": 200,
+  "gatewaySawClientKey": false,
+  "upstreamSawKey": true,
+  "diskHits": []
+}

@@ -65,3 +65,10 @@
 - 上游 500 时抛错（fail closed）；
 - 测试：`token-1` → TTL 后 `token-2`；500 抛错。
 - 证据：`06-vault-rotation/test.txt`。
+
+## 模型上游密钥隔离
+
+- 本地 model gateway 上游 key 只在 gateway 进程 env；
+- client→gateway 抓包与 data dir 搜索均无 key；
+- 上游 mock 确实收到 Bearer key。
+- 证据：`07-model-key-isolation/run.txt`。
