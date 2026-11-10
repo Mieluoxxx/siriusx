@@ -1,0 +1,10 @@
+import { chromium } from '/root/siriusx/deepseek-harness/node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs'
+const browser = await chromium.launch({ headless: true, executablePath: '/root/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome', args: ['--no-sandbox'] })
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+const errors = []; page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) }); page.on('pageerror', e => errors.push(String(e)))
+await page.goto(`http://127.0.0.1:13000/${process.env.QUERY}`, { waitUntil: 'domcontentloaded' })
+await page.waitForTimeout(7000)
+const body = await page.locator('body').innerText()
+console.log(JSON.stringify({ url: page.url(), body: body.slice(0, 1200), errors }, null, 2))
+await page.screenshot({ path: '/tmp/s8-dsh-web-image.png', fullPage: true })
+await browser.close()

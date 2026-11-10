@@ -89,3 +89,9 @@
 - 离线 bundle 增加 cloud-executor、kernel-acp、web-gateway；
 - 解包 control-plane health、租户、token、settings 通过；修复 ACP fixture 后离线包内 cloud_project 任务也跑通。
 - 证据：`08-offline-full/`。
+
+## DSH Web Host 离线镜像
+
+- 新增 Dockerfile/构建脚本，把 Node 24、DSH 源码、SiriusX 插件和预生成 profile 打进镜像；
+- 容器启动无需 pnpm/网络，能输出 token URL 并加载 SiriusX/Team 插件。
+- 证据：`09-dsh-web-image/`。

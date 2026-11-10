@@ -12,6 +12,14 @@ services:
       - "127.0.0.1:4322:4322"
     volumes:
       - siriusx-data:/data
+  dsh-web:
+    image: ${SIRIUSX_DSH_WEB_IMAGE:-siriusx/dsh-web:offline}
+    profiles: ["full"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - dsh-web-data:/data
   tool-gateway:
     image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
     restart: unless-stopped
@@ -28,3 +36,4 @@ services:
       - siriusx-data:/data
 volumes:
   siriusx-data:
+  dsh-web-data:

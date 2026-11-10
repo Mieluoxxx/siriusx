@@ -1,0 +1,14 @@
+# DSH Web Host image. Build context is staged by build-dsh-web-image.sh:
+#   node24/ dsh/ plugins/
+FROM debian:bookworm-slim
+COPY node24 /opt/node24
+COPY dsh /opt/dsh
+COPY plugins /opt/plugins
+COPY dsh-home /opt/dsh-home-template
+COPY dsh-web-entrypoint.sh /usr/local/bin/dsh-web-entrypoint.sh
+ENV PATH=/opt/node24/bin:$PATH
+ENV DSH_HOME=/data/dsh-home
+ENV DSH_TELEMETRY_DISABLED=1
+VOLUME ["/data"]
+EXPOSE 3000
+ENTRYPOINT ["/usr/local/bin/dsh-web-entrypoint.sh"]
