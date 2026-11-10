@@ -4,6 +4,11 @@ import { CreateAssignmentSchema, type CreateAssignment } from '@siriusx/contract
 import { LocalExecutor } from '@siriusx/executor-local'
 import { FakeKernel } from '@siriusx/fake-kernel'
 
+const UPLINK_EVENT_TYPES = new Set([
+  'state', 'report', 'activity', 'session.ready', 'turn.start', 'turn.end',
+  'assistant.attempt.start', 'assistant.attempt.end', 'permission.request', 'permission.settled',
+])
+
 export interface DeviceAgentOptions {
   readonly url: string
   readonly token: string
@@ -43,7 +48,7 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
     active.set(assignment.ticketId, activeEntry)
     const sendNew = (): void => {
       for (const event of executor.streamEventsForBot(created.assignmentId, 0).events) {
-        if (sent.has(event.seq)) continue
+        if (sent.has(event.seq) || !UPLINK_EVENT_TYPES.has(event.type)) continue
         sent.add(event.seq)
         socket.send(JSON.stringify({ type: 'ticket.event', ticketId: assignment.ticketId, event }))
       }
@@ -65,7 +70,7 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
           void (async () => {
             const cancelled = await running.executor.cancelAssignment(running.assignmentId, 'graceful')
             for (const event of running.executor.streamEventsForBot(cancelled.assignmentId, 0).events) {
-              if (running.sent.has(event.seq)) continue
+              if (running.sent.has(event.seq) || !UPLINK_EVENT_TYPES.has(event.type)) continue
               running.sent.add(event.seq)
               socket.send(JSON.stringify({ type: 'ticket.event', ticketId: message.ticketId, event }))
             }

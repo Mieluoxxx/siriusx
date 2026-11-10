@@ -58,3 +58,10 @@ Team panel 自动变为单列，工单列表、详情、diff 和事件流均可�
 - 证据：`08-mobile-approval-resume/run.txt`、`mobile-approval-resume.png`。
 
 仍缺：真实 iOS/Android 真机与真实等待中 agent 的同链路联调。
+
+## 设备上行脱敏
+
+- device agent 只上行 state/report/activity/turn 边界/permission，不上行 assistant.delta、assistant.message、tool.*、log；
+- 测试用包含 `LOCAL_SECRET_CODE_42` 的本地仓库和 fake kernel 输出，control-plane 事件轨迹中不含该内容；
+- 工单仍正常到 `person/review`。
+- 证据：`09-uplink-redaction/test.txt`。

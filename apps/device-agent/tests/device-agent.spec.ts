@@ -74,7 +74,7 @@ describe('device agent', () => {
     expect(detail?.stage).toBe('person/review')
     expect(detail?.latestAssignment?.report?.kind).toBe('ready')
     expect(detail?.events?.length).toBeGreaterThanOrEqual(3)
-    expect((detail?.events ?? []).every(event => (event as { type?: string }).type !== 'log')).toBe(true)
+    expect((detail?.events ?? []).every(event => !['log', 'assistant.delta', 'assistant.message', 'tool.call', 'tool.result'].includes((event as { type?: string }).type ?? ''))).toBe(true)
 
     const beforeFollowUp = detail?.events?.length ?? 0
     const followUp = await fetch(`${server.url}/v1/tickets/${assigned.ticketId}/input`, {
@@ -143,5 +143,52 @@ describe('device agent', () => {
     expect(final?.latestAssignment?.state).toBe('cancelled')
     expect(final?.stage).toBe('idle')
   }, 30_000)
+
+  it('never uplifts assistant text or tool output containing local code', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-device-redaction-'))
+    roots.push(root)
+    await execFileAsync('git', ['init', '-q'], { cwd: root })
+    await execFileAsync('git', ['config', 'user.email', 'test@example.com'], { cwd: root })
+    await execFileAsync('git', ['config', 'user.name', 'Test'], { cwd: root })
+    await writeFile(join(root, 'secret.txt'), 'LOCAL_SECRET_CODE_42\n')
+    await execFileAsync('git', ['add', '.'], { cwd: root })
+    await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret' })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
+    const pairing = await fetch(`${server.url}/v1/devices/pair/start`, { method: 'POST', headers: auth, body: JSON.stringify({ name: 'Redaction Device' }) }).then(response => response.json()) as { code: string }
+    const paired = await fetch(`${server.url}/v1/devices/pair/confirm`, { method: 'POST', headers: auth, body: JSON.stringify({ code: pairing.code }) }).then(response => response.json()) as { deviceId: string; token: string }
+    const bot = await fetch(`${server.url}/v1/bots`, { method: 'POST', headers: auth, body: JSON.stringify({ name: 'Redaction Bot' }) }).then(response => response.json()) as { id: string }
+    const gateway = await startDeviceGateway({ control: server.control, port: 0 })
+    gateways.push(gateway)
+    server.setDeviceGateway(gateway)
+    const executor = new LocalExecutor({
+      tenantId: tenant.id,
+      backend: new FakeKernel({ defaultScenario: { steps: [
+        { kind: 'delta', text: 'LOCAL_SECRET_CODE_42' },
+        { kind: 'tool', name: 'LOCAL_SECRET_CODE_42' },
+        { kind: 'delta', text: '```siriusx-report\n{"kind":"ready","summary":"redacted task finished","diffStats":{"filesChanged":0,"insertions":0,"deletions":0},"diffBasis":"ticketStart"}\n```' },
+      ] } }),
+    })
+    const agent = await startDeviceAgent({ url: gateway.url, token: paired.token, executor })
+    agents.push(agent)
+    await agent.ready
+    const created = await fetch(`${server.url}/v1/bots/${bot.id}/tickets`, {
+      method: 'POST', headers: auth,
+      body: JSON.stringify({ deviceId: paired.deviceId, path: root, prompt: 'read local code' }),
+    }).then(response => response.json()) as { ticketId: string }
+    let detail: { stage: string; events?: unknown[] } | undefined
+    for (let index = 0; index < 200; index++) {
+      detail = await fetch(`${server.url}/v1/tickets/${created.ticketId}`, { headers: auth }).then(response => response.json()) as typeof detail
+      if (detail?.stage === 'person/review') break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    const serialized = JSON.stringify(detail?.events ?? [])
+    expect(serialized).not.toContain('LOCAL_SECRET_CODE_42')
+    expect(detail?.stage).toBe('person/review')
+  })
 
 })
