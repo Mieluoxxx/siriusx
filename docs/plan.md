@@ -218,7 +218,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 - [x] 一个写入类动作在未批准时没有执行。批准后执行，审计里有这条记录。证据：`evidence/S6/01-tool-gateway/run.txt`。
 - [x] 停掉策略判定服务，所有外部调用被拒绝。证据：`policyEnabled:false` 测试。
-- [ ] 在 agent 进程的环境变量和日志里搜索连接器凭据，找不到。**部分完成**：审计/结果无 token；真实 sandbox env 未验。
+- [x] 在 agent 进程的环境变量和日志里搜索连接器凭据，找不到。证据：connector 持有 secret，sandbox `env` 与 audit 均无 secret；`evidence/S6/08-agent-credential-isolation/run.txt`。
 - [x] 用一个 `ticketId` 能查出这张工单的完整轨迹。证据：`GET /v1/tickets/:id/trace` 合并 ticket 事件 + tool-gateway 审计 + analytics `.l0l1.jsonl`；`evidence/S6/04-trace/test.txt`。
 - [x] 停掉事件总线，任务照常执行完。**SDK 级**证据：`packages/analytics` sink 故障不抛出。
 - [x] 跑一个本地任务并抓包，上行的数据里没有提示词、代码和命令输出的原文。证据：`streamEventsForBot` 过滤 log；device agent 只上行 lifecycle/report；主机 tcpdump 27 packets 中不含 `LOCAL_SECRET_CODE_42`。`evidence/S10/09-uplink-redaction/`、`10-packet-capture/`、`11-tcpdump-capture/`。

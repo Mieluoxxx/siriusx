@@ -72,3 +72,9 @@
 - client→gateway 抓包与 data dir 搜索均无 key；
 - 上游 mock 确实收到 Bearer key。
 - 证据：`07-model-key-isolation/run.txt`。
+
+## Agent 凭据隔离
+
+- connector 凭据只在 tool-gateway 进程；
+- Docker agent 进程 env 与 audit 均无 secret。
+- 证据：`08-agent-credential-isolation/run.txt`。
