@@ -14,7 +14,7 @@
 
 ## 未完成
 
-- 浏览器 SSO 登录后把控制面 token 注入 Team panel：**已由 web-gateway HttpOnly cookie + 同源 `/v1` 代理完成**；
+- 浏览器 SSO 登录后把控制面 token 注入 Team panel：**已由 web-gateway HttpOnly cookie + 同源 `/v1` 代理完成**；审批卡也已通过 Gateway 验证；
 - 未登录访问预览地址的 401：**通过**，重定向 `/login`，`/v1` 返回 401；
 - 两租户 Web 并排验证：**通过**，Acme 1 ticket / Beta 0 ticket；
 - 云端 `cloud_project` 任务发起（当前 Team panel 仍连本地 Bot API）；
@@ -57,3 +57,10 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 浏览器无控制台错误；
 - `nativeNewSessionVisible=false`、`localPathVisible=false`。
 - 证据：`02-gateway/run.txt`、`02-gateway/gateway.png`。
+
+## Web Gateway 审批
+
+- Web Gateway 同源代理 `/v1/approvals` 到 control-plane，再转发 tool-gateway；
+- 浏览器 cookie 登录后，Team panel 看到真实审批卡；
+- 点击 Approve 后，tool-gateway 状态变为 `approved`；
+- 证据：`03-gateway-approval/run.txt`、`gateway-approval.png`。

@@ -1,0 +1,5 @@
+{
+  "before": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\npending · medium\nacme/repo\napprove through web gateway\nticket gateway-approval\nApprove\nReject",
+  "after": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\ngithub: send_email\napproved · medium\nacme/repo\napprove through web gateway\nticket gateway-approval\nApprove\nReject",
+  "errors": []
+}
