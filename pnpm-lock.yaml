@@ -304,6 +304,19 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.3.7(@types/node@24.13.3)(esbuild@0.28.2)(tsx@4.23.13))
 
+  packages/kernel-pi:
+    dependencies:
+      '@siriusx/kernel-api':
+        specifier: workspace:*
+        version: link:../kernel-api
+    devDependencies:
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@24.13.3)(vite@8.3.7(@types/node@24.13.3)(esbuild@0.28.2)(tsx@4.23.13))
+
   plugins/account-sso:
     dependencies:
       '@deepseek-ai/cordis':

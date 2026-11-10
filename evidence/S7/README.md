@@ -22,13 +22,15 @@
   本地 mock HTTP 测试验证 Authorization 与请求体。证据：`04-github-connector/`。
 - GitHub write 经工具网关审批：read 直接执行，open PR 先 pending，批准后才 POST；
   审计无 token。证据：`05-github-gateway/test.txt`。
+- 真实 Pi CLI backend：`packages/kernel-pi` 通过 `pi --mode json` 跑两轮会话，
+  映射 text delta / turn_end / assistant.message；模型使用本地 mock。证据：`06-pi-backend/test.txt`。
 
 ## 验收对照
 
 | 验收项 | 状态 | 证据 |
 | --- | --- | --- |
 | ACP 会话能跑通 | **通过（fake ACP、真实 Docker、真实 DSH ACP）** | `02-acp-backend/test.txt`、`cloud-acp-docker.txt`、`03-real-dsh-acp/run.txt` |
-| pi 与 dsh 跑同一任务、事件一致 | **部分**：真实 dsh ACP 已跑通；pi 尚未接 | `03-real-dsh-acp/run.txt` |
+| pi 与 dsh 跑同一任务、事件一致 | **部分**：真实 dsh ACP 与真实 pi CLI 两轮均跑通；同一工单/Bot 侧并排未做 | `03-real-dsh-acp/run.txt`、`06-pi-backend/test.txt` |
 | 两个任务文件互不可见 | **通过** | `01-cloud-executor/docker-isolation.txt` |
 | 沙箱断网 | **通过** | 同上 |
 | 沙箱删掉后 workdir 还在 | **通过** | 同上 |
