@@ -5,8 +5,12 @@
   "type": "module",
   "description": "SiriusX single-box control plane: tenants, members, devices, personal bots, settings and tenant Bot runtimes.",
   "license": "MIT",
-  "bin": { "control-plane": "./src/cli.ts" },
-  "exports": { ".": "./src/index.ts" },
+  "bin": {
+    "control-plane": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "control-plane": "tsx src/cli.ts",
     "test": "vitest run",
@@ -17,11 +21,13 @@
     "@siriusx/autobot": "workspace:*",
     "@siriusx/fake-kernel": "workspace:*",
     "@siriusx/executor-local": "workspace:*",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "ws": "8.18.3"
   },
   "devDependencies": {
     "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "@types/ws": "8.18.1"
   }
 }

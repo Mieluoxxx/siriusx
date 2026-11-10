@@ -5,14 +5,18 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ControlPlane } from '../src/index.ts'
 import { startControlPlaneServer, type ControlPlaneServer } from '../src/server.ts'
 import { startModelGateway, type ModelGateway } from '../src/model-gateway.ts'
+import { startDeviceGateway, type DeviceGateway } from '../src/device-gateway.ts'
+import { WebSocket } from 'ws'
 import { createServer } from 'node:http'
 
 const roots: string[] = []
 const servers: ControlPlaneServer[] = []
 const planes: ControlPlane[] = []
 const gateways: ModelGateway[] = []
+const deviceGateways: DeviceGateway[] = []
 
 afterEach(async () => {
+  for (const gateway of deviceGateways.splice(0)) await gateway.close()
   for (const gateway of gateways.splice(0)) await gateway.close()
   for (const server of servers.splice(0)) await server.close()
   for (const plane of planes.splice(0)) plane.close()
@@ -129,4 +133,46 @@ describe('control plane', () => {
     const settings = await fetch(`${server.url}/v1/settings`, { headers: auth(token) }).then(response => response.json()) as { nativeConversationEnabled: boolean }
     expect(settings.nativeConversationEnabled).toBe(true)
   })
+  it('keeps a paired device connected and rejects a revoked token', async () => {
+    const { root, server } = await serverSetup()
+    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const pairStart = await fetch(`${server.url}/v1/devices/pair/start`, {
+      method: 'POST', headers: auth(token), body: JSON.stringify({ name: 'Device' }),
+    }).then(response => response.json()) as { code: string }
+    const paired = await fetch(`${server.url}/v1/devices/pair/confirm`, {
+      method: 'POST', headers: auth(token), body: JSON.stringify({ code: pairStart.code }),
+    }).then(response => response.json()) as { deviceId: string; token: string }
+    const gateway = await startDeviceGateway({ control: server.control, port: 0 })
+    deviceGateways.push(gateway)
+    server.setDeviceGateway(gateway)
+    const events: Array<Record<string, unknown>> = []
+    const closeCode = new Promise<number>(resolve => {
+      const socket = new WebSocket(`${gateway.url}?token=${encodeURIComponent(paired.token)}`)
+      socket.on('message', raw => events.push(JSON.parse(raw.toString()) as Record<string, unknown>))
+      socket.on('close', code => resolve(code))
+      socket.on('open', () => {
+        socket.send(JSON.stringify({ type: 'heartbeat' }))
+        setTimeout(() => {
+          fetch(`${server.url}/v1/devices/${paired.deviceId}/tickets`, {
+            method: 'POST', headers: auth(token),
+            body: JSON.stringify({ path: root, prompt: 'device local task' }),
+          }).then(async response => {
+            expect(response.status).toBe(202)
+            const assigned = await response.json() as { delivered: boolean }
+            expect(assigned.delivered).toBe(true)
+            return fetch(`${server.url}/v1/devices/${paired.deviceId}/revoke`, { method: 'POST', headers: auth(token) })
+          }).then(() => socket.send(JSON.stringify({ type: 'heartbeat' }))).catch(() => undefined)
+        }, 30)
+      })
+    })
+    expect(await closeCode).toBe(4001)
+    expect(events).toContainEqual(expect.objectContaining({ type: 'registered', deviceId: paired.deviceId }))
+    expect(events).toContainEqual(expect.objectContaining({ type: 'heartbeat.ack' }))
+    expect(events).toContainEqual(expect.objectContaining({ type: 'ticket.assign' }))
+    const bogus = new WebSocket(`${gateway.url}?token=bogus`)
+    expect(await new Promise<number>(resolve => bogus.once('close', code => resolve(code)))).toBe(4001)
+  })
+
 })

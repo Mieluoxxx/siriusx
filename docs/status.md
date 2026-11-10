@@ -1,0 +1,33 @@
+# 实施状态（滚动更新）
+
+| 阶段 | 代码 | 证据 | 状态 |
+| --- | --- | --- | --- |
+| S0 前提 | `docs/spike.md`、`evidence/S0/` | auth/tenant/coexist/agent-interface | **完成** |
+| S1 fork/遥测 | `deepseek-harness` 仅 `apps/desktop/src/main.ts` 改动；`plugins/telemetry-off*` | `evidence/S1/` | **部分**：Linux 构建通过；mac/win 启动与 10 分钟抓包待收尾 |
+| S2 契约/内核 | `packages/contracts`、`kernel-api`、`kernel-dsh`、`fake-kernel` | `evidence/S2/` | **完成** |
+| S3 本机闭环 | `packages/executor-local`、`plugins/executor-local`、`apps/autobot` | `evidence/S3/` | **部分**：真实 DSH AgentLoop 已验证；previews/TTL/真实 Host kill 待补 |
+| S4 工单界面 | `plugins/client-ui-team`、`packages/app-contract`、`apps/autobot/src/server.ts` | `evidence/S4/` | **部分**：发起/阶段/diff/排序/断线清空通过；审批与完整打断 UI 待补 |
+| S5 登录/租户 | `plugins/account-sso`、`apps/control-plane`（含 device gateway/model gateway）、Desktop enterprise gate | `evidence/S5/` | **部分**：OIDC/隔离/配对/长连接/模型网关通过；真实 IdP、KMS、单机安装待补 |
+| S6 工具网关 | `apps/tool-gateway`、`packages/analytics`、local_dir 上行过滤 | `evidence/S6/` | **部分**：审批/审计/fail-closed/分级通过；KMS、真实抓包、UI 审批卡待补 |
+| S7 云执行 | `packages/cloud-executor`、`packages/kernel-acp` | `evidence/S7/` | **部分**：Docker 隔离/卷持久化/ACP-in-Docker 通过；真实 dsh/pi、代码平台、M2 真崩溃待补 |
+| S8 发布 | `plugins/brand-siriusx`、`deploy/release`、`deploy/offline` | `evidence/S8/` | **骨架**：品牌/图标/打包参数通过；mac/win 签名安装与真机验收待补 |
+| S9 Web | DSH Web Host + Team panel control-plane 模式 | `evidence/S9/` | **部分**：同插件复用、两租户隔离通过；正式 SSO/反向代理/云端项目待补 |
+| S10 手机 | Team panel 响应式 | `evidence/S10/` | **评估通过**：390×844 可用；真机、审批、远程本地目录待补 |
+
+## 下一步优先级（不需要人工等待的）
+
+1. 把 S9 的 control-plane token 注入改成带鉴权的反向代理 + HttpOnly 会话。
+2. 把 tool-gateway 审批卡接入 Team panel。
+3. 用真实 `dsh` / `pi` 二进制替换 S7 的 fake ACP agent。
+4. 把 CloudExecutor 状态持久化到 SQLite，并接 Bot 服务的 `lost` 重试。
+5. 准备 mac/win 构建机与签名/公证凭据，完成 S8 真机安装。
+
+## 必须人工等待/外部条件的
+
+- S1 的 macOS/Windows 启动、10 分钟抓包、5 天使用；
+- S3 的 15 分钟 Host kill/restart；
+- S4 的 10 个工作日真实使用；
+- S5 的干净机器安装、真实 SSO IdP、KMS；
+- S7 的真实 GitHub/GitLab issue→MR、M2 真崩溃恢复；
+- S8 的签名/公证、真实客户 30 天；
+- S10 的 iOS/Android 真机。

@@ -183,7 +183,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 提供命令行开通租户：创建租户、配置 SSO、指定首个管理员。证据：`control-plane tenant create` / `user add` / `token issue`。
 - [x] 在桌面端接入 SSO 登录，协议先做 OIDC。证据：`plugins/account-sso`、`apps/desktop/src/enterprise.ts`、`evidence/S5/01-sso/run.txt`（Host 侧完整 OIDC 流程）。
 - [x] 让租户上下文进入 Host，做法以 S0 的结论为准。证据：`siriusxTenant` service + tenant probe。
-- [ ] 做入口网关的最小版：本机 Executor 主动建立长连接，网关按租户路由。**未完成**：pairing/token/API 路由已有，WebSocket 长连接未实现。
+- [x] 做入口网关的最小版：本机 Executor 主动建立长连接，网关按租户路由。**最小版完成**：`apps/control-plane/src/device-gateway.ts`；任务协议与重连待接。
 - [x] 做租户模型网关的最小版：本机 dsh 用 SSO 短期令牌访问，上游密钥留在服务端。证据：`apps/control-plane/src/model-gateway.ts`、`evidence/S5/03-control-plane/run.txt`。
 - [x] 做设备配对：桌面端显示配对码，成员在已登录的界面里确认。**服务端完成**；桌面配对 UI 待接入。证据：`03-control-plane/run.txt`。
 - [ ] 做个人 Bot 的最小版：成员能创建一个个人 Bot，它能派工给该成员已配对的电脑。本地执行只给个人 Bot（#51）。**部分完成**：创建/列出 personal bot 与每租户 runtime 已有；派工到已配对设备的长连接未实现。
@@ -195,7 +195,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 用命令行开通两个租户；两个租户的 token 互相看不到 bot/ticket。证据：`evidence/S5/03-control-plane/run.txt`。真实 SSO 浏览器双租户截图待补。
 - [x] 不登录时直接请求 Bot 服务的接口，服务端拒绝（401）。证据：`03-control-plane/run.txt` 与单测。
 - [ ] 登录后原生对话带有「个人、不审计」标识。管理员关掉开关后，登录状态下原生对话入口不可用。**部分完成**：设置 API/DB 开关和 Desktop gate 已有；视觉入口尚未接线。
-- [ ] 未配对的设备和已吊销的设备都建立不了长连接。**部分完成**：device token 校验与吊销已实现；长连接网关未实现。
+- [x] 未配对的设备和已吊销的设备都建立不了长连接。证据：`apps/control-plane/tests/control-plane.spec.ts`、`evidence/S5/03-control-plane/device-gateway-test.txt`。
 - [ ] 在本机抓包并搜索磁盘，找不到模型上游密钥。**部分完成**：gateway 单测证明上游 key 只在 gateway env；真实抓包未做。
 - [ ] 断网后 15 分钟内恢复，本地任务的状态对账正确。断网超过 15 分钟，工单被结算为 `lost`。**未完成**。
 - [ ] 手工改掉本机插件的启用状态，让团队面板在未登录时显示出来。面板里没有数据，服务端拒绝了它的请求。**未完成**：服务端拒绝已具备，前端实测未做。
@@ -289,7 +289,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [x] 先验一件事：DSH 的 `web` profile 能否在云端按用户提供与桌面端相同的前端和插件。**通过**：真实 Web Host 复用同一 Team 客户端插件。证据：`evidence/S9/README.md`。
-- [x] 如果能，把它部署成 Web 端，工单界面插件原样复用。**部分完成**：Web Host + Team panel 已跑通；控制面 token/SSO 注入未接。
+- [x] 如果能，把它部署成 Web 端，工单界面插件原样复用。**部分完成**：Web Host + Team panel 已跑通；控制面 token 已支持 localStorage 注入，正式 SSO/HttpOnly 未接。证据：`evidence/S9/01-control-plane/run.txt`。
 - [x] 如果不能，把工单、Bot 列表、审批这部分做成独立的 Web 应用，按 S4 的应用契约直连 Bot 服务，并修订 roadmap #59。**不适用**：web profile 可复用。
 - [ ] 预览地址经带鉴权的反向代理访问。**未完成**。
 

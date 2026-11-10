@@ -1,0 +1,30 @@
+{
+  "acme": {
+    "label": "acme",
+    "body": "DSH Local Build\n0.2.2-rc.1-fcc0ad4\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\nidle\nclosed\n5f923beb-a195 · reported\ntenant-local Bot runtime finished\nidle\nreported\n5f923beb-a195-4e9e-a52d-9eace8847786\ntenant-local Bot runtime finished\n{\n  \"filesChanged\": 0,\n  \"insertions\": 0,\n  \"deletions\": 0\n}\nSend\nStop\nEvents\n{\"type\":\"state\",\"seq\":0,\"at\":\"2026-11-10T15:09:59.046Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":1,\"at\":\"2026-11-10T15:09:59.047Z\",\"state\":\"running\"}\n{\"type\":\"report\",\"seq\":2,\"at\":\"2026-11-10T15:09:59.057Z\",\"report\":{\"kind\":\"ready\",\"summary\":\"tenant-local Bot runtime finished\",\"diffStats\":{\"filesChanged\":0,\"insertions\":0,\"deletions\":0},\"diffBasis\":\"ticketStart\"}}\n{\"type\":\"state\",\"seq\":3,\"at\":\"2026-11-10T15:09:59.057Z\",\"state\":\"reported\"}",
+    "errors": [],
+    "controlRequests": [
+      "GET http://127.0.0.1:4320/v1/bots",
+      "GET http://127.0.0.1:4320/v1/tickets",
+      "POST http://127.0.0.1:4320/v1/tickets",
+      "GET http://127.0.0.1:4320/v1/bots",
+      "GET http://127.0.0.1:4320/v1/tickets",
+      "GET http://127.0.0.1:4320/v1/bots",
+      "GET http://127.0.0.1:4320/v1/tickets",
+      "GET http://127.0.0.1:4320/v1/tickets/5f923beb-a195-4e9e-a52d-9eace8847786",
+      "GET http://127.0.0.1:4320/v1/bots",
+      "GET http://127.0.0.1:4320/v1/tickets",
+      "GET http://127.0.0.1:4320/v1/tickets/5f923beb-a195-4e9e-a52d-9eace8847786",
+      "GET http://127.0.0.1:4320/v1/bots"
+    ]
+  },
+  "beta": {
+    "label": "beta",
+    "body": "DSH Local Build\n0.2.2-rc.1-fcc0ad4\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\n\nNo tickets yet. Dispatch one to the local Executor.\n\nSelect a ticket to inspect its report and events.",
+    "errors": [],
+    "controlRequests": [
+      "GET http://127.0.0.1:4320/v1/bots",
+      "GET http://127.0.0.1:4320/v1/tickets"
+    ]
+  }
+}

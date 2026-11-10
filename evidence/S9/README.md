@@ -20,3 +20,19 @@
 - 云端 `cloud_project` 任务发起（当前 Team panel 仍连本地 Bot API）；
 - 带鉴权的预览反向代理；
 - 关闭标签页后任务继续（Bot 侧可继续，但 Web 端未做任务恢复 UI）。
+
+## 控制面 token 接入（最小可用）
+
+Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.controlApi`：
+- 有 token 时所有请求走 control-plane `/v1` 并带 `Authorization: Bearer`；
+- 无 token 时仍走本地 Bot API。
+
+真实 Chromium 验证：
+
+- Acme token：创建工单、读回详情/事件，网络请求全部为 `127.0.0.1:4320/v1/...`；
+- Beta token：同一 Web Host 下 `0 bot · 0 ticket`，看不到 Acme 工单；
+- 截图：`01-control-plane/acme-ticket.png`、`01-control-plane/beta-empty.png`；
+- 输出：`01-control-plane/run.txt`。
+
+这证明 Web UI 可以按租户隔离，但 token 仍是开发期 localStorage 注入；正式入口必须由
+带鉴权的反向代理/SSO 设置 HttpOnly 会话，不能把 token 放在 URL 或持久化到可读 JS 存储。

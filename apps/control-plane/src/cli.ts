@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { ControlPlane } from './index.ts'
 import { startControlPlaneServer } from './server.ts'
 import { startModelGateway } from './model-gateway.ts'
+import { startDeviceGateway } from './device-gateway.ts'
 
 function usage(): never {
   console.error(`usage:
@@ -80,8 +81,18 @@ try {
       ...(process.env.SIRIUSX_UPSTREAM_MODEL_URL === undefined ? {} : { upstreamUrl: process.env.SIRIUSX_UPSTREAM_MODEL_URL }),
       ...(process.env.SIRIUSX_UPSTREAM_MODEL_KEY === undefined ? {} : { upstreamKey: process.env.SIRIUSX_UPSTREAM_MODEL_KEY }),
     })
-    console.log(JSON.stringify({ ready: true, controlPlaneUrl: server.url, ...(gateway === undefined ? {} : { modelGatewayUrl: gateway.url }) }, undefined, 2))
-    const stop = async (): Promise<void> => { await gateway?.close(); await server.close(); process.exit(0) }
+    const deviceGateway = flags.get('device-port') === undefined ? undefined : await startDeviceGateway({
+      control: server.control,
+      port: Number(flags.get('device-port')),
+    })
+    if (deviceGateway !== undefined) server.setDeviceGateway(deviceGateway)
+    console.log(JSON.stringify({
+      ready: true,
+      controlPlaneUrl: server.url,
+      ...(gateway === undefined ? {} : { modelGatewayUrl: gateway.url }),
+      ...(deviceGateway === undefined ? {} : { deviceGatewayUrl: deviceGateway.url }),
+    }, undefined, 2))
+    const stop = async (): Promise<void> => { await deviceGateway?.close(); await gateway?.close(); await server.close(); process.exit(0) }
     process.once('SIGINT', () => { void stop() })
     process.once('SIGTERM', () => { void stop() })
     await new Promise<void>(() => {})

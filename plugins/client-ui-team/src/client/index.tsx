@@ -9,15 +9,38 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
 const PANEL_ID = 'siriusx-team' as MainPanelId
 const DEFAULT_API = 'http://127.0.0.1:4319'
+const DEFAULT_CONTROL_API = 'http://127.0.0.1:4320'
 
 function apiBase(): string {
-  try { return localStorage.getItem('siriusx.botApi') ?? DEFAULT_API } catch { return DEFAULT_API }
+  try {
+    const control = localStorage.getItem('siriusx.controlToken')
+    if (control !== undefined && control !== '') return localStorage.getItem('siriusx.controlApi') ?? DEFAULT_CONTROL_API
+    return localStorage.getItem('siriusx.botApi') ?? DEFAULT_API
+  } catch { return DEFAULT_API }
+}
+
+function controlToken(): string | undefined {
+  try {
+    const token = localStorage.getItem('siriusx.controlToken')
+    return token === null || token === '' ? undefined : token
+  } catch { return undefined }
+}
+
+function controlPath(path: string): string {
+  if (path === '/api/bots') return '/v1/bots'
+  if (path === '/api/approvals') return '/v1/approvals'
+  return path.replace(/^\/api/, '/v1')
 }
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBase()}${path}`, {
+  const token = controlToken()
+  const response = await fetch(`${apiBase()}${token === undefined ? path : controlPath(path)}`, {
     ...init,
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    headers: {
+      'content-type': 'application/json',
+      ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
+      ...(init?.headers ?? {}),
+    },
   })
   const value = await response.json() as unknown
   if (!response.ok) throw new Error(typeof value === 'object' && value !== null && 'error' in value ? String(value.error) : `HTTP ${response.status}`)
@@ -63,7 +86,12 @@ function TicketPanel(): ReactNode {
         json<{ bots: BotSummary[] }>('/api/bots'),
         json<{ tickets: TicketSummary[] }>('/api/tickets'),
       ])
-      setBots(botResult.bots)
+      setBots(botResult.bots.map(bot => ({
+        id: bot.id,
+        name: bot.name,
+        kind: 'personal',
+        status: 'online',
+      })))
       setTickets(ticketResult.tickets)
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))

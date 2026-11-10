@@ -1,6 +1,7 @@
 /** HTTP entry for the single-box control plane. Production terminates SSO at a gateway. */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { ControlPlane, ControlPlaneError, type Session } from './index.ts'
+import type { DeviceGateway } from './device-gateway.ts'
 
 export interface ControlPlaneServerOptions {
   readonly dbPath: string
@@ -14,6 +15,7 @@ export interface ControlPlaneServer {
   readonly server: Server
   readonly url: string
   readonly control: ControlPlane
+  setDeviceGateway(gateway: DeviceGateway): void
   close(): Promise<void>
 }
 
@@ -48,6 +50,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
   const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }) })
+  let deviceGateway: DeviceGateway | undefined
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, CORS).end()
@@ -96,7 +99,22 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'devices' && parts[2] !== undefined && parts[3] === 'revoke') {
         control.revokeDevice(session, parts[2])
+        deviceGateway?.closeDevice(parts[2])
         write(response, 200, { revoked: true })
+        return
+      }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'devices' && parts[2] !== undefined && parts[3] === 'tickets') {
+        if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')
+        const body = await readJson(request)
+        if (typeof body.path !== 'string' || typeof body.prompt !== 'string') throw new Error('path and prompt are required')
+        const ticket = control.createTicket(session, { path: body.path, prompt: body.prompt })
+        const delivered = deviceGateway.sendToDevice(session.tenantId, parts[2], {
+          type: 'ticket.assign',
+          ticketId: ticket.ticketId,
+          workspace: { kind: 'local_dir', path: body.path },
+          prompt: body.prompt,
+        })
+        write(response, 202, { ...ticket, delivered })
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/bots') {
@@ -155,6 +173,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
     server,
     url: `http://${options.host ?? '127.0.0.1'}:${port}`,
     control,
+    setDeviceGateway: gateway => { deviceGateway = gateway },
     close: async () => {
       await new Promise<void>((resolve, reject) => server.close(error => { error === undefined ? resolve() : reject(error) }))
       control.close()
