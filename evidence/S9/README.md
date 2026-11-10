@@ -82,3 +82,13 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 工单从 `working/queued` → `idle/cancelled`；
 - 无控制台错误。
 - 证据：`05-cloud-interrupt/run.txt`、`cloud-interrupt.png`。
+
+## 浏览器 OIDC 登录
+
+- `apps/web-gateway` 新增授权码 + PKCE + state/nonce 流程；
+- 校验 ID token 的 issuer/audience/nonce；
+- 通过 control-plane 的服务令牌端点换取租户用户 session，写入 HttpOnly cookie；
+- 本地 discovery/authorize/token IdP 实测：start 302 → callback 302 → `/v1/me` 200。
+- 证据：`06-oidc/run.txt`。
+
+仍缺：真实企业 IdP 配置与 RS256/JWKS 凭证。

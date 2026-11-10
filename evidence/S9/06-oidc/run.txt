@@ -1,0 +1,12 @@
+{
+  "start": 302,
+  "authorize": 302,
+  "callback": 302,
+  "cookie": "siriusx_session=<redacted>",
+  "me": 200,
+  "meBody": {
+    "tenantId": "tenant-oidc",
+    "userId": "3c694778-6239-4db0-826c-09eeea042bda",
+    "role": "admin"
+  }
+}

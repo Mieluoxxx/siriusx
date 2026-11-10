@@ -237,6 +237,17 @@ export class ControlPlane {
     return { userId }
   }
 
+  /** Trusted service-to-service SSO identity exchange; never exposed to browsers. */
+  ssoSession(input: { tenantId: string; email: string; role: Role }): { token: string; userId: string; tenantId: string } {
+    const tenant = this.#db.prepare('SELECT id FROM tenants WHERE id = ?').get(input.tenantId) as { id: string } | undefined
+    if (tenant === undefined) throw new ControlPlaneError(404, 'TENANT_NOT_FOUND', input.tenantId)
+    const existing = this.findUserByEmail(input.tenantId, input.email)
+    const user = existing ?? this.addUser({ tenantId: input.tenantId, email: input.email, role: input.role })
+    const role = existing?.role ?? input.role
+    const userId = existing?.id ?? (user as { userId: string }).userId
+    return { token: this.issueSession({ tenantId: input.tenantId, userId, role }), userId, tenantId: input.tenantId }
+  }
+
   issueSession(input: { tenantId: string; userId: string; role: Role }): string {
     const user = this.#db.prepare('SELECT id, role FROM users WHERE id = ? AND tenant_id = ?').get(input.userId, input.tenantId) as
       | { id: string; role: string } | undefined

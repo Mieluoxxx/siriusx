@@ -18,9 +18,21 @@ if (controlPlaneUrl === undefined || dshWebUrl === undefined) {
   console.error('control-plane and dsh-web are required')
   process.exit(2)
 }
+const oidcIssuer = process.env.SIRIUSX_OIDC_ISSUER
+const oidcClientId = process.env.SIRIUSX_OIDC_CLIENT_ID
+const oidcClientSecret = process.env.SIRIUSX_OIDC_CLIENT_SECRET
+const oidcRedirectUri = process.env.SIRIUSX_OIDC_REDIRECT_URI
+const oidcTenant = process.env.SIRIUSX_OIDC_TENANT_ID
+const oidc = oidcIssuer === undefined || oidcClientId === undefined || oidcClientSecret === undefined || oidcRedirectUri === undefined || oidcTenant === undefined ? undefined : {
+  issuer: oidcIssuer, clientId: oidcClientId, clientSecret: oidcClientSecret, redirectUri: oidcRedirectUri, tenantId: oidcTenant,
+  ...(process.env.SIRIUSX_OIDC_ROLE === 'admin' ? { role: 'admin' as const } : {}),
+  ...(process.env.SIRIUSX_OIDC_ID_TOKEN_ALG === 'HS256' ? { idTokenAlg: 'HS256' as const } : {}),
+}
 const gateway = await startWebGateway({
   controlPlaneUrl, dshWebUrl,
   port: flags.get('port') === undefined ? 8080 : Number(flags.get('port')),
+  ...(process.env.SIRIUSX_SSO_SERVICE_TOKEN === undefined ? {} : { controlPlaneServiceToken: process.env.SIRIUSX_SSO_SERVICE_TOKEN }),
+  ...(oidc === undefined ? {} : { oidc }),
 })
 console.log(JSON.stringify({ ready: true, url: gateway.url }, undefined, 2))
 const stop = async (): Promise<void> => { await gateway.close(); process.exit(0) }

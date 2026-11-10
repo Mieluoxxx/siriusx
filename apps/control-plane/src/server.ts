@@ -12,6 +12,7 @@ export interface ControlPlaneServerOptions {
   readonly sessionSecret?: string
   readonly toolGatewayUrl?: string
   readonly analyticsPath?: string
+  readonly ssoServiceToken?: string
 }
 
 export interface ControlPlaneServer {
@@ -56,6 +57,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   let deviceGateway: DeviceGateway | undefined
   const toolGatewayUrl = options.toolGatewayUrl
   const analyticsPath = options.analyticsPath
+  const ssoServiceToken = options.ssoServiceToken
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, CORS).end()
@@ -66,6 +68,15 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       const parts = url.pathname.split('/').filter(Boolean)
       if (request.method === 'GET' && url.pathname === '/health') {
         write(response, 200, { ok: true, service: 'siriusx-control-plane' })
+        return
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/sso/session') {
+        if (ssoServiceToken === undefined || request.headers['x-siriusx-service-token'] !== ssoServiceToken) {
+          throw new ControlPlaneError(401, 'UNAUTHORIZED', 'service token required')
+        }
+        const body = await readJson(request)
+        if (typeof body.tenantId !== 'string' || typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('tenantId, email and role are required')
+        write(response, 200, control.ssoSession({ tenantId: body.tenantId, email: body.email, role: body.role }))
         return
       }
       const session = sessionOf(control, request)

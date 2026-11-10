@@ -85,6 +85,7 @@ try {
       ...(process.env.SIRIUSX_SESSION_SECRET === undefined ? {} : { sessionSecret: process.env.SIRIUSX_SESSION_SECRET }),
       ...(process.env.SIRIUSX_TOOL_GATEWAY_URL === undefined ? {} : { toolGatewayUrl: process.env.SIRIUSX_TOOL_GATEWAY_URL }),
       ...(process.env.SIRIUSX_ANALYTICS_PATH === undefined ? {} : { analyticsPath: process.env.SIRIUSX_ANALYTICS_PATH }),
+      ...(process.env.SIRIUSX_SSO_SERVICE_TOKEN === undefined ? {} : { ssoServiceToken: process.env.SIRIUSX_SSO_SERVICE_TOKEN }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,
