@@ -1,0 +1,12 @@
+{
+  "text": "SiriusX clean-clone conversation OK.",
+  "eventTypes": [
+    "user.message",
+    "turn.start",
+    "assistant.attempt.start",
+    "assistant.delta",
+    "assistant.attempt.end",
+    "assistant.message",
+    "turn.end"
+  ]
+}

@@ -44,3 +44,11 @@
 - 历史中不得有 merge commit；
 - 当前结果：9 个文件，全部在 `apps/desktop/`，无 merge。
 - 证据：`05-fork-discipline/check.txt`、`desktop-typecheck.txt`。
+
+## Clean clone headless conversation
+
+- 干净 clone 执行 `pnpm install`；
+- `scripts/smoke-pi-conversation.sh` 用真实 Pi CLI + mock 模型返回
+  `SiriusX clean-clone conversation OK.`；
+- 这不是 Electron Desktop 启动，但验证了干净 clone 的依赖、内核 backend 和一轮对话。
+- 证据：`06-clean-conversation/`。

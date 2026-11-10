@@ -3,7 +3,7 @@
 | 阶段 | 代码 | 证据 | 状态 |
 | --- | --- | --- | --- |
 | S0 前提 | `docs/spike.md`、`evidence/S0/` | auth/tenant/coexist/agent-interface | **完成** |
-| S1 fork/遥测 | `deepseek-harness` 仅 `apps/desktop/src/main.ts` 改动；`plugins/telemetry-off*` | `evidence/S1/` | **部分**：Linux 构建、10 分钟零外联抓包、clean clone install+typecheck+test、fork 纪律自动检查通过；mac/win 启动与 5 天使用待补 |
+| S1 fork/遥测 | `deepseek-harness` 仅 `apps/desktop/src/main.ts` 改动；`plugins/telemetry-off*` | `evidence/S1/` | **部分**：Linux 构建、10 分钟零外联抓包、clean clone install+typecheck+test/headless Pi 对话、fork 纪律自动检查通过；mac/win 启动与 5 天使用待补 |
 | S2 契约/内核 | `packages/contracts`、`kernel-api`、`kernel-dsh`、`fake-kernel` | `evidence/S2/` | **完成** |
 | S3 本机闭环 | `packages/executor-local`、`plugins/executor-local`、`apps/autobot` | `evidence/S3/` | **完成**：真实 DSH AgentLoop、Bot/DSH Web Host SIGKILL/重启、模型断线、previews/TTL、lost 自动 resume 重试、sandbox orphan sweep + systemd timer 通过；tag `executor-v0.1.0` |
 | S4 工单界面 | 四个独立 client package + `packages/app-contract` + `apps/autobot/src/server.ts` | `evidence/S4/` | **部分**：发起/阶段/diff/排序/断线清空/审批/慢任务打断、四插件拆分通过；10 天自用待补 |
