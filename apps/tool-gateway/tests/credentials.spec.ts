@@ -53,4 +53,37 @@ describe('connector credential manager', () => {
     }
   })
 
+  it('refreshes a rotating credential after its cache TTL', async () => {
+    let calls = 0
+    const manager = createServer((request, response) => {
+      calls++
+      response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ value: `token-${calls}` }))
+    })
+    await new Promise<void>((resolve, reject) => { manager.once('error', reject); manager.listen(0, '127.0.0.1', () => resolve()) })
+    const address = manager.address()
+    const port = typeof address === 'object' && address !== null ? address.port : 0
+    const provider = new HttpCredentialProvider({ url: `http://127.0.0.1:${port}`, token: 'service-token', cacheTtlMs: 5 })
+    try {
+      expect(await provider.get('github')).toBe('token-1')
+      await new Promise(resolve => setTimeout(resolve, 15))
+      expect(await provider.get('github')).toBe('token-2')
+      expect(calls).toBe(2)
+    } finally {
+      await new Promise<void>((resolve, reject) => manager.close(error => { error === undefined ? resolve() : reject(error) }))
+    }
+  })
+
+  it('fails closed when the credential manager returns an error', async () => {
+    const manager = createServer((_request, response) => { response.writeHead(500).end('down') })
+    await new Promise<void>((resolve, reject) => { manager.once('error', reject); manager.listen(0, '127.0.0.1', () => resolve()) })
+    const address = manager.address()
+    const port = typeof address === 'object' && address !== null ? address.port : 0
+    const provider = new HttpCredentialProvider({ url: `http://127.0.0.1:${port}`, token: 'service-token' })
+    try {
+      await expect(provider.get('github')).rejects.toThrow('HTTP 500')
+    } finally {
+      await new Promise<void>((resolve, reject) => manager.close(error => { error === undefined ? resolve() : reject(error) }))
+    }
+  })
+
 })

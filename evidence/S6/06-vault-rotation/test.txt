@@ -1,0 +1,10 @@
+$ vitest run tests/credentials.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/apps/tool-gateway
+
+ ✓ tests/credentials.spec.ts (4 tests) 68ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  18:45:39
+   Duration  290ms (transform 42ms, setup 0ms, import 106ms, tests 68ms, environment 0ms)

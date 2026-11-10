@@ -13,6 +13,9 @@ export interface HttpCredentialProviderOptions {
   readonly url: string
   readonly token: string
   readonly fetchImpl?: typeof fetch
+  readonly cacheTtlMs?: number
+  readonly now?: () => number
+  readonly headers?: Readonly<Record<string, string>>
 }
 
 /** Minimal Vault/secret-manager adapter: GET <url>/<system> with a service token. */
@@ -20,25 +23,31 @@ export class HttpCredentialProvider implements CredentialProvider {
   readonly #url: string
   readonly #token: string
   readonly #fetch: typeof fetch
-  readonly #cache = new Map<string, string>()
+  readonly #cacheTtlMs: number
+  readonly #now: () => number
+  readonly #headers: Readonly<Record<string, string>>
+  readonly #cache = new Map<string, { value: string; expiresAt: number }>()
   constructor(options: HttpCredentialProviderOptions) {
     this.#url = options.url.replace(/\/$/u, '')
     this.#token = options.token
     this.#fetch = options.fetchImpl ?? fetch
+    this.#cacheTtlMs = options.cacheTtlMs ?? Number.POSITIVE_INFINITY
+    this.#now = options.now ?? Date.now
+    this.#headers = options.headers ?? {}
   }
 
   async get(system: string): Promise<string | undefined> {
     const cached = this.#cache.get(system)
-    if (cached !== undefined) return cached
+    if (cached !== undefined && cached.expiresAt > this.#now()) return cached.value
     const response = await this.#fetch(`${this.#url}/${encodeURIComponent(system)}`, {
-      headers: { authorization: `Bearer ${this.#token}`, accept: 'application/json' },
+      headers: { authorization: `Bearer ${this.#token}`, accept: 'application/json', ...this.#headers },
     })
     if (response.status === 404) return undefined
     if (!response.ok) throw new Error(`credential manager failed for ${system}: HTTP ${response.status}`)
     const value = await response.json() as { value?: unknown; data?: { value?: unknown; data?: { value?: unknown } } }
     const secret = typeof value.value === 'string' ? value.value : typeof value.data?.value === 'string' ? value.data.value : typeof value.data?.data?.value === 'string' ? value.data.data.value : undefined
     if (secret === undefined) throw new Error(`credential manager returned no value for ${system}`)
-    this.#cache.set(system, secret)
+    this.#cache.set(system, { value: secret, expiresAt: this.#now() + this.#cacheTtlMs })
     return secret
   }
 }

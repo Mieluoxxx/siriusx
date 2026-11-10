@@ -57,3 +57,11 @@
 - 本地 mock Vault 接口测试通过，凭据缓存且不进入审计。
 - 证据：`05-vault-kv2/test.txt`。
 - 仍缺真实 Vault/KMS 部署与权限。
+
+## Vault 凭据轮换/失败
+
+- `HttpCredentialProvider` 新增 `cacheTtlMs`，过期后重新拉取；
+- 支持 `headers`、注入时钟；
+- 上游 500 时抛错（fail closed）；
+- 测试：`token-1` → TTL 后 `token-2`；500 抛错。
+- 证据：`06-vault-rotation/test.txt`。

@@ -8,7 +8,7 @@
 | S3 本机闭环 | `packages/executor-local`、`plugins/executor-local`、`apps/autobot` | `evidence/S3/` | **完成**：真实 DSH AgentLoop、Bot/DSH Web Host SIGKILL/重启、模型断线、previews/TTL、lost 自动 resume 重试、sandbox orphan sweep + systemd timer 通过；tag `executor-v0.1.0` |
 | S4 工单界面 | 四个独立 client package + `packages/app-contract` + `apps/autobot/src/server.ts` | `evidence/S4/` | **部分**：发起/阶段/diff/排序/断线清空/审批/慢任务打断、四插件拆分通过；10 天自用待补 |
 | S5 登录/租户 | `plugins/account-sso`、`apps/control-plane`（含 device gateway/model gateway）、Desktop enterprise gate | `evidence/S5/` | **部分**：OIDC/隔离/配对/长连接/模型网关/隐私 badge/个人 Bot 派工/原生入口管理员开关通过；真实 IdP、KMS、单机安装待补 |
-| S6 工具网关 | `apps/tool-gateway`、`packages/analytics`、local_dir 上行过滤 | `evidence/S6/` | **部分**：审批/审计/fail-closed/分级/Bot 事件接线/完整 ticket trace/Vault KV v1+v2 凭据适配通过；真实 KMS/Vault、真实抓包待补 |
+| S6 工具网关 | `apps/tool-gateway`、`packages/analytics`、local_dir 上行过滤 | `evidence/S6/` | **部分**：审批/审计/fail-closed/分级/Bot 事件接线/完整 ticket trace/Vault KV v1+v2、TTL 轮换与 fail-closed 凭据适配通过；真实 KMS/Vault、真实抓包待补 |
 | S7 云执行 | `packages/cloud-executor`、`packages/kernel-acp` | `evidence/S7/` | **部分**：Docker/ACP/真实 dsh+pi（含 sandbox）/同工单内核一致性/云端 repo clone/资源限额+env+出口 allowlist/SQLite 恢复/GitHub+gateway 审批写、mock Issue→MR 通过；真实平台 Issue→MR、M2 真崩溃待补 |
 | S8 发布 | `plugins/brand-siriusx`、`deploy/release`、`deploy/offline` | `evidence/S8/` | **部分**：品牌/图标/打包参数、Linux 全依赖离线 tar（含 sandbox image）、DSH Web 离线镜像、全栈 Compose、internal 网络隔离、断网 Debian 容器安装、native/Docker 单机安装、补丁回移演练通过；mac/win 签名安装与全服务干净机验收待补 |
 | S9 Web | DSH Web Host + Team panel control-plane 模式 | `evidence/S9/` | **部分**：同插件复用、两租户隔离、HttpOnly cookie 同源网关、浏览器 OIDC（本地 HS256/RS256 JWKS IdP）登录并看工单、同工单跨接入模式渲染一致、无原生对话/本地目录入口、Web 审批、云端项目发起/打断（Docker+fake ACP）通过；真实企业 IdP/真实 agent 待补 |
