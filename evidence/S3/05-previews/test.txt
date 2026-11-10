@@ -1,0 +1,10 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/packages/executor-local
+
+ ✓ tests/executor.spec.ts (8 tests) 426ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  15:57:16
+   Duration  680ms (transform 76ms, setup 0ms, import 144ms, tests 426ms, environment 0ms)

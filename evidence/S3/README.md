@@ -57,3 +57,22 @@
 - `plugins/executor-local` 的 loopback route 只是 S3/S4 联调入口，不是生产传输；S5 要放到认证网关后面。
 - 预览进程、TTL、真实 Host 崩溃恢复仍是 S3 未完成项。
 - 会话日志里的模型是 deterministic mock，用于内核适配回归；真实模型会话在 S4 自用时补。
+
+## 进程被 SIGKILL 后重启
+
+- 子进程运行真实 `BotService` + `LocalExecutor` + 60s wait 场景；
+- 测试收到 ticketId 后 `SIGKILL` 子进程；
+- 同一 SQLite 库重新构造 `BotService`，assignment 被 `reconcile()` 结算为 `lost`；
+- 再次重启不会重复写 `assignment-lost` outbox。
+- 证据：`04-process-loss/test.txt`。
+
+注意：这是 Bot 服务进程级 kill/restart，不是 Electron Host 进程级实验；Host 级仍需补。
+
+## 预览进程与 TTL
+
+- `LocalExecutor.startPreview()` 登记预览子进程（workdir、port、pid、URL）；
+- `touchPreview()` 更新 lastAccess；
+- `sweepPreviews()` 按 TTL 清理；
+- `destroyWorkdir()` 同时停止该 workdir 的所有预览；
+- 测试验证预览停止、TTL 清理与跟随 workdir 销毁。
+- 证据：`05-previews/test.txt`、`05-previews/schema-export.txt`。

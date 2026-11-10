@@ -171,4 +171,23 @@ describe('local executor', () => {
       consent: { requestedBy: 'app:user-1' },
     })).resolves.toMatchObject({ uploads: [{ sourcePath: 'app.txt' }] })
   })
+  it('registers previews, enforces TTL and stops them with the workdir', async () => {
+    const root = await gitRepo()
+    let now = Date.now()
+    const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: reportScenario(), now: () => now, previewTtlMs: 1000 })
+    const req = request(root)
+    await executor.createAssignment(req)
+    await executor.wait(req.assignmentId)
+    const preview = await executor.startPreview(req.workdirKey, process.execPath, ['-e', 'setInterval(() => {}, 1000)'], 45678)
+    expect((await executor.listPreviews(req.workdirKey)).previews).toHaveLength(1)
+    expect((await executor.touchPreview(req.workdirKey, preview.previewId)).lastAccessAt).toBe(new Date(now).toISOString())
+    now += 2000
+    expect(await executor.sweepPreviews()).toEqual([preview.previewId])
+    const preview2 = await executor.startPreview(req.workdirKey, process.execPath, ['-e', 'setInterval(() => {}, 1000)'], 45679)
+    await executor.destroyWorkdir(req.workdirKey)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(() => process.kill(preview2.pid, 0)).toThrow()
+  })
+
+
 })

@@ -5,8 +5,8 @@
  * AgentBackend contract, maps kernel events to Executor events, and computes
  * diffStats from the recorded diff basis.
  */
-import { execFile } from 'node:child_process'
-import { createHash } from 'node:crypto'
+import { execFile, spawn, type ChildProcess } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
 import { copyFile, lstat, mkdir, readFile, readdir, stat } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
@@ -51,6 +51,7 @@ export interface LocalExecutorOptions {
   readonly maxFilesPerPage?: number
   readonly assignmentTimeoutMs?: number
   readonly uploadDir?: string
+  readonly previewTtlMs?: number
   readonly now?: () => number
 }
 
@@ -77,6 +78,7 @@ interface ResolvedLocalExecutorOptions {
   readonly maxFilesPerPage: number
   readonly assignmentTimeoutMs: number
   readonly uploadDir?: string
+  readonly previewTtlMs: number
 }
 
 interface AssignmentRecord {
@@ -90,6 +92,27 @@ interface AssignmentRecord {
   nextSeq: number
   oldestLogSeq?: number
   droppedLogs: number
+}
+
+export interface PreviewView {
+  readonly previewId: string
+  readonly workdirKey: string
+  readonly port: number
+  readonly url: string
+  readonly pid: number
+  readonly startedAt: string
+  readonly lastAccessAt: string
+}
+
+interface PreviewState {
+  readonly previewId: string
+  readonly workdirKey: string
+  readonly port: number
+  readonly url: string
+  readonly pid: number
+  readonly startedAt: number
+  lastAccessAt: number
+  readonly child: ChildProcess
 }
 
 type EventInput =
@@ -280,6 +303,7 @@ export class LocalExecutor {
   readonly #now: () => number
   readonly #records = new Map<string, AssignmentRecord>()
   readonly #workdirs = new Map<string, WorkdirState>()
+  readonly #previews = new Map<string, PreviewState>()
 
   constructor(options: LocalExecutorOptions) {
     this.#backend = options.backend
@@ -290,6 +314,7 @@ export class LocalExecutor {
       logLimitPerAssignment: options.logLimitPerAssignment ?? 10_000,
       maxFilesPerPage: options.maxFilesPerPage ?? 1000,
       assignmentTimeoutMs: options.assignmentTimeoutMs ?? 30 * 60 * 1000,
+      previewTtlMs: options.previewTtlMs ?? 30 * 60 * 1000,
       ...(options.uploadDir === undefined ? {} : { uploadDir: options.uploadDir }),
     }
     this.#now = options.now ?? Date.now
@@ -587,16 +612,76 @@ export class LocalExecutor {
   async destroyWorkdir(workdirKey: string): Promise<{ destroyed: boolean }> {
     const busy = [...this.#records.values()].some(record => record.assignment.workdirKey === workdirKey && !isTerminal(record.assignment.state))
     if (busy) throw new LocalExecutorError('WORKDIR_BUSY', workdirKey)
+    await this.stopPreviews(workdirKey)
     // Never remove the user's local_dir. Only our lease/state is cleaned.
     return { destroyed: this.#workdirs.delete(workdirKey) }
   }
 
-  async listPreviews(_workdirKey: string): Promise<{ previews: [] }> {
-    return { previews: [] }
+  /** Start a registered preview process in a workdir. The caller owns the command; the Executor owns lifecycle/TTL. */
+  async startPreview(workdirKey: string, command: string, args: readonly string[] = [], port: number): Promise<PreviewView> {
+    const workdir = this.#workdirs.get(workdirKey)
+    if (workdir === undefined) throw new LocalExecutorError('WORKDIR_NOT_FOUND', workdirKey)
+    if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new LocalExecutorError('INVALID_PAYLOAD', `invalid preview port: ${port}`)
+    await this.sweepPreviews()
+    const child = spawn(command, [...args], { cwd: workdir.path, env: process.env, stdio: 'ignore' })
+    if (child.pid === undefined) throw new Error(`preview process did not start: ${command}`)
+    const previewId = randomUUID()
+    const now = this.#now()
+    const preview: PreviewState = {
+      previewId, workdirKey, port, url: `http://127.0.0.1:${port}`, pid: child.pid,
+      startedAt: now, lastAccessAt: now, child,
+    }
+    this.#previews.set(previewId, preview)
+    child.once('exit', () => {
+      if (this.#previews.get(previewId)?.child === child) this.#previews.delete(previewId)
+    })
+    return this.#previewView(preview)
   }
 
-  async stopPreviews(_workdirKey: string, _previewId?: string): Promise<{ stopped: string[] }> {
-    return { stopped: [] }
+  #previewView(preview: PreviewState): PreviewView {
+    return {
+      previewId: preview.previewId, workdirKey: preview.workdirKey, port: preview.port, url: preview.url, pid: preview.pid,
+      startedAt: new Date(preview.startedAt).toISOString(), lastAccessAt: new Date(preview.lastAccessAt).toISOString(),
+    }
+  }
+
+  async touchPreview(workdirKey: string, previewId: string): Promise<PreviewView> {
+    const preview = this.#previews.get(previewId)
+    if (preview === undefined || preview.workdirKey !== workdirKey) throw new LocalExecutorError('PREVIEW_NOT_FOUND', previewId)
+    preview.lastAccessAt = this.#now()
+    return this.#previewView(preview)
+  }
+
+  async listPreviews(workdirKey: string): Promise<{ previews: PreviewView[] }> {
+    if (!this.#workdirs.has(workdirKey)) throw new LocalExecutorError('WORKDIR_NOT_FOUND', workdirKey)
+    await this.sweepPreviews()
+    return { previews: [...this.#previews.values()].filter(preview => preview.workdirKey === workdirKey).map(preview => this.#previewView(preview)) }
+  }
+
+  async stopPreviews(workdirKey: string, previewId?: string): Promise<{ stopped: string[] }> {
+    const stopped: string[] = []
+    for (const preview of [...this.#previews.values()]) {
+      if (preview.workdirKey !== workdirKey || (previewId !== undefined && preview.previewId !== previewId)) continue
+      preview.child.kill('SIGTERM')
+      const killTimer = setTimeout(() => { preview.child.kill('SIGKILL') }, 2000)
+      killTimer.unref()
+      this.#previews.delete(preview.previewId)
+      stopped.push(preview.previewId)
+    }
+    return { stopped }
+  }
+
+  /** Stop previews whose last access exceeded the TTL. Exposed for a Host watchdog. */
+  async sweepPreviews(): Promise<string[]> {
+    const cutoff = this.#now() - this.#options.previewTtlMs
+    const stale = [...this.#previews.values()].filter(preview => preview.lastAccessAt < cutoff)
+    const stopped: string[] = []
+    for (const preview of stale) {
+      preview.child.kill('SIGTERM')
+      this.#previews.delete(preview.previewId)
+      stopped.push(preview.previewId)
+    }
+    return stopped
   }
 
   async listFiles(workdirKey: string, path = '', cursor?: string): Promise<{

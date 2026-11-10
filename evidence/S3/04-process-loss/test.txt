@@ -1,0 +1,11 @@
+$ vitest run tests/process-loss.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/apps/autobot
+
+ ✓ tests/process-loss.spec.ts (1 test) 1163ms
+     ✓ marks a real SIGKILLed running assignment lost exactly once on restart  1161ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  15:55:23
+   Duration  1.42s (transform 80ms, setup 0ms, import 147ms, tests 1.16s, environment 0ms)

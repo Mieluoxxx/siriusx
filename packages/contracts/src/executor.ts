@@ -392,6 +392,7 @@ export const ExecutorErrorCodeSchema = z.enum([
   'WORKDIR_NOT_FOUND',
   'NO_CAPACITY',
   'PREVIEW_LIMIT',
+  'PREVIEW_NOT_FOUND',
   'PATH_OUTSIDE_WORKDIR',
   'FILE_NOT_FOUND',
   'FILE_TOO_LARGE',
