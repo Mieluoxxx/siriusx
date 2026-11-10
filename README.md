@@ -65,6 +65,17 @@ DSH 插件必须是独立 package；能用插件或独立 package 完成的能�
 - S9：DSH Web Host 复用同一 Team 工单插件；SSO/鉴权反向代理待补。
 - S10：390×844 响应式 Web 评估通过；真机、移动审批、远程本地目录待补。
 
+## 本地开发与验证
+
+```bash
+corepack prepare pnpm@11.28.5 --activate
+pnpm install
+pnpm typecheck
+pnpm test
+```
+
+`deepseek-harness/` 是独立 Git checkout，不随本仓库提交；需要验证 DSH 集成时单独 clone 并安装依赖。
+
 ## 魔改纪律
 
 - 只 fork 桌面外壳（`apps/desktop`），不改 agent 内核。

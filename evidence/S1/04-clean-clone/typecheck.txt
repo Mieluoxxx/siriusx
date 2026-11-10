@@ -1,0 +1,50 @@
+$ pnpm -r run typecheck
+Scope: 26 of 27 workspace projects
+apps/tool-gateway typecheck$ tsc -p tsconfig.json --noEmit
+apps/web-gateway typecheck$ tsc -p tsconfig.json --noEmit
+packages/contracts typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-api typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-api typecheck: Done
+plugins/account-sso typecheck$ tsc -p tsconfig.json --noEmit
+apps/web-gateway typecheck: Done
+plugins/brand-siriusx typecheck$ tsc -p tsconfig.json --noEmit
+apps/tool-gateway typecheck: Done
+packages/fake-kernel typecheck$ tsc -p tsconfig.json --noEmit
+packages/contracts typecheck: Done
+packages/kernel-dsh typecheck$ tsc -p tsconfig.json --noEmit
+plugins/account-sso typecheck: Done
+packages/analytics typecheck$ tsc -p tsconfig.json --noEmit
+packages/fake-kernel typecheck: Done
+packages/app-contract typecheck$ tsc -p tsconfig.json --noEmit
+plugins/brand-siriusx typecheck: Done
+packages/cloud-executor typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-dsh typecheck: Done
+packages/executor-local typecheck$ tsc -p tsconfig.json --noEmit
+packages/analytics typecheck: Done
+packages/app-contract typecheck: Done
+packages/client-ui-team-core typecheck$ tsc -p tsconfig.json --noEmit
+packages/cloud-executor typecheck: Done
+packages/kernel-acp typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-pi typecheck$ tsc -p tsconfig.json --noEmit
+packages/executor-local typecheck: Done
+apps/autobot typecheck$ tsc -p tsconfig.json --noEmit
+packages/client-ui-team-core typecheck: Done
+plugins/client-ui-approvals typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-pi typecheck: Done
+plugins/client-ui-bots typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-acp typecheck: Done
+plugins/client-ui-sessions typecheck$ tsc -p tsconfig.json --noEmit
+apps/autobot typecheck: Done
+plugins/client-ui-team typecheck$ tsc -p tsconfig.json --noEmit
+plugins/client-ui-approvals typecheck: Done
+plugins/client-ui-tickets typecheck$ tsc -p tsconfig.json --noEmit
+plugins/client-ui-bots typecheck: Done
+apps/control-plane typecheck$ tsc -p tsconfig.json --noEmit
+plugins/client-ui-sessions typecheck: Done
+plugins/executor-local typecheck$ tsc -p tsconfig.json --noEmit
+plugins/client-ui-team typecheck: Done
+plugins/client-ui-tickets typecheck: Done
+plugins/executor-local typecheck: Done
+apps/control-plane typecheck: Done
+apps/device-agent typecheck$ tsc -p tsconfig.json --noEmit
+apps/device-agent typecheck: Done

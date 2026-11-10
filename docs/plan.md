@@ -81,7 +81,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **验收标准。**
 
-- [ ] 在一份干净的 clone 上，只照 README 的命令就能构建、启动，并完成一轮对话。**部分完成**：构建与 headless 对话已验；Desktop 启动需 mac/win。
+- [ ] 在一份干净的 clone 上，只照 README 的命令就能构建、启动，并完成一轮对话。**部分完成**：干净 clone 的 `pnpm install/typecheck/test` 已通过；构建、headless 对话与 Desktop 启动仍需 DSH checkout / mac/win。证据：`evidence/S1/04-clean-clone/`。
 - [x] 开着抓包用它工作 10 分钟，没有任何请求发往上游的遥测或日志端点。证据：`evidence/S1/01-telemetry/network-soak-10min.txt`（27 轮，`nonloopback_inet_connects=0`）及 `.trace`。
 - [x] `git diff --stat upstream/<标签>` 的改动文件数是个位数。证据：`evidence/S1/00-fork/diff-stat.txt`（8 个文件，均在 `apps/desktop/`）。
 - [x] rebase 演练完成，冲突都落在施工图列出的文件里。证据：`evidence/S1/04-rebase/rebase.txt`。
