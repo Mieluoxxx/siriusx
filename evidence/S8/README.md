@@ -110,3 +110,10 @@
   - `/v1/me` 返回租户用户
   - `/` 经 web-gateway 返回 DSH Web 200
 - 证据：`10-full-compose/`。
+
+## 离线 sandbox 镜像
+
+- `build-offline.sh` 将 `teams-bridge:0.2.0` 保存进 bundle 的 `sandbox-image.tar`；
+- `install-offline.sh` 启动前 `docker load`，并把 `SIRIUSX_SANDBOX_IMAGE` 传给 control-plane；
+- 解包后无外网启动 control-plane，cloud_project 任务在 Docker sandbox 内到 `person/review`。
+- 证据：`11-offline-sandbox/`。
