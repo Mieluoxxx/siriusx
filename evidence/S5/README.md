@@ -21,7 +21,7 @@
 | --- | --- |
 | 两个租户 SSO 后数据隔离 | **通过**：bots B 为空、跨租户 ticket 读失败 |
 | 不登录请求 Bot API 被拒 | **通过**：401 |
-| 登录后原生对话标识 / 管理员开关 | **部分**：设置 API 与 Desktop 源码 gate 已实现；Electron 运行时未在 Linux 验证 |
+| 登录后原生对话标识 / 管理员开关 | **部分**：侧栏显示「个人 · 不审计」badge；管理员关闭 `nativeConversationEnabled` 后 badge 消失；原生对话入口本身未禁用 |
 | 未配对 / 吊销设备不能建长连接 | **通过**：WebSocket 握手拒绝伪造 token，已连接设备吊销后下次心跳关闭 |
 | 本机抓包/磁盘没有模型上游 Key | **部分**：gateway 代码与测试证明 key 只在服务进程 env，不下发；未做真实抓包 |
 | 断网 15 分钟 / lost | **未完成** |
@@ -34,6 +34,7 @@
 - 当前 control-plane 的 HTTP 鉴权使用 HMAC session token，登录入口仍是本地 fake IdP；
   生产 SSO 应把 OIDC ID token / session 交给入口网关验证。
 - device gateway 只实现了注册/心跳/服务端下发消息；本地 Executor 的任务协议、断线重连和 `lost` 结算仍需接。
-- `nativeConversationEnabled` 已控制服务端设置；Desktop 的「个人、不审计」视觉标识尚未接入。
+- `nativeConversationEnabled` 已控制服务端设置与侧栏「个人 · 不审计」badge（`04-native-label/`）；
+  原生对话入口的禁用仍需 UI 插件/入口网关接线。
 - 单机 Docker 镜像默认从 Docker Hub 拉 `debian:bookworm-slim`，当前执行环境网络无法完成；
   构建命令与 compose config 已验证。

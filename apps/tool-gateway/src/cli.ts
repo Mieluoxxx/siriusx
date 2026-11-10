@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Run the tool gateway with a demo GitHub/GitLab connector that never performs a real external write. */
 import { startToolGatewayServer } from './server.ts'
+import { GitHubConnector } from './github.ts'
 
 const port = process.env.SIRIUSX_TOOL_GATEWAY_PORT === undefined ? 4330 : Number(process.env.SIRIUSX_TOOL_GATEWAY_PORT)
 const db = process.env.SIRIUSX_TOOL_GATEWAY_DB ?? '/tmp/siriusx-tool-gateway.sqlite'
@@ -12,7 +13,9 @@ const server = await startToolGatewayServer({
     gitlab: process.env.GITLAB_TOKEN ?? 'not-configured',
   },
   connectors: {
-    github: { execute: async (request, credential) => ({ result: { system: 'github', action: request.actionClass, target: request.target, credentialPresent: credential !== undefined && credential !== 'not-configured' } }) },
+    github: process.env.SIRIUSX_GITHUB_REAL === '1'
+      ? new GitHubConnector(process.env.SIRIUSX_GITHUB_API_BASE === undefined ? {} : { apiBase: process.env.SIRIUSX_GITHUB_API_BASE })
+      : { execute: async (request, credential) => ({ result: { system: 'github', action: request.actionClass, target: request.target, credentialPresent: credential !== undefined && credential !== 'not-configured' } }) },
     gitlab: { execute: async (request, credential) => ({ result: { system: 'gitlab', action: request.actionClass, target: request.target, credentialPresent: credential !== undefined && credential !== 'not-configured' } }) },
   },
 })

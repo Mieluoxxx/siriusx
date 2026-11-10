@@ -1,0 +1,6 @@
+{
+  "title": "SiriusX",
+  "hasPrivacy": false,
+  "hasSiriusX": true,
+  "errors": []
+}
