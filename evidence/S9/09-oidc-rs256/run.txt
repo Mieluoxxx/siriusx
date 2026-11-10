@@ -1,0 +1,11 @@
+{
+  "start": 302,
+  "authorize": 302,
+  "callback": 302,
+  "me": 200,
+  "meBody": {
+    "tenantId": "tenant-rs256",
+    "userId": "cc4e9428-f93d-445c-bb60-e60329851823",
+    "role": "admin"
+  }
+}

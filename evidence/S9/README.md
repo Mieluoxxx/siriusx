@@ -111,3 +111,10 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 两边 Team panel 都显示相同 ticket 前缀、`idle/closed/reported` 和相同报告摘要。
 - 这验证了同一客户端插件与同一控制面数据源；真实 Electron 桌面窗口仍需 macOS/Windows 机器。
 - 证据：`08-desktop-web-consistency/run.txt`、`desktop-mode.png`、`web-mode.png`。
+
+## OIDC RS256/JWKS
+
+- 本地 IdP 生成 RSA 密钥并以 JWKS 暴露公钥；
+- web-gateway 用 `createRemoteJWKSet` 验签 RS256 ID token；
+- start/authorize/callback 302，`/v1/me` 200。
+- 证据：`09-oidc-rs256/run.txt`。
