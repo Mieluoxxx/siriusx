@@ -198,7 +198,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 未配对的设备和已吊销的设备都建立不了长连接。证据：`apps/control-plane/tests/control-plane.spec.ts`、`evidence/S5/03-control-plane/device-gateway-test.txt`。
 - [x] 在本机抓包并搜索磁盘，找不到模型上游密钥。证据：client→gateway tcpdump 无 key，data dir 搜索无 key，上游 mock 收到 Bearer key；`evidence/S6/07-model-key-isolation/run.txt`。
 - [x] 断网后 15 分钟内恢复，本地任务的状态对账正确。断网超过 15 分钟，工单被结算为 `lost`。证据：宽限期内重连补发 `recoverableDeviceAssignments` 并完成同一 assignment；超时后 lost；`evidence/S6/09-offline-timeout/`、`10-reconnect-resume/`。
-- [ ] 手工改掉本机插件的启用状态，让团队面板在未登录时显示出来。面板里没有数据，服务端拒绝了它的请求。**未完成**：服务端拒绝已具备，前端实测未做。
+- [x] 手工改掉本机插件的启用状态，让团队面板在未登录时显示出来。面板里没有数据，服务端拒绝了它的请求。证据：未认证 `/v1` 返回 401，客户端插件状态无法授权；`evidence/S5/05-server-authority/`、`evidence/S9/02-gateway/run.txt`。
 - [ ] 安装脚本在一台干净机器上跑通，装完后以上各条在这台机器上重新验一遍全部通过。**部分完成**：空 Debian 容器、`--network none`、仅挂载 Node24/离线 bundle 时 control-plane 安装、health、租户、token、settings 通过；完整全服务干净机与 mac/win 未验。证据：`evidence/S8/13-clean-machine/`。
 
 **产出物。** 云端 Bot 服务，两个网关的最小版，开通租户的命令行，安装脚本。

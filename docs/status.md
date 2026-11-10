@@ -22,6 +22,8 @@
 4. 完成全栈 Compose + 离线 bundle 的干净机器一键安装演练。
 5. 准备 mac/win 构建机与签名/公证凭据，完成 S8 真机安装。
 
+人工步骤见 [manual-acceptance.md](manual-acceptance.md)。
+
 ## 必须人工等待/外部条件的
 
 - S1 的 macOS/Windows 启动、5 天使用；
