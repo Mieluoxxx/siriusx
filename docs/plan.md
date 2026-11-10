@@ -289,7 +289,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [x] 先验一件事：DSH 的 `web` profile 能否在云端按用户提供与桌面端相同的前端和插件。**通过**：真实 Web Host 复用同一 Team 客户端插件。证据：`evidence/S9/README.md`。
-- [x] 如果能，把它部署成 Web 端，工单界面插件原样复用。**部分完成**：Web Host + Team panel 已跑通；控制面 token 已支持 localStorage 注入，正式 SSO/HttpOnly 未接。证据：`evidence/S9/01-control-plane/run.txt`。
+- [x] 如果能，把它部署成 Web 端，工单界面插件原样复用。证据：`evidence/S9/02-gateway/run.txt`（同源 HttpOnly 会话 + 同一 Team 插件）。
 - [x] 如果不能，把工单、Bot 列表、审批这部分做成独立的 Web 应用，按 S4 的应用契约直连 Bot 服务，并修订 roadmap #59。**不适用**：web profile 可复用。
 - [x] 预览地址经带鉴权的反向代理访问。证据：`apps/web-gateway`、`evidence/S9/02-gateway/`（未登录→login，`/v1`→401）。
 

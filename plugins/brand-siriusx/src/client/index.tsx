@@ -37,6 +37,8 @@ function PrivacyBadge(): ReactNode {
 
 function installNativeConversationGate(ctx: ClientContext): void {
   if (typeof document === 'undefined') return
+  let gateway = false
+  try { gateway = localStorage.getItem('siriusx.gatewayAuth') === '1' } catch { /* no storage */ }
   const style = document.createElement('style')
   style.dataset.plugin = 'siriusx-native-conversation-gate'
   style.textContent = `
@@ -52,6 +54,12 @@ function installNativeConversationGate(ctx: ClientContext): void {
   `
   document.head.append(style)
   ctx.effect(() => () => style.remove(), 'siriusx-brand: native conversation gate')
+  // The Web deployment is work-item only; it must not expose the native
+  // conversation or a local-directory entry.
+  if (gateway) {
+    document.documentElement.dataset.siriusxNativeConversation = 'disabled'
+    return
+  }
   try {
     const token = localStorage.getItem('siriusx.controlToken')
     if (token === null || token === '') return

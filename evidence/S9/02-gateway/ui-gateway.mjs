@@ -18,9 +18,12 @@ async function open(token, ticketWord, shot) {
   const cont = page.getByRole('button', { name: 'Continue' }); if (await cont.count()) await cont.click(); await page.waitForTimeout(800)
   const team = page.locator('button[aria-label="Team"]'); if (await team.count()) await team.first().click(); await page.waitForTimeout(1500)
   const body = await page.locator('body').innerText()
+  const nativeNewSessionVisible = await page.locator('[aria-label="New session"]').first().isVisible().catch(() => false)
+  const localPathVisible = await page.getByPlaceholder('Local repository path (absolute)').count() > 0
+  const title = await page.title().catch(() => '')
   if (shot !== undefined) await page.screenshot({ path: shot, fullPage: true })
   await context.close()
-  return { status: response?.status(), title: await page.title().catch(() => ''), ticketWord, body: body.slice(0, 900), errors }
+  return { status: response?.status(), title, ticketWord, nativeNewSessionVisible, localPathVisible, body: body.slice(0, 900), errors }
 }
 
 const acme = await open(process.env.TOKEN_A, '1 ticket', process.env.SHOT)

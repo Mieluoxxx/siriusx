@@ -198,17 +198,23 @@ function TicketPanel(): ReactNode {
       {tab === 'tickets' ? (
         <div style={styles.body} className="sx-team-body">
           <div style={{ ...styles.list, display: 'flex', flexDirection: 'column' }} className="sx-team-list">
-            <div style={styles.form}>
-              <input style={styles.input} placeholder="Local repository path (absolute)" value={repo} onChange={event => setRepo(event.target.value)} />
-              <textarea style={{ ...styles.input, minHeight: 54 }} placeholder="What should the bot do?" value={prompt} onChange={event => setPrompt(event.target.value)} />
-              {devices.length === 0 ? null : (
-                <select style={styles.input} value={deviceId} onChange={event => setDeviceId(event.target.value)}>
-                  <option value="">Cloud/local Bot runtime</option>
-                  {devices.map(device => <option key={device.id} value={device.id}>Device: {device.name}</option>)}
-                </select>
-              )}
-              <button style={styles.button} disabled={busy || repo.trim() === '' || prompt.trim() === ''} onClick={() => { void createTicket() }}>Dispatch ticket</button>
-            </div>
+            {gatewayMode() ? (
+              <div style={styles.form}>
+                <p style={{ margin: 0, opacity: 0.7 }}>Web 端只展示租户工单；本地目录请使用桌面端或已配对手机发起，云端项目入口待接入。</p>
+              </div>
+            ) : (
+              <div style={styles.form}>
+                <input style={styles.input} placeholder="Local repository path (absolute)" value={repo} onChange={event => setRepo(event.target.value)} />
+                <textarea style={{ ...styles.input, minHeight: 54 }} placeholder="What should the bot do?" value={prompt} onChange={event => setPrompt(event.target.value)} />
+                {devices.length === 0 ? null : (
+                  <select style={styles.input} value={deviceId} onChange={event => setDeviceId(event.target.value)}>
+                    <option value="">Cloud/local Bot runtime</option>
+                    {devices.map(device => <option key={device.id} value={device.id}>Device: {device.name}</option>)}
+                  </select>
+                )}
+                <button style={styles.button} disabled={busy || repo.trim() === '' || prompt.trim() === ''} onClick={() => { void createTicket() }}>Dispatch ticket</button>
+              </div>
+            )}
             <div style={{ overflow: 'auto' }}>
               {tickets.length === 0 ? <p style={{ opacity: 0.65 }}>No tickets yet. Dispatch one to the local Executor.</p> : null}
               {orderedTickets.map(ticket => (

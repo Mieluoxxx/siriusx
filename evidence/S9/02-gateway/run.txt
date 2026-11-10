@@ -5,16 +5,20 @@
   },
   "acme": {
     "status": 200,
-    "title": "",
+    "title": "SiriusX",
     "ticketWord": "1 ticket",
-    "body": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\nidle\nclosed\nd36a96f4-1a99 · reported\ntenant-local Bot runtime finished\n\nSelect a ticket to inspect its report and events.",
+    "nativeNewSessionVisible": false,
+    "localPathVisible": false,
+    "body": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\n\nWeb 端只展示租户工单；本地目录请使用桌面端或已配对手机发起，云端项目入口待接入。\n\nidle\nclosed\nac12a3b7-cdfa · reported\ntenant-local Bot runtime finished\n\nSelect a ticket to inspect its report and events.",
     "errors": []
   },
   "beta": {
     "status": 200,
-    "title": "",
+    "title": "SiriusX",
     "ticketWord": "0 ticket",
-    "body": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\nDispatch ticket\n\nNo tickets yet. Dispatch one to the local Executor.\n\nSelect a ticket to inspect its report and events.",
+    "nativeNewSessionVisible": false,
+    "localPathVisible": false,
+    "body": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\n\nWeb 端只展示租户工单；本地目录请使用桌面端或已配对手机发起，云端项目入口待接入。\n\nNo tickets yet. Dispatch one to the local Executor.\n\nSelect a ticket to inspect its report and events.",
     "errors": []
   }
 }

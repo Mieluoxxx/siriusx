@@ -45,12 +45,15 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - `/v1/*`：把 cookie 换成 Bearer 后代理到 control-plane；
 - 其他路径：代理到 DSH Web Host，并在服务端附加 Host 的 authority-bound cookie；
 - 未登录访问 `/` → `/login`；未登录 `/v1/*` → 401；
-- Team panel 使用同源相对路径，不再把 token 放进可读 localStorage。
+- Team panel 使用同源相对路径，不再把 token 放进可读 localStorage；
+- Web 模式隐藏原生 New Session、发送、工作区与本地目录输入框；
+- Team panel 保留工单列表、详情与审批。
 
 验证：
 
 - 未登录访问 → `/login`；
 - Acme cookie：Team panel 显示 `1 ticket`；
 - Beta cookie：同一 Web Host 下 `0 ticket`；
-- 浏览器无控制台错误。
+- 浏览器无控制台错误；
+- `nativeNewSessionVisible=false`、`localPathVisible=false`。
 - 证据：`02-gateway/run.txt`、`02-gateway/gateway.png`。
