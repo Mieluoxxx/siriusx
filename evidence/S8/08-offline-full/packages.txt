@@ -1,0 +1,9 @@
+analytics
+app-contract
+cloud-executor
+contracts
+executor-local
+fake-kernel
+kernel-acp
+kernel-api
+packages

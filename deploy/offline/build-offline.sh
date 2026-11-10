@@ -9,9 +9,9 @@ rm -rf "$STAGE" && mkdir -p "$STAGE/app/apps" "$STAGE/app/packages"
 cd "$ROOT"
 pnpm install --frozen-lockfile --offline
 cp -a package.json pnpm-lock.yaml pnpm-workspace.yaml "$STAGE/app/"
-cp -a apps/control-plane apps/autobot apps/tool-gateway "$STAGE/app/apps/"
+cp -a apps/control-plane apps/autobot apps/tool-gateway apps/web-gateway "$STAGE/app/apps/"
 mkdir -p "$STAGE/app/packages"
-cp -a packages/contracts packages/app-contract packages/executor-local packages/fake-kernel packages/kernel-api packages/analytics "$STAGE/app/packages/"
+cp -a packages/contracts packages/app-contract packages/executor-local packages/fake-kernel packages/kernel-api packages/analytics packages/cloud-executor packages/kernel-acp "$STAGE/app/packages/"
 # A pnpm virtual-store copy makes the bundle independent of the build host's store.
 cp -a node_modules "$STAGE/app/node_modules"
 cp deploy/offline/install-offline.sh "$STAGE/"

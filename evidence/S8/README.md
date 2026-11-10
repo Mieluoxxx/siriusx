@@ -83,3 +83,9 @@
 - cherry-pick 到冻结线，契约 25 个测试通过；
 - 打标签 `executor-v0.1.1`，生成 patch 文件。
 - 证据：`07-backport/`。
+
+## 离线包全依赖更新
+
+- 离线 bundle 增加 cloud-executor、kernel-acp、web-gateway；
+- 解包 control-plane health、租户、token、settings 通过。
+- 证据：`08-offline-full/`。
