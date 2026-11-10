@@ -1,0 +1,43 @@
+<!doctype html><meta charset="utf-8">
+<style>
+  body{margin:0;background:#fff;font-family:system-ui,DejaVu Sans,sans-serif;color:#0f172a}
+  .page{position:relative;width:1200px;height:720px;padding:34px;box-sizing:border-box;overflow:hidden}
+  h1{font-size:25px;margin:0 0 22px;font-weight:750}
+  .cols{display:grid;grid-template-columns:270px 330px 1fr;gap:30px}
+  .card{border:2px solid #334155;border-radius:12px;background:#f8fafc;padding:14px 16px;margin-bottom:22px;min-height:100px;box-sizing:border-box}
+  .card h2{font-size:17px;margin:0 0 8px}.card p{margin:3px 0;font-size:13px;color:#334155;line-height:1.35}
+  .g{border-color:#64748b;background:#e2e8f0}
+  .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:26px}
+  .wide{grid-column:1/-1;min-height:0;margin-top:18px}
+  .arrow{color:#2563eb;font-size:24px;font-weight:700;align-self:center;text-align:center}
+</style>
+<div class="page" id="overview">
+  <h1>SiriusX 当前实现总览（2026-11）</h1>
+  <div class="cols">
+    <div>
+      <div class="card"><h2>Web Browser</h2><p>Team panel / 工单 / 审批</p><p>无原生对话、无本地目录入口</p></div>
+      <div class="card"><h2>Desktop (DSH thin fork)</h2><p>原生对话 + Team panel</p><p>enterprise SSO gate</p></div>
+      <div class="card"><h2>Mobile / Responsive</h2><p>工单 / 审批 / follow-up</p><p>远程已配对设备</p></div>
+    </div>
+    <div>
+      <div class="card"><h2>Web Gateway</h2><p>HttpOnly session cookie</p><p>/v1 + DSH upstream cookie</p></div>
+      <div class="card"><h2>Control Plane</h2><p>tenants / SSO / bots / devices</p><p>model gateway / tenant isolation</p></div>
+      <div class="card"><h2>Tool Gateway</h2><p>policy / approval / audit</p><p>credential provider</p></div>
+    </div>
+    <div>
+      <div class="card"><h2>DSH Web Host + Plugins</h2><p>brand / Team / executor-local</p><p>upstream-cookie auth</p></div>
+      <div class="card"><h2>Cloud Executor</h2><p>per-ticket volumes / ACP kernel</p><p>Docker sandbox, network none</p></div>
+      <div class="card"><h2>Device Gateway + Agent</h2><p>paired device token / ticket.assign</p><p>local_dir follow-up / cancel</p></div>
+      <div class="card g"><h2>Source Connectors</h2><p>GitHub / GitLab</p></div>
+    </div>
+  </div>
+</div>
+<div class="page" id="app" style="display:none">
+  <h1>SiriusX 应用形态（当前）</h1>
+  <div class="row">
+    <div class="card"><h2>Web</h2><p>Team panel：Bot / 工单 / 七阶段 / 审批</p><p>Web Gateway：SSO HttpOnly + /v1 proxy</p><p>不提供原生对话 / 本地目录表单</p></div>
+    <div class="card"><h2>Desktop</h2><p>DSH 原生对话 + 企业登录 gate</p><p>Team panel + 品牌插件</p><p>Local Executor Host 插件：真实 DSH / workdir / diff</p></div>
+    <div class="card"><h2>Mobile</h2><p>响应式 Team panel：390×844 / 审批 / follow-up</p><p>远程设备：local_dir / Stop</p><p>暂不做原生 App，先验响应式 Web</p></div>
+  </div>
+  <div class="card g wide"><h2>共享</h2><p>app-contract · control-plane · bot/device/tool gateways · DSH plugin layer（plugins/ 与 deepseek-harness 同级）</p></div>
+</div>
