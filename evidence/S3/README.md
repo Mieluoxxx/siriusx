@@ -92,3 +92,10 @@
 - SIGKILL Host 进程后，用同一 profile 与同一 `SIRIUSX_BOT_DB` 重启；
 - 重启后的 BotService `reconcile()` 把 assignment 标为 `lost`，GET ticket 返回 200 且不重复推进。
 - 证据：`07-host-kill/run.txt`、`before-kill.txt`、`after-restart.txt`、`host-first.txt`、`host-second.txt`。
+
+## 真实模型断线
+
+- 本地 mock 模型建立连接后主动断开；
+- Host 插件返回 `state=reported`, `report.kind=failed`, `reason=Connection error.`；
+- Bot 阶段推导为 `person/blocked_failed`，不进入无限重试。
+- 证据：`08-model-disconnect/run.txt`、`result.txt`。

@@ -1,0 +1,3 @@
+{"ticketId":"aa456240-6dc8-4db3-9a94-fbf9042f1d74","title":"hit a model disconnect","stage":"person/blocked_failed","closed":false,"latestAssignment":{"tenantId":"tenant-local","assignmentId":"50a62e2d-6745-4613-9499-2b4237c2bd80","ticketId":"aa456240-6dc8-4db3-9a94-fbf9042f1d74","workdirKey":"aa456240-6dc8-4db3-9a94-fbf9042f1d74","kernel":"dsh","state":"reported","lastSeq":3,"report":{"kind":"failed","summary":"Executor failed.","reason":"Connection error."}},"pendingInputs":0}
+HTTP=200
+stage person/blocked_failed report {'kind': 'failed', 'summary': 'Executor failed.', 'reason': 'Connection error.'}

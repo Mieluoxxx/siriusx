@@ -1,0 +1,10 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/packages/contracts
+
+ ✓ tests/contracts.spec.ts (25 tests) 17ms
+
+ Test Files  1 passed (1)
+      Tests  25 passed (25)
+   Start at  16:39:06
+   Duration  281ms (transform 68ms, setup 0ms, import 136ms, tests 17ms, environment 0ms)

@@ -11,6 +11,7 @@ const port = Number(process.env.PORT ?? 18081)
 const log = process.env.MOCK_LOG ?? '/tmp/siriusx-mock-llm-requests.jsonl'
 const reply = process.env.MOCK_REPLY ?? 'SiriusX offline mock reply: S1 conversation OK.'
 const delayMs = Number(process.env.DELAY_MS ?? 0)
+const dropAfterMs = Number(process.env.DROP_AFTER_MS ?? 0)
 
 function json(response, status, value) {
   const body = JSON.stringify(value)
@@ -38,6 +39,11 @@ const server = createServer(async (request, response) => {
   const raw = Buffer.concat(chunks).toString('utf8')
   await appendFile(log, `${raw}\n`)
 
+  if (dropAfterMs > 0) {
+    await new Promise(resolve => setTimeout(resolve, dropAfterMs))
+    response.destroy()
+    return
+  }
   if (delayMs > 0) await new Promise(resolve => setTimeout(resolve, delayMs))
   const id = `chatcmpl-siriusx-${Date.now()}`
   const created = Math.floor(Date.now() / 1000)
