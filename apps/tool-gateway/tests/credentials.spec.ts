@@ -33,4 +33,24 @@ describe('connector credential manager', () => {
     gateway.close()
     await new Promise<void>((resolve, reject) => manager.close(error => { error === undefined ? resolve() : reject(error) }))
   })
+  it('reads Vault KV v2 data.data.value and caches it', async () => {
+    const manager = createServer((request, response) => {
+      if (request.url === '/v1/secret/data/github') {
+        response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ data: { data: { value: 'kv2-token' } } }))
+      } else {
+        response.writeHead(404).end()
+      }
+    })
+    await new Promise<void>((resolve, reject) => { manager.once('error', reject); manager.listen(0, '127.0.0.1', () => resolve()) })
+    const address = manager.address()
+    const port = typeof address === 'object' && address !== null ? address.port : 0
+    const provider = new HttpCredentialProvider({ url: `http://127.0.0.1:${port}/v1/secret/data`, token: 'service-token' })
+    try {
+      expect(await provider.get('github')).toBe('kv2-token')
+      expect(await provider.get('github')).toBe('kv2-token')
+    } finally {
+      await new Promise<void>((resolve, reject) => manager.close(error => { error === undefined ? resolve() : reject(error) }))
+    }
+  })
+
 })

@@ -210,7 +210,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [x] 实现工具网关：解析目标、策略判定、写审计、执行，任何一步失败都不执行。依据 [gateway.md](./design/gateway.md)。证据：`apps/tool-gateway/`、`evidence/S6/01-tool-gateway/run.txt`。
-- [ ] 连接器凭据存进密钥管理，由网关持有。**部分完成**：新增 Vault-style HTTP `CredentialProvider`、缓存与 env fallback；真实 Vault/KMS 部署未接。证据：`evidence/S6/01-tool-gateway/credential-manager-test.txt`。
+- [ ] 连接器凭据存进密钥管理，由网关持有。**部分完成**：HTTP `CredentialProvider` 支持 Vault KV v1/v2、缓存与 env fallback；真实 Vault/KMS 部署未接。证据：`evidence/S6/01-tool-gateway/credential-manager-test.txt`、`05-vault-kv2/`。
 - [x] 把审批卡片接到网关：写入、发送、删除类动作默认要审批，超时视为拒绝。证据：`evidence/S6/03-ui-approval/`（真实 DSH Web UI 批准卡）。
 - [x] 按 S2 定下的字段接入采集：Bot 服务与 Executor 先接，L0 入库。本地执行只上行 L0 与 L1。证据：`apps/autobot` 已发 `assignment.state_changed` / `report.produced` / `tool.called` / `model.called` / `human.input`，`autobot serve --analytics` 落 `.l0l1.jsonl`；`evidence/S6/02-analytics/`。
 

@@ -50,3 +50,10 @@
   - 若配置 tool-gateway，则合并该 ticket 的审计记录
 - 证据：`04-trace/test.txt`。
 - 已合并 analytics `.l0l1.jsonl`，按 `ticketId` 过滤。
+
+## Vault KV v2
+
+- `HttpCredentialProvider` 现在支持 `data.data.value`（Vault KV v2）；
+- 本地 mock Vault 接口测试通过，凭据缓存且不进入审计。
+- 证据：`05-vault-kv2/test.txt`。
+- 仍缺真实 Vault/KMS 部署与权限。
