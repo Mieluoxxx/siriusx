@@ -1,0 +1,24 @@
+{
+  "accepted": {
+    "accepted": true
+  },
+  "sessionId": "78a2a082-5301-4ed3-a078-c32a81b4f30b",
+  "eventTypes": [
+    "user.message",
+    "turn.start",
+    "assistant.attempt.start",
+    "assistant.delta",
+    "assistant.attempt.end",
+    "assistant.message",
+    "turn.end"
+  ],
+  "text": "SiriusX offline mock reply: S1 conversation OK.",
+  "turnEnd": {
+    "type": "turn.end",
+    "turn": 1,
+    "time": 1794324743361,
+    "reason": {
+      "kind": "completed"
+    }
+  }
+}

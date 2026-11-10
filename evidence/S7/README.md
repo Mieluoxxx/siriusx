@@ -15,13 +15,15 @@
   - `AcpCloudKernel` 在沙箱内 spawn ACP agent，自动回权限并产出报告/`diffStats`。
 - Docker 集成测试真实验证：两个工单目录互相不可见、`--network none` 无法访问外部、
   sandbox 销毁重建后 `/workspace/app.txt` 仍在。
+- 真实 DSH ACP server：`dsh --profile acp` + 本地 mock 模型，经 `AcpBackend` 完成
+  initialize/newSession/prompt/turn.end，收到真实 assistant 文本。证据：`03-real-dsh-acp/run.txt`。
 
 ## 验收对照
 
 | 验收项 | 状态 | 证据 |
 | --- | --- | --- |
-| ACP 会话能跑通 | **通过（fake ACP + 真实 Docker）** | `02-acp-backend/test.txt`、`cloud-acp-docker.txt` |
-| pi 与 dsh 跑同一任务、事件一致 | **部分**：ACP 是通用协议，未用真实 pi/dsh 二进制复验 | — |
+| ACP 会话能跑通 | **通过（fake ACP、真实 Docker、真实 DSH ACP）** | `02-acp-backend/test.txt`、`cloud-acp-docker.txt`、`03-real-dsh-acp/run.txt` |
+| pi 与 dsh 跑同一任务、事件一致 | **部分**：真实 dsh ACP 已跑通；pi 尚未接 | `03-real-dsh-acp/run.txt` |
 | 两个任务文件互不可见 | **通过** | `01-cloud-executor/docker-isolation.txt` |
 | 沙箱断网 | **通过** | 同上 |
 | 沙箱删掉后 workdir 还在 | **通过** | 同上 |

@@ -238,13 +238,13 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 写 ACP 后端：一个符合内核接口的 ACP 客户端，后端标识 `acp:<agent>`。证据：`packages/kernel-acp`、`evidence/S7/02-acp-backend/test.txt`。
 - [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel 已实现；真实 dsh/pi 镜像与拉代码未接。证据：`packages/cloud-executor`。
 - [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。**部分完成**：独立 volume 与 `--network none` 已完成；allowlist/资源限额未做。
-- [ ] 接入云端 dsh 与 pi 两个内核。**部分完成**：通用 ACP 后端已实现，尚未用真实 dsh/pi 二进制复验。
+- [ ] 接入云端 dsh 与 pi 两个内核。**部分完成**：真实 DSH ACP 已跑通；pi 与云端沙箱内 dsh 未接。证据：`evidence/S7/03-real-dsh-acp/`。
 - [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**未完成**：工具网关 connector 仍是 mock。
 - [ ] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：`recoverOrphans()` 内存版。
 
 **验收标准。**
 
-- [x] ACP 后端对着 S2 的场景剧本全部通过。证据：`02-acp-backend/test.txt` 与 `cloud-acp-docker.txt`；不是完整 S2 剧本，只是会话/更新/权限/取消路径。
+- [x] ACP 后端对着 S2 的场景剧本全部通过。证据：`02-acp-backend/test.txt`、`cloud-acp-docker.txt`、`03-real-dsh-acp/run.txt`（真实 dsh ACP）；不是完整 S2 剧本。
 - [ ] 同一组场景分别在本地直调的 dsh 和云端经 ACP 的 dsh 上运行，两边产生的契约事件序列一致。**未完成**。
 - [x] 两个任务的沙箱互相看不到进程和文件。证据：`evidence/S7/01-cloud-executor/docker-isolation.txt`（文件隔离；进程隔离由独立容器保证）。
 - [x] 沙箱内访问白名单以外的地址被拒绝。证据：`--network none` 下 fetch 失败。

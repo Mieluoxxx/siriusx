@@ -1,0 +1,23 @@
+- id: llm-pi-ai
+  config:
+    providers:
+      siriusx-mock:
+        displayName: SiriusX Mock
+        apiKeyEnv: SIRIUSX_MOCK_KEY
+        api: openai-completions
+        baseURL: http://127.0.0.1:18081/v1
+        models:
+          - id: siriusx-mock
+            name: SiriusX Mock
+            contextWindow: 65536
+            maxTokens: 2048
+            input:
+              - text
+- id: agent-default-model
+  config:
+    provider: siriusx-mock
+    model: siriusx-mock
+- id: acp
+  config:
+    provider: siriusx-mock
+    model: siriusx-mock
