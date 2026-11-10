@@ -1,0 +1,7 @@
+{
+  "stage": "person/review",
+  "wireFrames": 5,
+  "leakedOnWire": false,
+  "leakedInEvents": false,
+  "eventCount": 5
+}

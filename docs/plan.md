@@ -317,7 +317,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 - [ ] 在手机上批准一个审批，电脑上等待中的任务随即继续。**部分完成**：390×844 手机 viewport 审批 + tool-gateway callback + waiting BotService `resume` 全链路通过；真实 iOS/Android 真机与真实等待 agent 未验。证据：`evidence/S10/07-approval-resume/`、`08-mobile-approval-resume/`。
 - [x] 在手机上选择公司电脑的一个本地目录发起任务，任务在那台电脑上执行，手机上能看到状态和报告摘要。**浏览器仿真通过**：`evidence/S10/05-device-ui/`。
-- [ ] 手机发起本地任务期间在云端抓包，经过云端的只有状态与摘要，没有日志和文件内容。**部分完成**：设备代理现在只上行 state/report/activity/turn 边界/permission，assistant 文本与 tool 输出被过滤；用含本地 secret 的仓库测试，control-plane 轨迹不含 secret。真实网络抓包未做。证据：`evidence/S10/09-uplink-redaction/`。
+- [ ] 手机发起本地任务期间在云端抓包，经过云端的只有状态与摘要，没有日志和文件内容。**部分完成**：设备代理现在只上行 state/report/activity/turn 边界/permission，assistant 文本与 tool 输出被过滤；用含本地 secret 的仓库测试，control-plane 轨迹不含 secret；device-agent→gateway 透明 WebSocket 帧级抓包也不含 secret。真实主机网络抓包未做。证据：`evidence/S10/09-uplink-redaction/`、`10-packet-capture/`。
 - [x] 电脑离线时发起任务，工单停在 `person/delivery`，电脑上线后自动重试。证据：`evidence/S10/05-device-ui/offline-retry-test.txt`。
 - [ ] iOS 和 Android 各一台真机上，以上四条都通过。
 
