@@ -1,0 +1,10 @@
+$ vitest run tests/bot-service.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/apps/autobot
+
+ ✓ tests/bot-service.spec.ts (7 tests) 927ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  17:35:05
+   Duration  1.22s (transform 104ms, setup 0ms, import 177ms, tests 927ms, environment 0ms)

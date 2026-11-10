@@ -145,6 +145,8 @@ export interface BotServiceOptions {
   readonly inputDebounceMaxWaitMs?: number
   readonly analytics?: AnalyticsCollector
   readonly analyticsBotId?: string
+  /** Retry tickets whose latest assignment was reconciled as lost. */
+  readonly autoRetryLost?: boolean
 }
 
 export class BotService {
@@ -161,6 +163,7 @@ export class BotService {
   #analyticsSeq = 0
   readonly #analyticsSeen = new Set<string>()
   readonly #analyticsStates = new Map<string, Assignment['state']>()
+  readonly #retriedLost = new Set<string>()
 
   constructor(options: BotServiceOptions) {
     this.#db = new DatabaseSync(options.dbPath)
@@ -172,6 +175,7 @@ export class BotService {
     this.#analytics = options.analytics
     this.#analyticsBotId = options.analyticsBotId ?? 'bot-local'
     this.reconcile()
+    if (options.autoRetryLost === true) void this.retryLost().catch(() => undefined)
   }
 
   close(): void {
@@ -181,6 +185,20 @@ export class BotService {
     }
     this.#debounce.clear()
     this.#db.close()
+  }
+
+  /** Retry open tickets whose newest assignment was reconciled as lost. */
+  async retryLost(): Promise<string[]> {
+    const rows = this.#db.prepare('SELECT id FROM tickets WHERE closed = 0 ORDER BY created_at, rowid').all() as Array<{ id: string }>
+    const retried: string[] = []
+    for (const row of rows) {
+      if (this.#retriedLost.has(row.id) || this.#inFlight.has(row.id)) continue
+      if (this.latestAssignmentRow(row.id)?.state !== 'lost') continue
+      this.#retriedLost.add(row.id)
+      retried.push(row.id)
+      await this.dispatch(row.id).catch(() => undefined)
+    }
+    return retried
   }
 
   /** Mark assignments that no longer have an Executor owner as lost. */

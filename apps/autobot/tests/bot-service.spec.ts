@@ -205,4 +205,31 @@ describe('single-tenant local Bot loop', () => {
     expect(sink.events.find(event => event.schema === 'human.input')?.payload.textLength).toBe('follow up secret text'.length)
   })
 
+  it('retries a reconciled lost assignment on startup when enabled', async () => {
+    const root = await repo()
+    const dbPath = await dbFile()
+    const db = new DatabaseSync(dbPath)
+    db.exec(BOT_SCHEMA)
+    const ticketId = '00000000-0000-4000-8000-000000000011'
+    const assignmentId = '00000000-0000-4000-8000-000000000012'
+    db.prepare('INSERT INTO tickets (id, tenant_id, workspace_json, prompt, model_id, closed, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)')
+      .run(ticketId, 'tenant-a', JSON.stringify({ kind: 'local_dir', deviceId: 'd1', path: root }), 'retry me', 'm', Date.now())
+    db.prepare('INSERT INTO assignments (id, tenant_id, ticket_id, kind, workdir_key, state, report_json, last_seq, created_at) VALUES (?, ?, ?, ?, ?, ?, NULL, 0, ?)')
+      .run(assignmentId, 'tenant-a', ticketId, 'start', ticketId, 'lost', Date.now())
+    db.close()
+    const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: fake() })
+    const service = new BotService({ dbPath, executor, autoRetryLost: true })
+    services.push(service)
+    for (let index = 0; index < 100; index++) {
+      if (service.getTicket(ticketId).latestAssignment?.state === 'reported') break
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    const view = service.getTicket(ticketId)
+    expect(view.latestAssignment?.state).toBe('reported')
+    const db2 = new DatabaseSync(dbPath)
+    const kinds = db2.prepare('SELECT kind FROM assignments WHERE ticket_id = ? ORDER BY created_at, rowid').all(ticketId) as Array<{ kind: string }>
+    db2.close()
+    expect(kinds.map(row => row.kind)).toEqual(['start', 'resume'])
+  })
+
 })

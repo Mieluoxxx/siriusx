@@ -67,7 +67,7 @@ export async function apply(ctx: Context): Promise<void> {
   })
   const executor = new LocalExecutor({ tenantId: 'tenant-local', backend, capacity: 2 })
   const botDb = process.env.SIRIUSX_BOT_DB ?? join(process.env.DSH_HOME ?? '/tmp', 'siriusx-host-bot.sqlite')
-  const bot = new BotService({ dbPath: botDb, executor })
+  const bot = new BotService({ dbPath: botDb, executor, autoRetryLost: process.env.SIRIUSX_AUTO_RETRY_LOST === '1' })
   ctx.effect(() => () => bot.close(), 'siriusx-executor-local: bot store')
 
   ctx.effect(() => ctx.webServer.register({

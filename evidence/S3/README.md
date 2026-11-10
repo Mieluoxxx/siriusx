@@ -99,3 +99,11 @@
 - Host 插件返回 `state=reported`, `report.kind=failed`, `reason=Connection error.`；
 - Bot 阶段推导为 `person/blocked_failed`，不进入无限重试。
 - 证据：`08-model-disconnect/run.txt`、`result.txt`。
+
+## Lost 自动重试
+
+- `BotServiceOptions.autoRetryLost` 开启后，启动时对最新 assignment 为 `lost` 的 open ticket
+  自动创建 `resume` assignment。
+- 测试验证：原 lost assignment 保留，新 assignment 为 `resume` 并达到 `reported`。
+- Host 插件通过 `SIRIUSX_AUTO_RETRY_LOST=1` 可选开启。
+- 证据：`10-lost-retry/test.txt`。
