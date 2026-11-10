@@ -452,7 +452,7 @@ export const TouchWorkdirResponseSchema = z.object({
 | `WORKDIR_NOT_FOUND` | `resume` / 预览操作时 `workdirKey` 对应目录不存在 |
 | `NO_CAPACITY` | 槽位已满，或该租户的并发配额已用完（Bot 应排队，不应重试轰炸） |
 | `PREVIEW_LIMIT` | 宿主预览进程数已达上限 |
-| `PREVIEW_NOT_FOUND` | 预览进程不存在或不属于该 workdir |
+| `PREVIEW_NOT_FOUND` | 预览进程不存在或不属于该 workdir。过期后不得静默复用旧 previewId，由调用方决定是否重新 `startPreview`。 |
 | `PATH_OUTSIDE_WORKDIR` | 文件浏览的路径越出 workdir |
 | `FILE_NOT_FOUND` | 文件浏览的路径不存在 |
 | `FILE_TOO_LARGE` | 读取的文件超过单次上限 |
