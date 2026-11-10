@@ -130,3 +130,9 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - Web Gateway 拒绝跨源 state-changing 请求；
 - `/login` 设置 nosniff / DENY / no-referrer。
 - 证据：`12-csrf-origin/run.txt`。
+
+## Cookie hardening
+
+- TLS 反向代理下设置 Secure cookie；
+- OIDC pending state 有 TTL/上限。
+- 证据：`13-cookie-hardening/run.txt`。

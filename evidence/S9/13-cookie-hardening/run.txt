@@ -1,0 +1,8 @@
+{
+  "login": 204,
+  "secure": true,
+  "before": 200,
+  "logout": 302,
+  "cleared": true,
+  "after": 401
+}

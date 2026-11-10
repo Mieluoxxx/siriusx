@@ -109,6 +109,7 @@ async function body(request: IncomingMessage): Promise<Record<string, unknown>> 
 
 export async function startWebGateway(options: WebGatewayOptions): Promise<WebGateway> {
   const cookieName = options.cookieName ?? 'siriusx_session'
+  const secureFlag = (request: IncomingMessage): string => request.headers['x-forwarded-proto'] === 'https' || (request.socket as { encrypted?: boolean }).encrypted === true ? '; Secure' : ''
   const controlPlaneUrl = options.controlPlaneUrl.replace(/\/$/u, '')
   const dshWebUrl = new URL(options.dshWebUrl)
   const dshCookie = await exchangeDshCookie(options.dshWebUrl)
@@ -139,6 +140,8 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
       }
       if (request.method === 'GET' && url.pathname === '/health') { json(response, 200, { ok: true, service: 'siriusx-web-gateway' }); return }
       if (request.method === 'GET' && url.pathname === '/auth/oidc/start' && oidcEnabled && oidc !== undefined && oidcMetadata !== undefined) {
+        for (const [key, value] of pending) if (Date.now() - value.createdAt > 10 * 60 * 1000) pending.delete(key)
+        if (pending.size >= 1000) { response.writeHead(429, { 'cache-control': 'no-store' }).end('too many pending OIDC states'); return }
         const state = randomBytes(24).toString('base64url')
         const verifier = randomBytes(48).toString('base64url')
         const nonce = randomBytes(24).toString('base64url')
@@ -185,7 +188,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         if (!session.ok) { response.writeHead(401).end('control-plane SSO exchange failed'); return }
         const sessionBody = await session.json() as { token: string }
         response.writeHead(302, {
-          'set-cookie': `${cookieName}=${encodeURIComponent(sessionBody.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800`,
+          'set-cookie': `${cookieName}=${encodeURIComponent(sessionBody.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800${secureFlag(request)}`,
           location: '/', 'cache-control': 'no-store',
         }).end()
         return
@@ -216,7 +219,7 @@ document.getElementById('f').onsubmit = async (event) => {
           location = endSession.toString()
         }
         response.writeHead(302, {
-          'set-cookie': `${cookieName}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`,
+          'set-cookie': `${cookieName}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureFlag(request)}`,
           location, 'cache-control': 'no-store',
         }).end()
         return
@@ -227,7 +230,7 @@ document.getElementById('f').onsubmit = async (event) => {
           json(response, 401, { error: 'invalid session' }); return
         }
         response.writeHead(204, {
-          'set-cookie': `${cookieName}=${encodeURIComponent(payload.token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`,
+          'set-cookie': `${cookieName}=${encodeURIComponent(payload.token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secureFlag(request)}`,
           'cache-control': 'no-store',
         }).end()
         return
