@@ -74,3 +74,11 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - 证据：`04-cloud-project/run.txt`、`cloud-project.png`、`direct-api-detail.json`。
 
 注意：ACP agent 仍是 fake agent，用于验证云执行/UI 链路；真实仓库 clone 与 dsh/pi 镜像待接。
+
+## 云端项目打断（Web UI）
+
+- 云端任务配置 `SIRIUSX_CLOUD_START_DELAY_MS` 保持 sandbox 运行；
+- Web UI 点击 Stop 后，control-plane 调用 CloudExecutor.cancelAssignment；
+- 工单从 `working/queued` → `idle/cancelled`；
+- 无控制台错误。
+- 证据：`05-cloud-interrupt/run.txt`、`cloud-interrupt.png`。

@@ -295,6 +295,8 @@ export interface AcpCloudKernelOptions {
   readonly args?: readonly string[]
   readonly permission?: 'allow-once' | 'reject'
   readonly timeoutMs?: number
+  /** Test/deployment hook: keep the sandbox running before the first prompt. */
+  readonly startDelayMs?: number
   /** Copy one local executable/script into the sandbox before spawning it. */
   readonly copyIn?: { readonly localPath: string; readonly remotePath: string }
 }
@@ -319,6 +321,9 @@ export class AcpCloudKernel {
 
   async run(context: import('@siriusx/cloud-executor').CloudKernelContext): Promise<import('@siriusx/cloud-executor').AssignmentReport> {
     if (this.#options.copyIn !== undefined) await context.sandbox.copyIn(this.#options.copyIn.localPath, this.#options.copyIn.remotePath)
+    if (this.#options.startDelayMs !== undefined && this.#options.startDelayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, this.#options.startDelayMs))
+    }
     const process = await context.sandbox.spawn(this.#options.command, this.#options.args)
     const session = await openAcpSession({ backendId: 'acp:cloud', cwd: context.sandbox.workdir, transport: process })
     const events: AgentEvent[] = []

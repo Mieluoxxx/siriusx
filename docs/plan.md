@@ -295,7 +295,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **验收标准。**
 
-- [ ] 在浏览器里经 SSO 登录后，能看 Bot 列表和工单、处理审批、对云端项目发起任务并打断。**部分完成**：同源 SSO cookie、Bot 列表/工单、审批、云端项目发起（Docker+fake ACP）已通；真实 OIDC/真实 agent/云端项目打断未接。证据：`evidence/S9/02-gateway/`、`03-gateway-approval/`、`04-cloud-project/`。
+- [ ] 在浏览器里经 SSO 登录后，能看 Bot 列表和工单、处理审批、对云端项目发起任务并打断。**部分完成**：同源 SSO cookie、Bot 列表/工单、审批、云端项目发起与打断（Docker+fake ACP）已通；真实 OIDC/真实 agent 未接。证据：`evidence/S9/02-gateway/`、`03-gateway-approval/`、`04-cloud-project/`、`05-cloud-interrupt/`。
 - [ ] Web 端没有原生对话入口，也没有打开本地目录的入口。**未完成**：Web profile 仍保留原生对话。
 - [x] 未登录直接访问预览地址被拒绝。证据：`evidence/S9/02-gateway/run.txt`（`/`→`/login`，`/v1`→401）。
 - [x] 两个租户的成员各自登录，互相看不到对方的数据。证据：`evidence/S9/02-gateway/run.txt`（Acme 1 ticket / Beta 0 ticket）。

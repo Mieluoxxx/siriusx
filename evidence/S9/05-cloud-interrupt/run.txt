@@ -1,0 +1,5 @@
+{
+  "before": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\n\nWeb 端只使用云端项目；本地目录请使用桌面端或已配对手机。\n\nDispatch cloud ticket\nworking/queued\nopen\n9f5fa2a3-867e · preparing\nWaiting for report…\nworking/queued\npreparing\n9f5fa2a3-867e-4867-8ea2-b3d7a6c19f03\n\nNo report yet.\n\nSend\nStop\nEvents\nNo events",
+  "after": "Plugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\napprovals\nRefresh\n\nWeb 端只使用云端项目；本地目录请使用桌面端或已配对手机。\n\nDispatch cloud ticket\nidle\nclosed\n9f5fa2a3-867e · cancelled\nWaiting for report…\nidle\ncancelled\n9f5fa2a3-867e-4867-8ea2-b3d7a6c19f03\n\nNo report yet.\n\nSend\nStop\nEvents\nNo events",
+  "errors": []
+}

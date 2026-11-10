@@ -491,6 +491,7 @@ export class ControlPlane {
         copyIn: { localPath: fixture, remotePath: '/workspace/fake-acp.mjs' },
         allowTools: true,
         timeoutMs: 2 * 60 * 1000,
+        startDelayMs: process.env.SIRIUSX_CLOUD_START_DELAY_MS === undefined ? 0 : Number(process.env.SIRIUSX_CLOUD_START_DELAY_MS),
       } as never),
     })
     this.#cloudExecutors.set(ticketId, executor)
