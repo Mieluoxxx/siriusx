@@ -1,0 +1,11 @@
+$ vitest run tests/clone.integration.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/packages/kernel-acp
+
+ ✓ tests/clone.integration.spec.ts (1 test) 818ms
+     ✓ clones a bound repo into the sandbox and runs ACP in the clone  816ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:09:57
+   Duration  1.13s (transform 81ms, setup 0ms, import 203ms, tests 818ms, environment 0ms)

@@ -12,6 +12,7 @@ export interface DockerSandboxProviderOptions {
   readonly image?: string
   readonly allowlistNetwork?: string
   readonly prefix?: string
+  readonly binds?: readonly { hostPath: string; containerPath: string; readOnly?: boolean }[]
 }
 
 function safePart(value: string): string {
@@ -37,12 +38,14 @@ export class DockerSandboxProvider implements SandboxProvider {
   readonly #image: string
   readonly #allowlistNetwork: string | undefined
   readonly #prefix: string
+  readonly #binds: readonly { hostPath: string; containerPath: string; readOnly?: boolean }[]
 
   constructor(options: DockerSandboxProviderOptions = {}) {
     this.#dockerBin = options.dockerBin ?? 'docker'
     this.#image = options.image ?? 'debian:bookworm-slim'
     this.#allowlistNetwork = options.allowlistNetwork
     this.#prefix = options.prefix ?? 'siriusx'
+    this.#binds = options.binds ?? []
   }
 
   async available(): Promise<boolean> {
@@ -72,6 +75,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       '--label', `siriusx.workdir=${request.workdirKey}`,
       '-v', `${home}:/home/siriusx`,
       '-v', `${work}:/workspace`,
+      ...this.#binds.flatMap(bind => ['-v', `${bind.hostPath}:${bind.containerPath}${bind.readOnly === true ? ':ro' : ''}`]),
       '-w', '/workspace',
       request.image || this.#image,
       'sleep', 'infinity',

@@ -62,7 +62,30 @@ export interface SandboxProvider {
 export interface CloudKernelContext {
   readonly assignment: CreateAssignment
   readonly sandbox: Sandbox
+  /** Working directory after optional repository preparation. */
+  readonly cwd: string
   emitActivity(event: Omit<Extract<AssignmentEvent, { type: 'activity' }>, 'seq' | 'at' | 'type'>): void
+}
+
+/** Optional first step after sandbox creation, e.g. clone the project repository. */
+export type WorkspacePreparer = (request: CreateAssignment, sandbox: Sandbox) => Promise<string | undefined>
+
+/** Clone a cloud_project workspace into a directory inside the sandbox. */
+export class GitClonePreparer {
+  readonly #target: string
+  constructor(target = '/workspace/repo') { this.#target = target }
+
+  async prepare(request: CreateAssignment, sandbox: Sandbox): Promise<string> {
+    if (request.workspace.kind !== 'cloud_project') throw new Error('GitClonePreparer only accepts cloud_project')
+    const quote = (value: string): string => `'${value.replace(/'/gu, `'\''`)}'`
+    // Bind mounts may be owned by another uid; the sandbox is ephemeral and
+    // already isolated, so mark the clone source as safe for git.
+    await sandbox.exec("git config --global --add safe.directory '*'")
+    await sandbox.exec(`rm -rf ${quote(this.#target)}`)
+    const result = await sandbox.exec(`git clone --depth 1 --branch ${quote(request.workspace.baseRef)} ${quote(request.workspace.repo.cloneUrl)} ${quote(this.#target)}`)
+    if (result.exitCode !== 0) throw new Error(`git clone failed: ${result.stderr.trim()}`)
+    return this.#target
+  }
 }
 
 export interface CloudKernel {
@@ -75,6 +98,7 @@ export interface CloudExecutorOptions {
   readonly image?: string
   readonly network?: 'none' | 'allowlist'
   readonly now?: () => number
+  readonly prepareWorkspace?: WorkspacePreparer
   /** Durable store; when omitted the executor is process-local. */
   readonly store?: AssignmentStore
   readonly dbPath?: string
@@ -96,6 +120,7 @@ export class CloudExecutor {
   readonly #image: string
   readonly #network: 'none' | 'allowlist'
   readonly #now: () => number
+  readonly #prepareWorkspace: WorkspacePreparer | undefined
   readonly #store: AssignmentStore
 
   constructor(options: CloudExecutorOptions) {
@@ -104,6 +129,7 @@ export class CloudExecutor {
     this.#image = options.image ?? 'debian:bookworm-slim'
     this.#network = options.network ?? 'none'
     this.#now = options.now ?? Date.now
+    this.#prepareWorkspace = options.prepareWorkspace
     this.#store = options.store ?? (options.dbPath === undefined ? new MemoryAssignmentStore() : new SqliteAssignmentStore(options.dbPath))
   }
 
@@ -157,11 +183,14 @@ export class CloudExecutor {
       entry.sandboxId = sandbox.id
       this.#store.update(entry.assignment, sandbox.id)
       if (entry.cancelled) { await sandbox.destroy(); return }
+      const cwd = this.#prepareWorkspace === undefined ? undefined : await this.#prepareWorkspace(request, sandbox)
+      if (entry.cancelled) { await sandbox.destroy(); return }
       entry.assignment.state = 'running'
       this.#emit(entry, 'running')
       const report = await this.#kernel.run({
         assignment: request,
         sandbox,
+        cwd: cwd ?? sandbox.workdir,
         emitActivity: event => this.#emitActivity(entry, event),
       })
       if (entry.cancelled || this.#store.get(entry.assignment.assignmentId)?.assignment.state === 'lost') return

@@ -325,7 +325,7 @@ export class AcpCloudKernel {
       await new Promise(resolve => setTimeout(resolve, this.#options.startDelayMs))
     }
     const process = await context.sandbox.spawn(this.#options.command, this.#options.args)
-    const session = await openAcpSession({ backendId: 'acp:cloud', cwd: context.sandbox.workdir, transport: process })
+    const session = await openAcpSession({ backendId: 'acp:cloud', cwd: context.cwd, transport: process })
     const events: AgentEvent[] = []
     let finish: (() => void) | undefined
     const done = new Promise<void>(resolve => { finish = resolve })
@@ -349,7 +349,7 @@ export class AcpCloudKernel {
     const summary = final?.type === 'assistant.message'
       ? final.blocks.map(block => block.text ?? '').join('')
       : 'ACP turn finished without a final message'
-    const diff = await context.sandbox.exec('git diff --numstat')
+    const diff = await context.sandbox.exec(`git -C ${context.cwd} diff --numstat`)
     return { kind: 'ready', summary, diffStats: diff.exitCode === 0 ? parseDiffStats(diff.stdout) : { filesChanged: 0, insertions: 0, deletions: 0 }, diffBasis: 'baseRef' }
   }
 }

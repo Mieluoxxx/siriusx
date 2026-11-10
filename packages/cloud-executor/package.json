@@ -5,11 +5,19 @@
   "type": "module",
   "description": "Cloud Executor: sandbox lifecycle, per-ticket workdir volumes, cancellation and orphan recovery.",
   "license": "MIT",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "@siriusx/contracts": "workspace:*",
     "zod": "4.4.3"
   },
-  "devDependencies": { "typescript": "6.0.3", "vitest": "4.1.11" }
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
 }

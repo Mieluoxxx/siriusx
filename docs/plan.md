@@ -236,7 +236,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [x] 写 ACP 后端：一个符合内核接口的 ACP 客户端，后端标识 `acp:<agent>`。证据：`packages/kernel-acp`、`evidence/S7/02-acp-backend/test.txt`。
-- [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel 已实现；真实 dsh/pi 镜像与拉代码未接。证据：`packages/cloud-executor`。
+- [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel/仓库 clone 已实现；真实 dsh/pi 镜像与真实代码平台认证未接。证据：`packages/cloud-executor`、`evidence/S7/08-repo-clone/`。
 - [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。**部分完成**：独立 volume 与 `--network none` 已完成；allowlist/资源限额未做。
 - [ ] 接入云端 dsh 与 pi 两个内核。**部分完成**：真实 DSH ACP 与真实 Pi JSON backend 均已跑通，且同一 local_dir 工单在 Bot 侧结果一致；云端沙箱内 dsh/pi 尚未接入。证据：`evidence/S7/03-real-dsh-acp/`、`06-pi-backend/`、`07-kernel-parity/`。
 - [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub REST connector + 工具网关审批写测试完成；真实仓库全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`。

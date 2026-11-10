@@ -26,6 +26,8 @@
   映射 text delta / turn_end / assistant.message；模型使用本地 mock。证据：`06-pi-backend/test.txt`。
 - 同一 `local_dir` 工单分别交给真实 DSH ACP 与真实 Pi CLI，BotService 侧得到相同的
   stage/report/事件类型序列（`idle`、`ready`、`state,state,report,state`）。证据：`07-kernel-parity/run.txt`。
+- CloudExecutor 仓库准备：`GitClonePreparer` 在 Docker sandbox 内 clone，ACP 在 clone 目录运行；
+  真实本地 bare repo + Python ACP agent 测试通过。证据：`08-repo-clone/test.txt`。
 
 ## 验收对照
 
@@ -38,7 +40,7 @@
 | 沙箱删掉后 workdir 还在 | **通过** | 同上 |
 | 网络允许列表 | **未完成**：仅 `none` 与预配置 network | — |
 | agent 环境无连接器凭据 | **部分**：CloudExecutor 不注入 secretRefs；未做 env 扫描 | — |
-| 真 GitHub/GitLab issue → MR | **部分**：GitHub REST connector + gateway 审批写测试完成；未在真实仓库走 Issue→MR | `04-github-connector/`、`05-github-gateway/` |
+| 真 GitHub/GitLab issue → MR | **部分**：GitHub REST connector + gateway 审批写测试完成；云端 repo clone 测试完成；未在真实仓库走 Issue→MR | `04-github-connector/`、`05-github-gateway/`、`08-repo-clone/` |
 | 崩溃恢复 | **部分**：SQLite 跨进程恢复单测通过；真实进程 kill/重试未做 | `01-cloud-executor/store-test.txt` |
 
 ## 已知边界
