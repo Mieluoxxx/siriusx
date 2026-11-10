@@ -1,0 +1,9 @@
+{
+  "tenant": {
+    "id": "tenant-clean",
+    "name": "Clean",
+    "idpIssuer": "https://idp.example",
+    "createdAt": 1794336265784
+  },
+  "adminUserId": "dd73e35f-d269-42ca-965f-fe55c595e0a9"
+}

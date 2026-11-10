@@ -125,3 +125,12 @@
 - web-gateway 访问外网失败（exit 7）；
 - web-gateway 能访问内部 `dsh-web:3000`（401 是 DSH token fence，连接成立）。
 - 证据：`12-isolated-network/`。
+
+## 断网干净容器安装
+
+- 在空的 `debian:bookworm-slim` 容器、`--network none`、只挂载 Node24 与离线 bundle：
+  - `install-offline.sh` 成功启动 control-plane；
+  - 容器内 `/health` 通过；
+  - 开通租户、签发 token、读取 settings 通过。
+- 这是 Linux 干净环境的安装 smoke；macOS/Windows 与完整 Web Gateway 仍需另验。
+- 证据：`13-clean-machine/`。
