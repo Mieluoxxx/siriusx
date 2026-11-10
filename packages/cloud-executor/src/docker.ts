@@ -16,6 +16,8 @@ export interface DockerSandboxProviderOptions {
   readonly memoryLimit?: string
   readonly cpuLimit?: string
   readonly pidsLimit?: number
+  readonly proxyUrl?: string
+  readonly addHosts?: readonly string[]
 }
 
 function safePart(value: string): string {
@@ -45,6 +47,8 @@ export class DockerSandboxProvider implements SandboxProvider {
   readonly #memoryLimit: string
   readonly #cpuLimit: string
   readonly #pidsLimit: number
+  readonly #proxyUrl: string | undefined
+  readonly #addHosts: readonly string[]
 
   constructor(options: DockerSandboxProviderOptions = {}) {
     this.#dockerBin = options.dockerBin ?? 'docker'
@@ -55,6 +59,8 @@ export class DockerSandboxProvider implements SandboxProvider {
     this.#memoryLimit = options.memoryLimit ?? '1g'
     this.#cpuLimit = options.cpuLimit ?? '1'
     this.#pidsLimit = options.pidsLimit ?? 256
+    this.#proxyUrl = options.proxyUrl
+    this.#addHosts = options.addHosts ?? []
   }
 
   async available(): Promise<boolean> {
@@ -83,6 +89,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       '--memory', this.#memoryLimit,
       '--cpus', this.#cpuLimit,
       '--pids-limit', String(this.#pidsLimit),
+      ...this.#addHosts.flatMap(host => ['--add-host', host]),
       '--label', 'siriusx.managed=true',
       '--label', `siriusx.tenant=${request.tenantId}`,
       '--label', `siriusx.workdir=${request.workdirKey}`,
@@ -94,11 +101,14 @@ export class DockerSandboxProvider implements SandboxProvider {
       'sleep', 'infinity',
     ])
     if (started.exitCode !== 0) throw new Error(`docker run failed: ${started.stderr}`)
+    const sandboxEnv = this.#proxyUrl === undefined ? {} : {
+      HTTP_PROXY: this.#proxyUrl, HTTPS_PROXY: this.#proxyUrl, ALL_PROXY: this.#proxyUrl, NO_PROXY: '127.0.0.1,localhost',
+    }
     return {
       id: container,
       workdir: '/workspace',
       exec: async (command: string, options?: SandboxExecOptions): Promise<SandboxExecResult> => {
-        const env = Object.entries(options?.env ?? {}).flatMap(([key, value]) => ['-e', `${key}=${value}`])
+        const env = Object.entries({ ...sandboxEnv, ...(options?.env ?? {}) }).flatMap(([key, value]) => ['-e', `${key}=${value}`])
         const result = await dockerBin(this.#dockerBin, ['exec', ...env, container, 'sh', '-lc', command], options?.timeoutMs)
         return result
       },
@@ -107,7 +117,7 @@ export class DockerSandboxProvider implements SandboxProvider {
         if (copied.exitCode !== 0) throw new Error(`docker cp failed: ${copied.stderr}`)
       },
       spawn: async (command: string, args: readonly string[] = [], options?: SandboxExecOptions) => {
-        const env = Object.entries(options?.env ?? {}).flatMap(([key, value]) => ['-e', `${key}=${value}`])
+        const env = Object.entries({ ...sandboxEnv, ...(options?.env ?? {}) }).flatMap(([key, value]) => ['-e', `${key}=${value}`])
         const child = spawn(this.#dockerBin, ['exec', '-i', ...env, '-w', '/workspace', container, command, ...args], {
           stdio: ['pipe', 'pipe', 'pipe'],
         })

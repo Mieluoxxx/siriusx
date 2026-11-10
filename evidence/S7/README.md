@@ -34,6 +34,8 @@
   `PiCloudKernel` 读取 JSON 事件并产出 ready 报告。证据：`10-real-pi-docker/run.txt`。
 - 沙箱资源限额与凭据隔离：Docker `--memory/--cpus/--pids-limit`，容器 env 不继承宿主连接器凭据；
   `--network none` 下外网请求失败。证据：`11-sandbox-hardening/test.txt`。
+- 出口 allowlist 代理：sandbox 位于 `--internal` 网络，只有显式允许的目标可经代理访问；
+  直接外网请求失败，代理拒绝非白名单目标。证据：`12-egress-allowlist/test.txt`。
 
 ## 验收对照
 
