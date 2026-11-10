@@ -1,0 +1,3 @@
+- insert:
+    - id: siriusx-client-ui-bots
+      name: '@siriusx/dsh-client-ui-bots'

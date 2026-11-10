@@ -155,7 +155,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 **任务。**
 
 - [x] 把 Bot 与应用之间的契约写成代码类型，范围见 [web-app.md](./design/web-app.md) 第 3 节。界面插件只导入这些类型。证据：`packages/app-contract/`。
-- [ ] 做四个界面插件，挂进 DSH Desktop 的界面槽位：Bot 列表、工单与七阶段、会话视图（消息、报告、实时事件）、审批卡片。**部分完成**：一个合并 Team panel 覆盖四个区域；审批卡已接真实 tool-gateway，尚未拆成四个独立 package。证据：`plugins/client-ui-team/`、`evidence/S4/02-approvals/`。
+- [x] 做四个界面插件，挂进 DSH Desktop 的界面槽位：Bot 列表、工单与七阶段、会话视图（消息、报告、实时事件）、审批卡片。证据：`plugins/client-ui-bots`、`client-ui-tickets`、`client-ui-sessions`、`client-ui-approvals` 四个独立 package，共享 `packages/client-ui-team-core`；`evidence/S4/03-four-panels/`。
 - [x] 在界面里支持发起任务、补充输入、打断、查看 diff。证据：`evidence/S4/01-team-panel/run.txt`（发起与 diff）；输入/Stop 按钮在位，真实打断在 S3 已验。
 
 **验收标准。**

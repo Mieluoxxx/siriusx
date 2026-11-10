@@ -1,0 +1,4 @@
+{
+  "body": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nApprovals\n▣\nBots\n▣\nSessions\n▣\nTickets\nMore\nWorkspaces\nNo sessions yet\nMore\nSiriusX Team\n0 bot · 0 ticket\ntickets\nbots\napprovals\nRefresh\nApprovals\n\nNo approval cards for this tenant.",
+  "errors": []
+}

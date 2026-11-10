@@ -193,6 +193,36 @@ importers:
         specifier: 6.0.3
         version: 6.0.3
 
+  packages/client-ui-team-core:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.1.0
+        version: 4.1.0
+      '@deepseek-ai/dsh-client-ui-layout':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-sidebar':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@siriusx/app-contract':
+        specifier: workspace:*
+        version: link:../app-contract
+      '@types/react':
+        specifier: 18.3.31
+        version: 18.3.31
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
   packages/cloud-executor:
     dependencies:
       '@siriusx/contracts':
@@ -387,6 +417,87 @@ importers:
         specifier: 6.0.3
         version: 6.0.3
 
+  plugins/client-ui-approvals:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.1.0
+        version: 4.1.0
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-sidebar':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@siriusx/client-ui-team-core':
+        specifier: workspace:*
+        version: link:../../packages/client-ui-team-core
+      '@types/react':
+        specifier: 18.3.31
+        version: 18.3.31
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  plugins/client-ui-bots:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.1.0
+        version: 4.1.0
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-sidebar':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@siriusx/client-ui-team-core':
+        specifier: workspace:*
+        version: link:../../packages/client-ui-team-core
+      '@types/react':
+        specifier: 18.3.31
+        version: 18.3.31
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  plugins/client-ui-sessions:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.1.0
+        version: 4.1.0
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-sidebar':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@siriusx/client-ui-team-core':
+        specifier: workspace:*
+        version: link:../../packages/client-ui-team-core
+      '@types/react':
+        specifier: 18.3.31
+        version: 18.3.31
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
   plugins/client-ui-team:
     devDependencies:
       '@deepseek-ai/cordis':
@@ -407,6 +518,36 @@ importers:
       '@siriusx/app-contract':
         specifier: workspace:*
         version: link:../../packages/app-contract
+      '@siriusx/client-ui-team-core':
+        specifier: workspace:*
+        version: link:../../packages/client-ui-team-core
+      '@types/react':
+        specifier: 18.3.31
+        version: 18.3.31
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  plugins/client-ui-tickets:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.1.0
+        version: 4.1.0
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@deepseek-ai/dsh-client-ui-sidebar':
+        specifier: 0.2.2-rc.1
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
+      '@siriusx/client-ui-team-core':
+        specifier: workspace:*
+        version: link:../../packages/client-ui-team-core
       '@types/react':
         specifier: 18.3.31
         version: 18.3.31

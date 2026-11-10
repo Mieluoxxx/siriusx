@@ -49,3 +49,17 @@ errors=[]
 - Bot API 仍使用确定性 fake kernel；真实 DSH Host Executor 插件已在 S3 验证，S5 把两者合成企业链路。
 - 审批页已接 control-plane `/v1/approvals` 代理与 tool-gateway；真实审批审计见 S6 证据。
 - 设备任务与 Stop：`evidence/S4/03-interrupt/run.txt`、`interrupt.png`。
+
+## 四个独立 UI 插件
+
+新增四个独立 client package，共享 `@siriusx/client-ui-team-core`：
+
+- `@siriusx/dsh-client-ui-bots`
+- `@siriusx/dsh-client-ui-tickets`
+- `@siriusx/dsh-client-ui-sessions`
+- `@siriusx/dsh-client-ui-approvals`
+
+真实 DSH Web Host 同时加载四个插件，侧栏出现 Bots / Tickets / Sessions / Approvals；
+点击 Approvals 打开对应 tab，控制台无错误。旧聚合 Team panel 保留兼容。
+
+证据：`03-four-panels/run.txt`、`four-panels.png`。

@@ -1,0 +1,13 @@
+import { chromium } from '/root/siriusx/deepseek-harness/node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs'
+const browser = await chromium.launch({ headless: true, executablePath: '/root/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome', args: ['--no-sandbox'] })
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+const errors = []; page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) }); page.on('pageerror', e => errors.push(String(e)))
+await page.goto(process.env.DSH_URL, { waitUntil: 'domcontentloaded' })
+await page.waitForTimeout(6000)
+const cont = page.getByRole('button', { name: 'Continue' }); if (await cont.count()) await cont.click(); await page.waitForTimeout(800)
+await page.getByText('Approvals', { exact: true }).first().click()
+await page.waitForTimeout(1000)
+const body = await page.locator('body').innerText()
+console.log(JSON.stringify({ body: body.slice(0, 1800), errors }, null, 2))
+await page.screenshot({ path: '/tmp/s4-four-panels.png', fullPage: true })
+await browser.close()

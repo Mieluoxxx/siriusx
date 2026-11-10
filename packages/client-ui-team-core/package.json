@@ -1,0 +1,22 @@
+{
+  "name": "@siriusx/client-ui-team-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared SiriusX Team panel React components for four DSH client plugins.",
+  "license": "MIT",
+  "exports": { ".": "./src/index.tsx" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "peerDependencies": { "react": "^18.2.0" },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-sidebar": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-layout": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.2-rc.1",
+    "@types/react": "18.3.31",
+    "react": "18.3.1",
+    "typescript": "6.0.3",
+    "@siriusx/app-contract": "workspace:*"
+  }
+}
