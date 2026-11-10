@@ -1,0 +1,43 @@
+origin=http://127.0.0.1:41529
+--- index ---
+status=200
+--- tenant plugin ---
+{"tenantId":"tenant-acme","subjectId":"user-42","source":"sso-spike"}
+status=200
+--- executor plugin ---
+{"pid":2714851,"pluginLoaded":true,"agentsService":true,"sessionControllerService":true,"tenantId":"tenant-acme","subjectId":"user-42","liveAgents":0,"workspaceKind":"local_dir"}
+status=200
+--- account/getState (replacement provider) ---
+{"type":"server-response","rpcId":"a6f1c8b4-87a1-42c9-97a4-2b2673646abd","result":{"ok":true,"value":{"status":"signed-out","links":{"usageUrl":"https://siriusx.example/usage","topUpUrl":"https://siriusx.example/top-up"},"attempt":null}}}
+status=200
+--- account/startSignIn (replacement provider) ---
+{"type":"server-response","rpcId":"2d074e58-d6ed-4154-9244-4746f0603e5d","result":{"ok":true,"value":{"status":"signed-out","links":{"usageUrl":"https://siriusx.example/usage","topUpUrl":"https://siriusx.example/top-up"},"attempt":{"id":"sso-spike-attempt","phase":"waiting-browser","authorizeUrl":"http://127.0.0.1:41529/__siriusx/sso/callback?state=sso-spike-attempt"}}}}
+status=200
+--- SSO callback (browser step; callback carries tenant claims) ---
+signed instatus=200
+--- account/getState after SSO callback ---
+{"type":"server-response","rpcId":"f9dddf67-042b-4081-9027-3b258098f478","result":{"ok":true,"value":{"status":"credential-stored","links":{"usageUrl":"https://siriusx.example/usage","topUpUrl":"https://siriusx.example/top-up"},"attempt":{"id":"sso-spike-attempt","phase":"succeeded"}}}}
+status=200
+--- tenant plugin after SSO callback ---
+{"tenantId":"tenant-sso","subjectId":"user-sso","source":"sso-spike"}
+status=200
+--- executor plugin after SSO callback (same tenant service) ---
+{"pid":2714851,"pluginLoaded":true,"agentsService":true,"sessionControllerService":true,"tenantId":"tenant-sso","subjectId":"user-sso","liveAgents":0,"workspaceKind":"local_dir"}
+status=200
+--- executor run (UI-like path + Executor path on one live Session) ---
+{"sessionId":"siriusx-executor-spike-35f35f16-6bf5-4876-b986-c283a59df995","sameAgent":true,"inputs":2,"turns":2,"assistantMessages":2}
+status=200
+--- Web UI open + Executor turn in the same Host ---
+{
+  "url": "http://127.0.0.1:41529/",
+  "title": "DSH Local Build",
+  "bodyText": "DSH Local Build\n0.2.2-rc.1-fcc0ad4\nNew Session\nPlugins\nAutomation tasks\nMore\nWorkspaces\nUngrouped\nSSO Spike User\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace to start\nPreview Notice\n\nDeepSeek Harness 0.2 is still in preview, and many areas need continued improvement and refinement. We welcome feedback and suggestions from all developers and users. The new desktop app now targets a broad range of users, while developer-related advanced features can be enabled in the settings. DeepSeek Harness’s product features and plugin APIs are expected to continue rapid iteration and evolution, and will gradually stabilize over time.\n\nWe look forward to exploring the limits of intelligence together with users and developers around the world, building on open-source, reusable, and composable infrastructure. We welcome everyone to bring their ideas to life with DeepSeek Harness and participate in the community to enrich the plugin ecosystem.\n\nContinue",
+  "errors": [
+    "[deepseek-account] default model initialization failed {reason: refused}"
+  ],
+  "result": {
+    "status": 200,
+    "body": "{\"sessionId\":\"siriusx-executor-spike-8403bbbf-78d9-4a09-93d0-91e225b9c94f\",\"sameAgent\":true,\"inputs\":2,\"turns\":2,\"assistantMessages\":2}"
+  }
+}
+--- host stderr ---

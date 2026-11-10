@@ -1,0 +1,8 @@
+{
+  "result": "pass",
+  "sessionId": "siriusx-shared-session-spike",
+  "sameAgentInstance": true,
+  "inputsRetained": 2,
+  "turns": 2,
+  "resumeWhileLive": "SessionAlreadyOwnedError: session \"siriusx-shared-session-spike\" is already owned by an active write handle"
+}

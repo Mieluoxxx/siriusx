@@ -1,0 +1,4 @@
+PASS: interface extraction type-checks
+commit=4011b417edf3eee2975226ba64a7a809a8d94ca1
+files=12
+lines=3240

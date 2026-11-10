@@ -50,19 +50,19 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 
 **任务。**
 
-- [ ] 把上游仓库 `deepseek-ai/deepseek-harness` clone 到本机，记下所用的标签。证据：标签名与提交号。
-- [ ] 读 `apps/desktop` 的主进程、preload、Host 启动与认证链路，回答下面四个问题。每个问题给出「能」「不能」或「有条件」的结论。
-  - [ ] Host 的认证能否以插件方式替换成 SSO，还是必须改 Host 源码。证据：认证入口的文件路径与行号。
-  - [ ] 租户上下文怎么进入 Host。证据：主进程携带认证信息的代码位置，以及一个把自定义字段带进 Host 的最小实验。
-  - [ ] Executor 插件与界面前端能否在同一个 Host 里并存。证据：一个最小插件在界面开着时调用内核跑完一轮的日志。再记录同一个会话被界面和插件同时操作时发生了什么。
-  - [ ] dsh-TUI 的 `src/agent` 接口与 DSH 后端能否拆出来。证据：把它们拷进一个空包后类型检查通过的输出，以及为此替换或带走的类型清单。
-- [ ] 写出施工图 `docs/spike.md`。
+- [x] 把上游仓库 `deepseek-ai/deepseek-harness` clone 到本机，记下所用的标签。证据：标签名与提交号。
+- [x] 读 `apps/desktop` 的主进程、preload、Host 启动与认证链路，回答下面四个问题。每个问题给出「能」「不能」或「有条件」的结论。
+  - [x] Host 的认证能否以插件方式替换成 SSO，还是必须改 Host 源码。证据：认证入口的文件路径与行号。
+  - [x] 租户上下文怎么进入 Host。证据：主进程携带认证信息的代码位置，以及一个把自定义字段带进 Host 的最小实验。
+  - [x] Executor 插件与界面前端能否在同一个 Host 里并存。证据：一个最小插件在界面开着时调用内核跑完一轮的日志。再记录同一个会话被界面和插件同时操作时发生了什么。
+  - [x] dsh-TUI 的 `src/agent` 接口与 DSH 后端能否拆出来。证据：12 文件接口空包严格 tsc 通过；DSH 后端传递闭包 237 个本地文件、54 个外部依赖、原样 tsc 33 个错误，结论是不可原样复用。
+- [x] 写出施工图 `docs/spike.md`。
 
 **验收标准。**
 
-- [ ] 四个问题各有结论，每个结论都指向源码位置或可重跑的实验。
-- [ ] 施工图列出 fork 要改的每一个文件，并给出文件总数。
-- [ ] 如果第一个问题的结论是「必须改 Host 源码」，已经更新 roadmap #56，并把 S5 拆成两步写回本文件。
+- [x] 四个问题各有结论，每个结论都指向源码位置或可重跑的实验。
+- [x] 施工图列出 fork 要改的每一个文件，并给出文件总数。
+- [x] 不适用：S0 结论是 SSO 走 account seam，不需要改 Host 源码；相应内核接口修订已写入 roadmap #57、#62。
 
 **产出物。** `docs/spike.md`，`evidence/S0/` 下的实验记录。
 
@@ -108,7 +108,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
   - [ ] `local_dir` 的用户主动上传方法（#36）。
 - [ ] 实现 [ticket-stage.md](./contracts/ticket-stage.md) 的阶段推导，写成纯函数。
 - [ ] 定下分析事件的信封与字段，每个字段标 L0、L1 或 L2，未标级别的字段在入口被拒收。依据 [logging.md](./design/logging.md)。
-- [ ] 把 dsh-TUI 的 `AgentBackend`、`AgentSession`、`AgentEvent`、`SessionCapabilities` 与 DSH 后端拷进本仓，保留 MIT 版权声明。
+- [ ] 只把 dsh-TUI 的 `AgentBackend`、`AgentSession`、`AgentEvent`、`SessionCapabilities` 及所需 view types 拷进本仓并裁剪，保留 MIT 版权声明；**不要拷 DSH 后端**，按 DSH 公共 `Agent`/`session/event` API 自研 in-process adapter（S0 结论，见 [spike.md](./spike.md)）。
 - [ ] 写一个可编排的假内核，实现同一套内核接口，供场景剧本使用。
 - [ ] 把 roadmap 节点 BG1 列出的场景逐条写成可执行的剧本。每个剧本规定发生某件事时 Bot 应依次收到哪些契约事件。
 

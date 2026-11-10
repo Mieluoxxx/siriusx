@@ -1,0 +1,126 @@
+===== UI session commands ultimately use the public Agent API =====
+   360	          }
+   361	        }
+   362	        const content = await this.ctx.attachments.admitPromptContent(admission.content)
+   363	        if (this.hasPromptRequest(agent.session, request.requestId)) return { accepted: true }
+   364	        const message: UserMessage = createUserMessage({ content, source })
+   365	        if (this.ctx.agents.get(agent.id) !== agent) {
+   366	          throw new RemoteError(
+   367	            'session/not-found',
+   368	            `session "${agent.id}" was disposed during prompt admission`,
+   369	            { sessionId: agent.id },
+   370	          )
+   371	        }
+   372	        using binding = this.ctx.fileUploads.bindPrompt(agent, admission.receiptIds, request.requestId)
+   373	        if (request.mode === 'steer') agent.steer(message)
+   374	        else agent.followup(message)
+   375	        binding.commit()
+   376	      } catch (error) {
+   377	        if (this.hasPromptRequest(agent.session, request.requestId)) return { accepted: true }
+   378	        if (remoteErrorOf(error) !== undefined) throw error
+   379	        if (error instanceof AttachmentError) {
+   380	          throw new RemoteError('session/attachment-invalid', error.message, { reason: error.code })
+
+===== UI resolves or resumes through ctx.agents =====
+   270	        installModelSelection(agentCtx)
+   271	        await presets.mount(agentCtx, resolvedId)
+   272	      },
+   273	    }
+   274	  }
+   275
+   276	  private liveAgent(sessionId: SessionId): ApiSessionAgentResult | undefined {
+   277	    const agent = this.ctx.agents.get(sessionId)
+   278	    if (agent === undefined) return undefined
+   279	    return hasApiSessionSubagentOwner(agent.session)
+   280	      ? { error: apiSessionSubagentOwnershipError(sessionId) }
+   281	      : { agent }
+   282	  }
+   283
+   284	  private async resume(sessionId: SessionId, supplied?: SessionObservation): Promise<Agent> {
+   285	    if (supplied !== undefined) return this.resumeObserved(sessionId, supplied)
+   286	    try {
+   287	      using observation = await this.ctx.sessionQuery.observeSession(sessionId)
+   288	      return await this.resumeObserved(sessionId, observation)
+   289	    } catch (error: unknown) {
+   290	      if (error instanceof SessionQueryError
+   291	        && error.code === 'SESSION_QUERY_SESSION_NOT_FOUND') {
+   292	        throw new ApiSessionNotFound(`session "${sessionId}" not found`)
+   293	      }
+   294	      throw error
+   295	    }
+   296	  }
+   297
+   298	  private async resumeObserved(
+   299	    sessionId: SessionId,
+   300	    observation: SessionObservation,
+   301	  ): Promise<Agent> {
+   302	    if (observation.header.id !== sessionId || observation.header.cwd === undefined) {
+   303	      throw new ApiSessionNotFound(`session "${sessionId}" not found`)
+   304	    }
+   305	    if (hasApiSessionSubagentOwner({ header: observation.header })) {
+   306	      throw new ApiSessionSubagentOwnership(sessionId)
+   307	    }
+   308	    const composition = await this.composeAgent(this.presetForObservation(observation))
+   309	    const published = this.ctx.sessions.get(sessionId)
+   310	    if (published !== undefined && hasApiSessionSubagentOwner(published)) {
+   311	      throw new ApiSessionSubagentOwnership(sessionId)
+   312	    }
+   313	    return (await this.ctx.agents.resume({
+   314	      resumeSessionId: sessionId,
+   315	      agentOptions: this.agentOptions(),
+   316	      setup: composition.setup,
+   317	    })).agent
+   318	  }
+   319
+   320	  private async inOrder<Value>(sessionId: SessionId, operation: () => Promise<Value>): Promise<Value> {
+
+===== same-Session publication is the authoritative collision boundary =====
+   470	   *   `agent/disposed` with listener failures contained. When called from a
+   471	   *   `agent/created` listener, removal and disposal wait until the serial
+   472	   *   creation dispatch settles.
+   473	   */
+   474	  enter(agent: Agent): () => void {
+   475	    const id = agent.id
+   476	    if (id !== agent.session.id) {
+   477	      throw new Error(`agent id "${id}" does not match session id "${agent.session.id}"`)
+   478	    }
+   479	    const carrier = scopeTarget(agent, agent)
+   480	    // This is the authoritative collision boundary. Concurrent create/resume
+   481	    // operations may both prepare, but only one exact entry can publish.
+   482	    if (this.store.has(id)) throw new Error(`agent "${id}" is already registered`)
+   483	    const entry: AgentEntry = {
+   484	      id,
+   485	      agent,
+   486	      carrier,
+   487	      announced: false,
+   488	      announcing: false,
+   489	      detachRequested: false,
+   490	    }
+
+===== plugins receive a scoped Context and can inject agents =====
+   410	  async create(options: CreateAgentOptions): Promise<AgentHandle> {
+   411	    const ownerCtx = this.ctx
+   412	    // Re-trace a Service-backed factory through the accessing context
+   413	    // explicitly. This preserves AgentLoop's dependency origin while binding
+   414	    // its effects to ownerCtx; plain factories receive ownerCtx as an explicit
+   415	    // capability and need no Cordis tracker magic.
+   416	    const { target } = this.requireFactory()
+   417	    const receiver = getTraceable(ownerCtx, target)
+   418	    // oxlint-disable-next-line typescript/unbound-method -- Reflect.apply intentionally supplies the caller-traced receiver
+   419	    return Reflect.apply(target.createAgent, receiver, [ownerCtx, options])
+   420	  }
+   421
+   422	  /**
+   423	   * Load a persisted session and resume an agent on it through the registered
+   424	   * factory. Rejects if no factory is registered; the factory rejects if
+   425	   * session persistence is not configured or persistence/setup fails.
+   426	   * @param options - persisted identity, configuration, and setup.
+   427	   * @returns the handle after setup, rollback-covered publication, and loop start complete.
+   428	   */
+   429	  async resume(options: ResumeAgentOptions): Promise<AgentHandle> {
+   430	    const ownerCtx = this.ctx
+   431	    const { target } = this.requireFactory()
+   432	    const receiver = getTraceable(ownerCtx, target)
+   433	    // oxlint-disable-next-line typescript/unbound-method -- Reflect.apply intentionally supplies the caller-traced receiver
+   434	    return Reflect.apply(target.resume, receiver, [ownerCtx, options])
+   435	  }

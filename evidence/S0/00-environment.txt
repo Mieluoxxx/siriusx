@@ -1,0 +1,75 @@
+# S0 environment and baseline
+utc=2026-11-10T13:49:56Z
+node=v24.22.2
+pnpm=11.28.5
+repo=/root/siriusx
+repo_head=ea4b8464eea18c22cb2644b7dcdb611d8d97545b
+repo_tracked_files=32
+dsh_source=/root/siriusx/deepseek-harness
+dsh_head=fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159
+dsh_describe=dsh-v0.2.2-rc.1-811-gfcc0ad4621
+dsh_branch=master
+dsh_tui_commit=4011b417edf3eee2975226ba64a7a809a8d94ca1
+dsh_tui_version=0.19.0
+
+## current upstream typecheck (Node 24)
+run-gates: start Host Typert
+run-gates: PASS Host Typert (8.70s)
+run-gates: start host compiler
+run-gates: PASS host compiler (0.85s)
+run-gates: start client compiler
+run-gates: start host aggregate check
+run-gates: PASS client compiler (0.71s)
+run-gates: start client aggregate check
+run-gates: PASS client aggregate check (54.56s)
+run-gates: PASS host aggregate check (92.17s)
+
+run-gates: 5 passed, 0 failed, 0 skipped in 101.73s.
+
+## current upstream artifact build
+run-gates: PASS Host bundle (8.98s)
+run-gates: start Desktop bundle
+run-gates: PASS Desktop bundle (2.53s)
+run-gates: start client compiler
+run-gates: PASS client compiler (0.76s)
+run-gates: start Client bundle
+run-gates: PASS Client bundle (8.64s)
+run-gates: start Web build
+run-gates: PASS Web build (7.63s)
+
+run-gates: 8 passed, 0 failed, 0 skipped in 38.56s.
+build: recorded 367 client artifact(s) with 2 public value(s)
+
+## tracked files in SiriusX repo
+.gitignore
+README.md
+docs/architecture.md
+docs/contracts/executor.md
+docs/contracts/ticket-stage.md
+docs/design/admin.md
+docs/design/background.md
+docs/design/bot.md
+docs/design/deployment.md
+docs/design/gateway.md
+docs/design/gitlab.md
+docs/design/layerfs.md
+docs/design/logging.md
+docs/design/runtime.md
+docs/design/web-app.md
+docs/images/01-overview.png
+docs/images/02-bot.png
+docs/images/03-cloud-executor.png
+docs/images/04-app.png
+docs/images/05-admin.png
+docs/images/06-task-lifecycle.png
+docs/images/07-deployment-trust.png
+docs/images/08-tool-gateway.png
+docs/images/09-gitlab.png
+docs/images/10-logging.png
+docs/images/11-desktop-composition.png
+docs/images/12-login-modes.png
+docs/images/13-kernel-backends.png
+docs/images/14-execution-order.png
+docs/images/15-fork-branches.png
+docs/plan.md
+docs/roadmap.md

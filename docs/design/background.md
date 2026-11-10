@@ -152,9 +152,9 @@ DSH 通过 `llm-pi-ai` 插件配置模型 Provider，支持内置供应商与**�
 - **同一套验收**：每个内核的适配层都必须通过 BG1 的全部 Mock 场景与 BOT1 的端到端用例，才能启用。
 - **产出同一套分析事件**：每个内核的适配层必须产出相同的 `model.called`、`tool.called` 事件（[logging.md §3](./logging.md#3-数据模型一个工单一条轨迹)），否则不同内核之间无法比较。
 - **不可用时降级**：某个内核未安装或适配层启动失败时，只把它标记为「不可用」并说明原因，不影响其他内核与 Bot（借鉴 OpenMausBot 的驱动层）。
-- **统一的内核接口**（roadmap #57）：适配层对 Executor 暴露同一套接口：`AgentBackend`（检测、打开会话）、`AgentSession`（历史、订阅、提交、取消、释放）、`AgentEvent`（统一事件词汇，实时与回放共用）、`SessionCapabilities`（能力清单）。接口取自 dsh-TUI（MIT）的 `src/agent/`，拷入本仓自己维护。每个内核各有一个翻译器把自己的输出翻成 `AgentEvent`；Executor 把 `AgentEvent` 映射成契约事件的代码只有一份。
+- **统一的内核接口**（roadmap #57）：适配层对 Executor 暴露同一套接口：`AgentBackend`（检测、打开会话）、`AgentSession`（历史、订阅、提交、取消、释放）、`AgentEvent`（统一事件词汇，实时与回放共用）、`SessionCapabilities`（能力清单）。接口取自 dsh-TUI（MIT）的 `src/agent/`，拷入本仓自己维护。每个内核各有一个翻译器把自己的输出翻成 `AgentEvent`；Executor 把 `AgentEvent` 映射成契约事件的代码只有一份。**S0 已验**：接口可以干净拆出，但 dsh-TUI 的 DSH 后端不能原样复用；DSH 适配器由我们按公共 `Agent` / `session/event` API 自研（[spike](../spike.md)）。
 - **能力缺席即不支持**：内核不支持的能力不声明，Executor 据此决定该内核能否用于某类任务，不在适配层里造假事件。下表「内核不原生支持时」一栏的兜底仍由 Executor 负责。
-- **首批内核 dsh 与 pi，备选 codex 与 claude**。dsh 在本地由 Host 进程内直接调用（桌面端是 DSH Desktop 的薄 fork，roadmap #56，本地内核固定为 dsh）；pi 与云端 dsh 经 **ACP 后端**接入。codex 与 claude 在 dsh-TUI 已有实现，启用前须改成无人值守并确认能指向租户模型网关。
+- **首批内核 dsh 与 pi，备选 codex 与 claude**。dsh 在本地由 Host 进程内直接调用，但经**我们自研的 in-process adapter**（桌面端是 DSH Desktop 的薄 fork，roadmap #56，本地内核固定为 dsh）；上游 DSH 不是 `AgentBackend`，不要照搬 dsh-TUI 的 DSH 后端。pi 与云端 dsh 经 **ACP 后端**接入。codex 与 claude 在 dsh-TUI 已有实现，启用前须改成无人值守并确认能指向租户模型网关。
 - **ACP 后端**：我们自己写的、符合上述接口的 ACP 客户端（后端标识 `acp:<agent>`），任何会说 ACP 的 agent 都经它接入。`open` 对应 `session/new` / `session/resume`，`submit` 对应 `session/prompt`，`cancel` 对应 `session/cancel`，事件来自 `session/update`，「等待人处理」来自 `session/request_permission`。ACP 一个会话同时只收一个 prompt，运行中的追加输入由后端排队，打断即先取消再提交。能力清单只声明 ACP 给得出的项，不声明分叉、回退、历史回放。
 - **其他内核的准入**：实现接口、如实声明能力清单、通过同一套验收、满足最低能力门槛（待定；云端内核至少要有审批与自定义模型端点）、会话记录能放到家目录卷上（每个 Assignment 是新沙箱，续跑靠卷里的会话记录）。
 - **本地直调的代价**：dsh 的进程内后端依赖 DSH 的内部接口而非对外协议，上游升级时最容易变。用录制的会话日志做回归，每次升级 DSH 跑一遍；成本不可接受时，本地也改经 ACP 后端，Executor 只认接口，上层不受影响。

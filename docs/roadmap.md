@@ -9,7 +9,9 @@
 
 ## 执行顺序（当前版本）
 
-> roadmap #61。#56–#60 之后的顺序，**取代**下面「依赖图」「按人手排期」里的先后关系；节点详情里的内容与验收仍可参考，W1、W2 待 S0 完成后重写。
+> **S0 已完成（2026-11），结论与施工图见 [spike.md](./spike.md)，下一步 S1。**
+>
+> roadmap #61。#56–#60 之后的顺序，**取代**下面「依赖图」「按人手排期」里的先后关系；节点详情里的内容与验收仍可参考，W1、W2 待 W0/BOT1 定型后按 S0 结论重写。
 
 专家原来的顺序是「云端沙箱 → Bot → 应用」，桌面端排在倒数第四。现在产品本体是 DSH Desktop 的薄 fork，个人版就是它本身，所以**倒过来：先本地，后云端**。理由：
 
@@ -219,11 +221,12 @@ flowchart LR
 | 54 | 数据使用授权 | 我方使用某租户的 L2 须经该租户开启授权（默认关闭）；个人 Bot 的内容还需所有者本人同意；授权内容去标识后只在受控分析环境中使用，不可导出，查询留审计；撤回后限期删除。私有化部署的数据不出客户网络 | LOG2、ADM1 |
 | 55 | 结果回填与实验 | 工单结束后继续记录结果（MR / PR 最终状态、合并前人改了多少、评审轮数、人的处置、是否被回滚、用户评价），全部为 L0。每个事件带 `variant`（Prompt、策略、模型、内核版本与功能开关），实验按工单分流 | LOG2、BOT8 |
 | 56 | 桌面端基于 DSH Desktop | 桌面端不自研壳，改为 **DSH Desktop 的薄 fork**（只改 `apps/desktop`：品牌、更新源、签名、登录入口），个人版与企业版是**同一个安装包**：不登录即个人版（DSH 自带 Host），SSO 登录后加载 Host 侧扩展（SSO、租户上下文、本地 Executor）与界面插件（团队面板、审批卡片、Source 配置）。不改 agent 内核；能用插件或独立 package 做的不进 fork；上游只 rebase 不 merge，每季度一次；私有化客户用冻结版本并由我方 backport 安全补丁。**前提待验证**：Host 认证能否替换为 SSO、租户上下文如何进入 Host（开工前一周 spike）。修订 [web-app.md §6.3](./design/web-app.md#63-monorepo-结构) 的 `apps/desktop` | W1、W2、D1 |
-| 57 | 内核接入标准 | 内核适配层统一为一套与内核无关的接口：`AgentBackend` / `AgentSession` / `AgentEvent` / `SessionCapabilities`（能力清单缺席即不支持），取自 dsh-TUI（MIT）的 `src/agent/`，**拷入本仓自己维护，不作为依赖**。Executor 只面向这套接口，「事件 → 契约事件」的映射只写一份。**首批内核 dsh 与 pi，备选 codex 与 claude**；其他内核须符合准入标准：实现接口、如实声明能力、通过同一套场景测试、满足最低能力门槛（待定）、会话记录能放到家目录卷上。dsh 在本地由 Host 进程内直接调用；**ACP 降为接入方式之一**：我们自己写一个符合该接口的 **ACP 后端**（`acp:<agent>`），pi 与云端 dsh 经它接入。已知代价：本地直调依赖 DSH 内部接口，靠录制日志回归把关，必要时本地也改经 ACP 后端。结构化报告、`diffStats`、workdir、预览不在接口内，由 Executor 自己做。**本地内核固定为 dsh**，内核选择只对 `cloud_project` 生效。修订 #32。见 [background.md §6.5](./design/background.md#65-内核适配层) | C0、BG3、W2 |
+| 57 | 内核接入标准 | 内核适配层统一为一套与内核无关的接口：`AgentBackend` / `AgentSession` / `AgentEvent` / `SessionCapabilities`（能力清单缺席即不支持），取自 dsh-TUI（MIT）的 `src/agent/`，**拷入本仓自己维护，不作为依赖**。S0 已验证：Agent Domain 接口可干净拆出；dsh-TUI 的 DSH 后端不可原样复用（见 #62）。Executor 只面向这套接口，「事件 → 契约事件」的映射只写一份。**首批内核 dsh 与 pi，备选 codex 与 claude**；其他内核须符合准入标准：实现接口、如实声明能力、通过同一套场景测试、满足最低能力门槛（待定）、会话记录能放到家目录卷上。dsh 在本地由 Host 进程内直接调用，但经**我们自研的 DSH in-process adapter**，不复用 dsh-TUI 的 DSH 后端；**ACP 降为接入方式之一**：我们自己写一个符合该接口的 **ACP 后端**（`acp:<agent>`），pi 与云端 dsh 经它接入。已知代价：本地直调依赖 DSH 内部接口，靠录制日志回归把关，必要时本地也改经 ACP 后端。结构化报告、`diffStats`、workdir、预览不在接口内，由 Executor 自己做。**本地内核固定为 dsh**，内核选择只对 `cloud_project` 生效。修订 #32。见 [background.md §6.5](./design/background.md#65-内核适配层) | C0、BG3、W2 |
 | 58 | 登录即受组织管理 | 登录是分界线：**登录了就受组织管理，才能使用手机、Bot 与云端**；不登录即个人版，只有本机原生对话。登录后桌面端两条路并存：**原生对话**（界面直连本机 Host，无工单、无审计、手机不可见，界面明确标为「个人、不审计」）与 **Bot 派工**（经 Executor 契约，有工单、审计、用量）。**租户管理员可关闭登录状态下的原生对话**。已知边界：开关只管登录状态，退出登录后原生对话仍在。解决 [web-app.md §7](./design/web-app.md#7-待定问题) 第 7 题的「纯本地模式」；修订 #33（桌面端仍不运行 Bot，但不再是「只有 Executor」） | W1、W2、ADM1 |
 | 59 | 工单界面是 DSH 插件 | 工单、Bot 列表、审批卡片、团队面板全部做成 **DSH 插件**，挂在 DSH Desktop 的界面槽位里，不另做独立应用。修订 [web-app.md §1](./design/web-app.md#1-定位与边界)「Web 和桌面端是同一个应用」的实现方式。**待定**：纯浏览器端与手机端没有本机 Host，这套插件界面如何提供 | W0、W1、W2 |
 | 60 | fork 的发版前置条件 | 基于 DSH Desktop 的安装包（#56）发版前必须满足四条：**①** 上游自带的遥测与日志上报（`dsh-host-product-telemetry-otel`、`dsh-client-product-analytics`、`dsh-session-telemetry-otel`、`dsh-session-log-deepseek`、`dsh-anonymous-user-id`）逐个审查，关闭或改指向我方端点，与 #53、#54 的数据边界一致；**②** 去掉官方品牌与官方账号入口（MIT 不授予商标）；**③** 企业插件随安装包分发，登录只是启用，不依赖联网安装；**④** 权限只在服务端判定，界面插件只负责显示 | W2、D1、LOG1 |
 | 61 | 执行顺序倒过来 | 原顺序「云端沙箱 → Bot → 应用」改为**先本地、后云端**：S0 spike（只验挡路的四条）→ S1 DSH Desktop 本地 fork 最小版（个人版）→ S2 契约、内核接口与分析事件字段 → S3 本地 Executor 与本机闭环（M1）→ S4 工单界面插件 → 检查点（自己愿意天天用才继续）→ S5 登录与组织管理（含两个网关的最小版）→ S6 工具网关与日志采集 → S7 云端执行与第一个代码平台（M2）→ S8 发版与私有化交付。三条规则：S5 起始终能单机一体安装；S6 不得晚于 S7；发版工作不提前。理由：云端沙箱的硬工程不影响契约，用本地实现验证契约成本低一个数量级；个人版能自己天天用，最早给出产品是否成立的信号。见本文「执行顺序（当前版本）」 | 全局 |
+| 62 | S0 spike 结论（2026-11） | **① SSO 走 account seam，不走传输层。** `deepseekAccount` 是 Cordis service seam，可由企业 SSO provider 替换，Desktop 欢迎/登录链路无需改 Host；`client-connection` 的 launch-token Cookie 是本地传输凭据，不能通过配置替换，也不应替换。**② 租户上下文在 Host 内产生。** OIDC 回调解析 tenant/subject，由 Host service 提供给 Executor/UI 插件；不经过 Electron session 或 Web Cookie。**③ Executor 与 UI 可同 Host 并存，但必须单写者。** 同一 live Agent 的并发输入会进入 durable inbox；第二个独立 `resume()` 会被 `SessionAlreadyOwnedError` 拒绝。Bot 管理的 Session 中 UI 只能经 Bot 打断/续跑，不能直写 Agent。**④ 只复用 dsh-TUI 接口，不复用 DSH 后端。** 12 文件接口空包 tsc 通过；DSH 后端传递闭包 237 文件/54 依赖并拖入 TUI/Ink，且 DSH 上游明确不是 `AgentBackend`；S2 改为自研 DSH adapter。见 [spike.md](./spike.md) | C0、W2、S2、S5 |
 | ① | 状态机归属 | 7 阶段归 Bot 推导；Executor 只暴露 Assignment 状态 | C0 |
 | ③ | 暂停 | 不提供单个 Assignment 的 pause；全局暂停是 Bot 停止派发 | C0 |
 | ④ | 凭据 | 鉴权只走传输层；payload 只允许 `secretRefs` 引用名 | C0 |

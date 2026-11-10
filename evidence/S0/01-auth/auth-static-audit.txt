@@ -1,0 +1,163 @@
+===== client-connection: BrowserAuth is constructed internally =====
+   126	export async function apply(ctx: Context, config?: ConnectionConfig): Promise<void> {
+   127	  const recovery = resolveConnectionConfig(config?.recovery)
+   128	  // The Loader resolves schema defaults; hand-built test contexts may pass none.
+   129	  const trustedHosts = config?.trustedHosts ?? []
+   130	  const cookieMaxAgeDays = config?.cookieMaxAgeDays ?? 30
+   131	  const maxRequestBodyBytes = config?.maxRequestBodyBytes ?? DEFAULT_MAX_REQUEST_BODY_BYTES
+   132	  // Config boundary: a malformed entry fails the load loudly here rather than
+   133	  // silently authorizing its hostname prefix at request time.
+   134	  for (const entry of trustedHosts) assertTrustedAuthority(entry)
+   135	  assertImageBodyCapacity(ctx, maxRequestBodyBytes)
+   136	  const connection = new HostConnectionService(
+   137	    ctx,
+   138	    trustedHosts,
+   139	    await BrowserAuth.create(ctx.root, ctx.credentials, cookieMaxAgeDays),
+   140	  )
+
+===== client-connection config has no auth provider field =====
+    92	/** Services required before providing Connection. */
+    93	export const inject = ['credentials']
+    94
+    95	/** Browser authentication, request limits, and connection recovery configuration. */
+    96	export interface ConnectionConfig {
+    97	  /** Browser recovery timing, injected into each served page. */
+    98	  recovery?: ConnectionRecoveryConfig
+    99	  /**
+   100	   * Authorities this deployment serves beyond loopback: exact `host:port`, or
+   101	   * port-less `host` matching any port. The fence accepts loopback and the
+   102	   * listener's own bind IP independently; other remote authorities require
+   103	   * an entry here. A non-canonical or non-bare authority fails plugin load.
+   104	   */
+   105	  trustedHosts?: string[]
+   106	  /** Absolute browser and API cookie lifetime in days. Default: 30. */
+   107	  cookieMaxAgeDays?: number
+   108	  /** Maximum buffered JSON body for every `/api` request. Default: 300 MiB. */
+   109	  maxRequestBodyBytes?: number
+   110	}
+   111
+   112	export const Config: z<ConnectionConfig> = z.object({
+   113	  recovery: ConnectionRecoveryConfigSchema.default({}),
+   114	  trustedHosts: z.array(String).default([]),
+   115	  cookieMaxAgeDays: z.natural().min(1).default(30),
+   116	  maxRequestBodyBytes: z.natural().min(1).default(DEFAULT_MAX_REQUEST_BODY_BYTES),
+   117	})
+
+===== every authenticated browser request gets the same owner Peer =====
+   128	  /** Browser requests share an owner Peer; API HTTP does not depend on an attached socket. */
+   129	  admit(request: ConnectionTrustRequest): PeerAdmission {
+   130	    if (!this.isTrusted(request)) return { rejection: 403 }
+   131	    if (this.disposed) return { rejection: 401 }
+   132	    const secure = this.owner.get('webServer')?.protocol === 'https:'
+   133	    if (this.browserAuth.isAuthenticated(request, secure)) return { peer: this.browserPeer }
+   134	    const id = this.browserAuth.authenticateApi(request, secure)
+   135	    const record = id === undefined ? undefined : this.peers.get(id)
+   136	    return record === undefined ? { rejection: 401 } : { peer: record.peer }
+   137	  }
+
+===== the account provider is a replaceable Cordis service row =====
+   117	    - id: authorization
+   118	      name: '@deepseek-ai/dsh-authorization'
+   119
+   120	    - id: deepseek-account
+   121	      name: '@deepseek-ai/dsh-deepseek-account-platform'
+   122	      config:
+   123	        desktopPlatform: !!js "ctx.get('profileContext')?.name === 'desktop' && ['darwin', 'win32'].includes(process.platform) ? process.platform : null"
+   124
+   125	    - id: credentials
+   126	      name: '@deepseek-ai/dsh-credentials-local'
+
+===== account-controller consumes the deepseekAccount service =====
+     9	/** Account commands and reconnect-safe state stream. */
+    10	export class AccountController extends TypertRemoteService {
+    11	  static inject = ['deepseekAccount', 'agents']
+    12	  /** @param ctx - Host with the account provider mounted. */
+    13	  constructor(ctx: Context) { super(ctx, 'accountController', { namespace: 'account' }) }
+    14	  /**
+    15	   * Read the safe account projection.
+    16	   * @returns current account and attempt state.
+    17	   */
+    18	  @Remote
+    19	  getState(): Promise<AccountView> { return this.ctx.deepseekAccount.getState() }
+    20	  /**
+    21	   * Query display-safe Platform profile data.
+    22	   * @param client - identity of the requesting UI; the Host derives Platform request headers from it.
+    23	   * @returns profile outcome, or null when the account grant is absent or changed.
+    24	   */
+    25	  @Remote
+    26	  getProfile(client: AccountClientMetadata): Promise<AccountDetails['profile'] | null> {
+    27	    return this.ctx.deepseekAccount.getProfile(client)
+    28	  }
+    29	  /**
+    30	   * Query Platform recharge-wallet balances.
+
+===== Desktop welcome decides entry from account state + API key =====
+  1428	    if (quitting || recovery.active) return
+  1429	    const state = await readWelcomeState()
+  1430	    if (isQuitting() || backend.state.phase !== 'ready') return
+  1431	    locale = resolveDesktopStartupLocale(state.localePreference, systemLanguages)
+  1432	    writeDesktopLocaleCache(app.getPath('userData'), locale.id)
+  1433	    windowsLanguage = locale.id
+  1434	    refreshApplicationMenu()
+  1435	    if (!enteredWorkspace && needsWelcome({ loggedIn: state.loggedIn, hasApiKey: state.hasApiKey })) {
+  1436	      // A later login must retain its own activation policy instead of replaying startup focus.
+  1437	      raiseAfterUpdate = false
+  1438	      await showWelcome()
+  1439	    } else {
+  1440	      await enterWorkspace()
+  1441	    }
+
+===== Desktop retrieves the Host cookie and keeps it out of Electron session =====
+   537	      start: async () => {
+   538	        const ready = await host.start()
+   539	        const cookie = await authenticateWebHost(ready.url)
+   540	        hostCookie = cookie
+   541	        hostUrl = ready.url
+   542	        void removeLegacyHostCookies(session.defaultSession.cookies, ready.url)
+   543	          .catch((error: unknown) => { console.error('desktop: legacy Host cookie cleanup failed', error) })
+   544	        if (ready.injections === undefined) throw new Error('Desktop Host did not provide boot injections')
+   545	        injections = ready.injections
+   546	        welcomeBackend = connectDesktopWelcome(ready.url, cookie)
+    37
+    38	/**
+    39	 * Exchange the Host launch URL for an authority-bound browser cookie.
+    40	 * @param url - Authenticated URL reported by the owned Host process.
+    41	 * @returns Cookie header for requests forwarded to that Host.
+    42	 */
+    43	export async function authenticateWebHost(url: string): Promise<string> {
+    44	  const response = await fetch(url, { redirect: 'manual' })
+    45	  const cookie = response.headers.get('set-cookie')
+    46	  await response.body?.cancel()
+    47	  if (response.status !== 303 || cookie === null) throw new Error('Desktop Host authentication failed')
+    48	  const end = cookie.indexOf(';')
+    49	  return end < 0 ? cookie : cookie.slice(0, end)
+    97	export async function forwardWebRequest(request: Request, host: string, cookie: string): Promise<Response> {
+    98	  const source = new URL(request.url)
+    99	  const origin = request.headers.get('origin')
+   100	  if (origin !== null && origin !== 'dsh-app://app') return new Response(null, { status: 403 })
+   101	  const target = new URL(host)
+   102	  target.pathname = source.pathname
+   103	  target.search = source.search
+   104	  const headers = new Headers(request.headers)
+   105	  for (const name of ['host', 'origin', 'cookie', 'sec-fetch-site']) headers.delete(name)
+   106	  headers.set('cookie', cookie)
+   107	  const init = { method: request.method, headers, body: request.body, signal: request.signal, duplex: 'half', redirect: 'manual' as const }
+   108	  const response = await fetch(target, init)
+   109	  const outgoing = new Headers(response.headers)
+   110	  for (const name of WITHHELD_RESPONSE_HEADERS) outgoing.delete(name)
+   111	  if (PLUGIN_BUNDLE_PATH.test(source.pathname)) outgoing.set('cache-control', 'no-store')
+   112	  return new Response(response.body, { status: response.status, headers: outgoing })
+
+===== WebSocket forwarding attaches the same host cookie =====
+   837	  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['ws://127.0.0.1/*', 'wss://127.0.0.1/*'] }, (details, callback) => {
+   838	    if (hostUrl === undefined || hostCookie === undefined || details.webContentsId !== mainWindow?.webContents.id) {
+   839	      callback({})
+   840	      return
+   841	    }
+   842	    const target = new URL(hostUrl)
+   843	    const requested = new URL(details.url)
+   844	    if (requested.host !== target.host || requested.protocol !== (target.protocol === 'https:' ? 'wss:' : 'ws:')) { callback({}); return }
+   845	    const headers = Object.fromEntries(Object.entries(details.requestHeaders).map(([name, value]) => [name.toLowerCase(), value]))
+   846	    if (headers.origin !== 'dsh-app://app') { callback({ cancel: true }); return }
+   847	    callback({ requestHeaders: { ...headers, origin: target.origin, cookie: hostCookie, 'sec-fetch-site': 'same-origin' } })
+   848	  })

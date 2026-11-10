@@ -1,0 +1,13 @@
+{
+  "name": "siriusx-sso-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "out/index.js",
+  "exports": "./out/index.js",
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-deepseek-account": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-host-webserver": "0.2.2-rc.1"
+  }
+}

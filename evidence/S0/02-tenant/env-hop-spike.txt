@@ -1,0 +1,6 @@
+{
+  "result": "pass",
+  "tenant": "tenant-acme",
+  "subject": "user-42",
+  "electronRunAsNode": "1"
+}

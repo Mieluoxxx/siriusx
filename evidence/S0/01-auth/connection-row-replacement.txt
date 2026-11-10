@@ -1,0 +1,16 @@
+$ # attempt to replace the connection row by name
+dsh: [/tmp/siriusx-s0-negative/profiles/neg/cordis.patch.yml] patch: name mismatch for "connection" (expected "@deepseek-ai/dsh-client-connection", got "siriusx-sso-spike"), skipping
+$ # resulting connection row keeps the upstream name
+518:- id: connection
+519-  name: '@deepseek-ai/dsh-client-connection'
+520-  inject:
+521-    - webStartup
+522-  config:
+523-    trustedHosts: !!js ctx.webStartup.trustedHosts
+524-- id: file-upload
+525-  name: '@deepseek-ai/dsh-client-file-upload'
+526-- id: api-remotes
+527-  name: '@deepseek-ai/dsh-api-remotes'
+528-- id: cordis-client-runner
+529-  name: '@deepseek-ai/dsh-cordis-client-runner'
+530-- id: ui-theme

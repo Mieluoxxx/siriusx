@@ -1,0 +1,59 @@
+dsh-tui_commit=4011b417edf3eee2975226ba64a7a809a8d94ca1
+root=/tmp/dsh-TUI/src
+local_files=237
+external_specifiers=54
+EXTERNAL #tui-profile/profile-definitions
+EXTERNAL #tui-profile/tui-contributions
+EXTERNAL @alcalzone/ansi-tokenize
+EXTERNAL @deepseek-ai/cordis
+EXTERNAL @deepseek-ai/dsh-agent
+EXTERNAL @deepseek-ai/dsh-llm
+EXTERNAL @deepseek-ai/dsh-session
+EXTERNAL @deepseek-ai/dsh-user-questions
+EXTERNAL @dsh-std/command
+EXTERNAL @dsh-std/core
+EXTERNAL @dsh-std/manifest
+EXTERNAL @dsh-std/messages
+EXTERNAL @dsh-std/presentation
+EXTERNAL @dsh-std/storage
+EXTERNAL auto-bind
+EXTERNAL bidi-js
+EXTERNAL buffer
+EXTERNAL chalk
+EXTERNAL cli-boxes
+EXTERNAL code-excerpt
+EXTERNAL emoji-regex
+EXTERNAL events
+EXTERNAL fs
+EXTERNAL get-east-asian-width
+EXTERNAL indent-string
+EXTERNAL ink
+EXTERNAL lodash-es/noop.js
+EXTERNAL lodash-es/throttle.js
+EXTERNAL node:async_hooks
+EXTERNAL node:child_process
+EXTERNAL node:crypto
+EXTERNAL node:fs
+EXTERNAL node:fs/promises
+EXTERNAL node:module
+EXTERNAL node:os
+EXTERNAL node:path
+EXTERNAL node:timers/promises
+EXTERNAL node:url
+EXTERNAL node:worker_threads
+EXTERNAL node:zlib
+EXTERNAL react
+EXTERNAL react-reconciler
+EXTERNAL react-reconciler/constants.js
+EXTERNAL semver/functions/coerce.js
+EXTERNAL sharp
+EXTERNAL signal-exit
+EXTERNAL sixel
+EXTERNAL stack-utils
+EXTERNAL stream
+EXTERNAL strip-ansi
+EXTERNAL supports-hyperlinks
+EXTERNAL type-fest
+EXTERNAL util
+EXTERNAL wrap-ansi
+missing_local_targets=0

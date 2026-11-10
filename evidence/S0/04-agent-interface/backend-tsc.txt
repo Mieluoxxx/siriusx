@@ -1,0 +1,40 @@
+# DSH backend extraction type-check failure
+# input: src/dsh-adapter/backend/{session,translate}.ts + transitive local closure
+# dsh-tui source commit: 4011b417edf3eee2975226ba64a7a809a8d94ca1 (0.19.0)
+# dependencies: exact /tmp/dsh-TUI pnpm install; @dsh-std vendored packages built
+# result: tsc exit 2, 33 errors
+
+src/adapter/channel/read-view.ts(87,17): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+src/adapter/channel/read-view.ts(87,27): error TS7006: Parameter 'thisArg' implicitly has an 'any' type.
+src/adapter/channel/read-view.ts(100,17): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+src/adapter/channel/read-view.ts(100,27): error TS7006: Parameter 'thisArg' implicitly has an 'any' type.
+src/adapter/standard/grants.ts(158,12): error TS7006: Parameter 'principalValue' implicitly has an 'any' type.
+src/adapter/standard/grants.ts(158,28): error TS7006: Parameter 'permission' implicitly has an 'any' type.
+src/adapter/standard/grants.ts(158,40): error TS7006: Parameter 'scope' implicitly has an 'any' type.
+src/adapter/standard/grants.ts(172,16): error TS7006: Parameter 'permission' implicitly has an 'any' type.
+src/adapter/standard/registry.ts(134,55): error TS7006: Parameter 'permission' implicitly has an 'any' type.
+src/adapter/standard/tui-extension.ts(27,3): error TS2305: Module '"../spec/tui-contributions.js"' has no exported member 'tuiChannelDefinition'.
+src/adapter/standard/tui-extension.ts(28,3): error TS2305: Module '"../spec/tui-contributions.js"' has no exported member 'TUI_CHANNEL'.
+src/adapter/standard/tui-extension.ts(29,3): error TS2305: Module '"../spec/tui-contributions.js"' has no exported member 'TUI_CHANNEL_FEATURES'.
+src/adapter/standard/tui-extension.ts(30,3): error TS2305: Module '"../spec/tui-contributions.js"' has no exported member 'TUI_CHANNEL_WIRE_REVISION'.
+src/dsh-adapter/backend/translate.ts(495,12): error TS2678: Type '"session/title"' is not comparable to type '"turn/start" | "turn/end" | "step/start" | "step/end" | "user/message" | "developer/message" | "system/message" | "assistant/message" | "assistant/attempt" | "tool/call" | ... 5 more ... | "model/selection"'.
+src/dsh-adapter/backend/translate.ts(496,31): error TS2339: Property 'data' does not exist on type 'never'.
+src/dsh-adapter/backend/translate.ts(497,55): error TS2339: Property 'data' does not exist on type 'never'.
+src/dsh-adapter/sessionTree.ts(555,9): error TS2367: This comparison appears to be unintentional because the types '"turn/start" | "turn/end" | "step/start" | "step/end" | "user/message" | "developer/message" | "system/message" | "assistant/message" | "assistant/attempt" | "tool/call" | ... 5 more ... | "model/selection"' and '"session/title"' have no overlap.
+src/dsh-adapter/sessionTree.ts(556,26): error TS2339: Property 'data' does not exist on type 'never'.
+src/ink/components/Box.tsx(96,10): error TS2339: Property 'ink-box' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Box.tsx(99,16): error TS2339: Property 'ink-box' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/ErrorOverview.tsx(4,24): error TS7016: Could not find a declaration file for module 'stack-utils'. '/tmp/dsh-TUI/node_modules/.pnpm/stack-utils@2.0.6/node_modules/stack-utils/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/stack-utils` if it exists or add a new declaration (.d.ts) file containing `declare module 'stack-utils';`
+src/ink/components/Image.tsx(70,5): error TS2339: Property 'ink-image' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Image.tsx(93,5): error TS2339: Property 'ink-image' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Link.tsx(9,40): error TS2339: Property 'ink-link' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Link.tsx(9,68): error TS2339: Property 'ink-link' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Newline.tsx(7,10): error TS2339: Property 'ink-text' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Newline.tsx(7,40): error TS2339: Property 'ink-text' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/ScrollBox.tsx(391,10): error TS2339: Property 'ink-box' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/ScrollBox.tsx(405,5): error TS2339: Property 'ink-box' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Text.tsx(94,12): error TS2339: Property 'ink-text' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Text.tsx(94,89): error TS2339: Property 'ink-text' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Text.tsx(101,10): error TS2339: Property 'ink-text' does not exist on type 'JSX.IntrinsicElements'.
+src/ink/components/Text.tsx(101,78): error TS2339: Property 'ink-text' does not exist on type 'JSX.IntrinsicElements'.

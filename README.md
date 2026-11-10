@@ -51,11 +51,11 @@
 
 ## 执行内核怎么接
 
-内核接入标准是一套与内核无关的接口：`AgentBackend`（检测、打开会话）、`AgentSession`（历史、订阅、提交、取消、释放）、`AgentEvent`（统一事件）、`SessionCapabilities`（能力清单，缺席即不支持）。接口取自 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI)（MIT）的 `src/agent/`，拷入本仓自己维护，不作为依赖。Executor 只面向这套接口，把 `AgentEvent` 映射成契约事件的代码只写一份。
+内核接入标准是一套与内核无关的接口：`AgentBackend`（检测、打开会话）、`AgentSession`（历史、订阅、提交、取消、释放）、`AgentEvent`（统一事件）、`SessionCapabilities`（能力清单，缺席即不支持）。接口取自 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI)（MIT）的 `src/agent/`，拷入本仓自己维护，不作为依赖。Executor 只面向这套接口，把 `AgentEvent` 映射成契约事件的代码只写一份。**S0 已验**：接口可以干净拆出，但 dsh-TUI 的 DSH 后端不能原样复用；DSH 适配器由我们按公共 `Agent`/`session/event` API 自研，见 [S0 spike](docs/spike.md)。
 
 | 批次 | 内核 | 怎么接 |
 | --- | --- | --- |
-| 首批 | dsh | 本地：Host 进程内直接调用（dsh-TUI 已有的 DSH 后端）。云端：经下面的 ACP 后端连 `dsh --profile acp` |
+| 首批 | dsh | 本地：Host 进程内调用，经**自研的 DSH in-process adapter**（不复用 dsh-TUI 的 DSH 后端）。云端：经下面的 ACP 后端连 `dsh --profile acp` |
 | 首批 | pi | 经 ACP 后端 |
 | 备选 | codex、claude | dsh-TUI 已有实现，需改成无人值守，并确认能指向租户模型网关 |
 | 其他 | — | 必须符合准入标准 |
@@ -73,22 +73,22 @@
 
 **准入标准**（其他内核想接入）：实现接口；如实声明能力清单；通过同一套场景测试；满足最低能力门槛（门槛待定，云端内核至少要有审批与自定义模型端点）；会话记录能放到家目录卷上（云端每次派工都是新沙箱，续跑靠卷里的会话记录）。
 
-**已知代价**：本地直调 dsh 用的是 DSH 的内部接口（`dsh-agent`、`dsh-session`），不是对外协议，上游升级时最容易变。对策：用录制的会话日志做回归，每次升级 DSH 跑一遍；成本不可接受时，本地也改经 ACP 后端（Host 里挂 `dsh-acp`），Executor 只认接口，上层不受影响。
+**已知代价**：本地直调 dsh 用的是 DSH 内部接口（`dsh-agent`、`dsh-session`），不是对外协议，上游升级时最容易变；而且上游把 DSH 特殊对待，它本身不是 `AgentBackend`，需要我们自己的 in-process wrapper。对策：用录制的会话日志做回归，每次升级 DSH 跑一遍；成本不可接受时，本地也改经 ACP 后端（Host 里挂 `dsh-acp`），Executor 只认接口，上层不受影响。
 
 不在这套接口里、由 Executor 自己做的：结构化报告（`ready` / `answer` / `blocked`）、`diffStats`、workdir、预览。
 
 Desktop 自己的界面仍然直连 Host，与 Executor 无关。
 
-## 待验证
+## S0 已验证与后续待验证
 
-**开工前（S0，一周）**，只验会挡住前五步的四条：
+**S0 已完成（2026-11）**，结论与施工图见 [docs/spike.md](docs/spike.md)：
 
-1. Host 的认证能否以插件方式替换成 SSO，还是必须改 Host 源码。目前没有线索：`dsh-authorization` 是「插件经对话向用户索取凭据」的流程，不是应用登录，切入点只能从 `apps/desktop` 源码里找。
-2. 租户上下文怎么进入 Host（Desktop 的认证 Cookie 由主进程显式携带，不进任何 Electron session）。
-3. 本地 Executor 作为 Host 内的插件直接调用内核，与界面前端能否并存；同一个会话被界面和 Executor 同时操作时的行为。
-4. dsh-TUI 的接口定义与 DSH 后端能否干净地拆出来（接口里引用了两个界面侧的类型；后端按规则只依赖接口目录与共享目录，未逐个文件核对）。
+1. **SSO 走应用层 account seam，不改 Host 传输认证。** `deepseekAccount` 可由企业 provider 替换；`client-connection` 的 launch-token Cookie 是本地传输凭据，不应改成 SSO。
+2. **租户上下文在 Host 内产生。** OIDC 回调解析 tenant/subject，由 Host service 提供给 Executor 与界面插件，不经过 Electron session 或 Web Cookie。
+3. **Executor 与界面可同 Host 并存，但必须单写者。** 同一 live Agent 共享 durable inbox；第二个独立 `resume()` 会被拒绝。Bot 管理的 Session 中界面只能经 Bot 打断/续跑。
+4. **只复用 dsh-TUI 接口，不复用 DSH 后端。** 12 文件接口空包 tsc 通过；DSH 后端提取会拖入 237 个本地文件和大量 TUI/Ink 依赖。
 
-产出：一页施工图，列出要改的文件和改动点。
+产出：`docs/spike.md` 与 `evidence/S0/`；S1–S5 的 fork 施工图需改 9 个文件（2 新增、7 修改），品牌/签名等 S8 工作另计。
 
 **用到之前再验**：
 
@@ -112,6 +112,7 @@ Desktop 自己的界面仍然直连 Host，与 Executor 无关。
 
 - [架构总览](docs/architecture.md)
 - [任务步骤书](docs/plan.md)：从 fork 到全平台的逐步任务与验收标准
-- [路线图与决议](docs/roadmap.md)（桌面端与内核接入见 #56、#57，登录与工单界面见 #58、#59，发版前必办见 #60，**执行顺序见 #61**）
+- [路线图与决议](docs/roadmap.md)（桌面端与内核接入见 #56、#57，登录与工单界面见 #58、#59，发版前必办见 #60，**执行顺序见 #61，S0 结论见 #62**）
+- [S0 Spike 结论与施工图](docs/spike.md)
 - [Executor 契约](docs/contracts/executor.md)
 - 设计文档见 `docs/design/`
