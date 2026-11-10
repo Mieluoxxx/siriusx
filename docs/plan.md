@@ -239,7 +239,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 实现云端 Executor：调度沙箱、挂载家目录卷、管理 workdir，经 ACP 后端启动内核。**部分完成**：沙箱生命周期/卷/ACP kernel 已实现；真实 dsh/pi 镜像与拉代码未接。证据：`packages/cloud-executor`。
 - [x] 实现沙箱：进程隔离、资源限额、出口网络白名单。**部分完成**：独立 volume 与 `--network none` 已完成；allowlist/资源限额未做。
 - [ ] 接入云端 dsh 与 pi 两个内核。**部分完成**：真实 DSH ACP 已跑通；pi 与云端沙箱内 dsh 未接。证据：`evidence/S7/03-real-dsh-acp/`。
-- [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub REST connector（读 issue/建分支/开 PR）与测试完成；真实仓库全流程未走。证据：`evidence/S7/04-github-connector/`。
+- [ ] 接入第一个代码平台，GitLab 或 GitHub，按首个客户定。写操作全部经工具网关。**部分完成**：GitHub REST connector + 工具网关审批写测试完成；真实仓库全流程未走。证据：`evidence/S7/04-github-connector/`、`05-github-gateway/`。
 - [x] 做进程守护与巡检，依据 [bot.md](./design/bot.md) 第 7 节。**部分完成**：SQLite 持久化 + 跨进程 `recoverOrphans()` 单测通过；真实 kill/重试未做。证据：`evidence/S7/01-cloud-executor/store-test.txt`。
 
 **验收标准。**

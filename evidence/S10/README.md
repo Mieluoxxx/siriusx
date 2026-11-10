@@ -23,9 +23,10 @@ Team panel 自动变为单列，工单列表、详情、diff 和事件流均可�
 - `apps/device-agent`：以配对 token 连接 control-plane WebSocket，接收 `ticket.assign`，
   在本地 `local_dir` 执行，并把生命周期/报告事件上行；日志原文不上行。
 - control-plane 设备工单：离线时保持 `person/delivery`，设备上线后自动补发同一个 assignment。
-- 设备工单支持 follow-up（新 assignment）与 Stop（网关 `ticket.cancel`）；事件使用 ticket 全局序号，不覆盖旧轨迹。
+- 设备工单支持 follow-up（新 assignment）与 Stop（网关 `ticket.cancel`）；事件使用 ticket 全局序号，不覆盖旧轨迹；设备代理只发尚未发送的事件，避免重复状态。
+- 手机 viewport 下的 Team panel 已实际点击 follow-up Send，事件从 seq0-3 增长到 seq4-7。
 - Team panel 在控制面模式下列出已配对设备，手机 viewport 可选设备、填本地目录并派工。
-- 证据：`05-device-ui/run.txt`、`device-task.png`、`device-agent-test.txt`、`offline-retry-test.txt`。
+- 证据：`05-device-ui/run.txt`、`device-task.png`、`device-agent-test.txt`、`offline-retry-test.txt`、`06-device-followup/`。
 
 ## 未完成
 
@@ -33,7 +34,7 @@ Team panel 自动变为单列，工单列表、详情、diff 和事件流均可�
 - 手机审批卡片与电脑上等待任务的联动（卡已可批准，工具 connector 已执行，尚未接真实等待任务）；
 - 手机选择已配对电脑/本地目录并发起 `local_dir` 任务：**已通过浏览器仿真端到端验证**；真机未验；
 - 电脑离线 → `person/delivery` → 上线自动补发已通过设备代理测试；
-- follow-up 与 cancel 已通过设备代理测试；Stop 已通过 Team panel 真实 UI 验证。
+- follow-up 与 cancel 已通过设备代理测试；follow-up Send 与 Stop 均通过 Team panel 真实 UI 验证。
 - 手机端云端抓包（只允许状态/摘要）。
 
 因此当前结论是「先做响应式 Web」，原生端暂不启动。

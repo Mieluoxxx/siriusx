@@ -20,6 +20,8 @@
   initialize/newSession/prompt/turn.end，收到真实 assistant 文本。证据：`03-real-dsh-acp/run.txt`。
 - GitHub connector：读 issue、创建分支、开 PR；凭据只来自 gateway env；
   本地 mock HTTP 测试验证 Authorization 与请求体。证据：`04-github-connector/`。
+- GitHub write 经工具网关审批：read 直接执行，open PR 先 pending，批准后才 POST；
+  审计无 token。证据：`05-github-gateway/test.txt`。
 
 ## 验收对照
 
@@ -32,7 +34,7 @@
 | 沙箱删掉后 workdir 还在 | **通过** | 同上 |
 | 网络允许列表 | **未完成**：仅 `none` 与预配置 network | — |
 | agent 环境无连接器凭据 | **部分**：CloudExecutor 不注入 secretRefs；未做 env 扫描 | — |
-| 真 GitHub/GitLab issue → MR | **部分**：GitHub REST connector 与 mock 测试完成；未在真实仓库走 Issue→MR | `04-github-connector/` |
+| 真 GitHub/GitLab issue → MR | **部分**：GitHub REST connector + gateway 审批写测试完成；未在真实仓库走 Issue→MR | `04-github-connector/`、`05-github-gateway/` |
 | 崩溃恢复 | **部分**：SQLite 跨进程恢复单测通过；真实进程 kill/重试未做 | `01-cloud-executor/store-test.txt` |
 
 ## 已知边界

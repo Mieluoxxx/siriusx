@@ -30,7 +30,7 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
   let readyReject: ((error: Error) => void) | undefined
   const ready = new Promise<void>((resolve, reject) => { readyResolve = resolve; readyReject = reject })
   let queue = Promise.resolve()
-  const active = new Map<string, { executor: LocalExecutor; assignmentId: string }>()
+  const active = new Map<string, { executor: LocalExecutor; assignmentId: string; sent: Set<number> }>()
 
   const handleAssign = async (message: Record<string, unknown>): Promise<void> => {
     if (typeof message.ticketId !== 'string' || typeof message.assignment !== 'object' || message.assignment === null) return
@@ -38,16 +38,21 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
     if (assignment.workspace.kind !== 'local_dir') throw new Error('device agent only accepts local_dir')
     const executor = options.executor ?? new LocalExecutor({ tenantId: assignment.tenantId, backend: kernel })
     const created = await executor.createAssignment(assignment)
-    active.set(assignment.ticketId, { executor, assignmentId: created.assignmentId })
+    const sent = new Set<number>()
+    const activeEntry = { executor, assignmentId: created.assignmentId, sent }
+    active.set(assignment.ticketId, activeEntry)
+    const sendNew = (): void => {
+      for (const event of executor.streamEventsForBot(created.assignmentId, 0).events) {
+        if (sent.has(event.seq)) continue
+        sent.add(event.seq)
+        socket.send(JSON.stringify({ type: 'ticket.event', ticketId: assignment.ticketId, event }))
+      }
+    }
     // Send lifecycle events early so the Team panel moves to working.
-    for (const event of executor.streamEventsForBot(created.assignmentId, 0).events) {
-      socket.send(JSON.stringify({ type: 'ticket.event', ticketId: assignment.ticketId, event }))
-    }
-    const done = await executor.wait(created.assignmentId)
+    sendNew()
+    await executor.wait(created.assignmentId)
+    sendNew()
     active.delete(assignment.ticketId)
-    for (const event of executor.streamEventsForBot(created.assignmentId, 0).events) {
-      socket.send(JSON.stringify({ type: 'ticket.event', ticketId: assignment.ticketId, event }))
-    }
   }
 
   socket.on('message', raw => {
@@ -60,6 +65,8 @@ export async function startDeviceAgent(options: DeviceAgentOptions): Promise<Dev
           void (async () => {
             const cancelled = await running.executor.cancelAssignment(running.assignmentId, 'graceful')
             for (const event of running.executor.streamEventsForBot(cancelled.assignmentId, 0).events) {
+              if (running.sent.has(event.seq)) continue
+              running.sent.add(event.seq)
               socket.send(JSON.stringify({ type: 'ticket.event', ticketId: message.ticketId, event }))
             }
             active.delete(message.ticketId as string)
