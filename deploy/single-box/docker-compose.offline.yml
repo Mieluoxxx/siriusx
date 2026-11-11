@@ -11,6 +11,8 @@ services:
       SIRIUSX_COMMIT: ${SIRIUSX_COMMIT:-dev}
       SIRIUSX_DB: /data/control.sqlite
       SIRIUSX_DATA_DIR: /data
+      DATABASE_URL: ${DATABASE_URL:-}
+      SIRIUSX_CACHE_REFRESH_MS: ${SIRIUSX_CACHE_REFRESH_MS:-30000}
     ports:
       - "127.0.0.1:4320:4320"
       - "127.0.0.1:4321:4321"

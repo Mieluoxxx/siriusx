@@ -5,6 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/part-of: siriusx
 data:
+  SIRIUSX_CACHE_REFRESH_MS: "30000"
   SIRIUSX_VERSION: "dev"
   SIRIUSX_COMMIT: "dev"
   SIRIUSX_TOOL_GATEWAY_URL: "http://tool-gateway:4330"

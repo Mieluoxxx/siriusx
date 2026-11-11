@@ -1,0 +1,23 @@
+{
+  "files": 14,
+  "documents": 37,
+  "kinds": [
+    "ClusterIssuer",
+    "ClusterRole",
+    "ClusterRoleBinding",
+    "ConfigMap",
+    "CronJob",
+    "DaemonSet",
+    "Deployment",
+    "Ingress",
+    "Kustomization",
+    "Namespace",
+    "NetworkPolicy",
+    "PersistentVolumeClaim",
+    "Secret",
+    "Service",
+    "ServiceAccount",
+    "StatefulSet"
+  ],
+  "resources": 9
+}

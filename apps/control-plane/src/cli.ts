@@ -38,7 +38,8 @@ const flags = parseFlags(rest)
 const dbPath = flags.get('db') ?? process.env.SIRIUSX_DB ?? '/tmp/siriusx-control.sqlite'
 const dataDir = flags.get('data-dir') ?? process.env.SIRIUSX_DATA_DIR ?? '/tmp/siriusx-data'
 mkdirSync(dataDir, { recursive: true })
-const storage = process.env.DATABASE_URL === undefined ? undefined : new PostgresStorage(process.env.DATABASE_URL)
+const databaseUrl = process.env.DATABASE_URL?.trim()
+const storage = databaseUrl === undefined || databaseUrl === '' ? undefined : new PostgresStorage(databaseUrl)
 const control = new ControlPlane({
   dbPath,
   dataDir,
