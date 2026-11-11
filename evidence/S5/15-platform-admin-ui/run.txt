@@ -1,5 +1,6 @@
 {
   "tenant": true,
+  "suspended": true,
   "usage": true,
   "quota": true,
   "usageDaily": true,

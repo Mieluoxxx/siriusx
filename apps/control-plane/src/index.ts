@@ -34,6 +34,7 @@ export interface Tenant {
   readonly name: string
   readonly idpIssuer: string
   readonly createdAt: number
+  readonly status: 'active' | 'suspended'
 }
 
 export interface Device {
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   idp_issuer TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS users (
@@ -224,6 +226,8 @@ export class ControlPlane {
     mkdirSync(options.dataDir, { recursive: true })
     this.#db = new DatabaseSync(options.dbPath)
     this.#db.exec(SCHEMA)
+    const tenantColumns = this.#db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>
+    if (!tenantColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE tenants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
@@ -244,9 +248,9 @@ export class ControlPlane {
     this.#db.close()
   }
 
-  private tenantRow(tenantId: string): { id: string; name: string; idp_issuer: string; created_at: number } {
+  private tenantRow(tenantId: string): { id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended' } {
     const row = this.#db.prepare('SELECT * FROM tenants WHERE id = ?').get(tenantId) as
-      | { id: string; name: string; idp_issuer: string; created_at: number }
+      | { id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended' }
       | undefined
     if (row === undefined) throw new ControlPlaneError(404, 'TENANT_NOT_FOUND', tenantId)
     return row
@@ -257,8 +261,8 @@ export class ControlPlane {
     const now = this.#now()
     this.#db.exec('BEGIN')
     try {
-      this.#db.prepare('INSERT INTO tenants (id, name, idp_issuer, created_at) VALUES (?, ?, ?, ?)')
-        .run(id, input.name, input.idpIssuer, now)
+      this.#db.prepare('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?)')
+        .run(id, input.name, input.idpIssuer, 'active', now)
       this.#db.prepare('INSERT INTO settings (tenant_id) VALUES (?)').run(id)
       this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1)').run(id, 'tenant-default')
       this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
@@ -269,7 +273,13 @@ export class ControlPlane {
       this.#db.exec('ROLLBACK')
       throw error
     }
-    return { id, name: input.name, idpIssuer: input.idpIssuer, createdAt: now }
+    return { id, name: input.name, idpIssuer: input.idpIssuer, createdAt: now, status: 'active' }
+  }
+
+  setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Tenant {
+    const current = this.tenantRow(tenantId)
+    this.#db.prepare('UPDATE tenants SET status = ? WHERE id = ?').run(status, tenantId)
+    return { id: tenantId, name: current.name, idpIssuer: current.idp_issuer, createdAt: current.created_at, status }
   }
 
   updateTenant(tenantId: string, patch: { name?: string; idpIssuer?: string }): Tenant {
@@ -277,13 +287,13 @@ export class ControlPlane {
     const name = patch.name ?? current.name
     const idpIssuer = patch.idpIssuer ?? current.idp_issuer
     this.#db.prepare('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?').run(name, idpIssuer, tenantId)
-    return { id: tenantId, name, idpIssuer, createdAt: current.created_at }
+    return { id: tenantId, name, idpIssuer, createdAt: current.created_at, status: current.status }
   }
 
   listTenants(): Tenant[] {
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
-      id: string; name: string; idp_issuer: string; created_at: number
-    }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
+      id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended'
+    }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at, status: row.status }))
   }
 
   createSupportRequest(tenantId: string, requestedBy: string, reason: string): { id: string; status: string; expiresAt: number | null } {
@@ -429,8 +439,8 @@ export class ControlPlane {
 
   findTenantByIssuer(issuer: string): Tenant | undefined {
     const row = this.#db.prepare('SELECT * FROM tenants WHERE idp_issuer = ?').get(issuer) as
-      | { id: string; name: string; idp_issuer: string; created_at: number } | undefined
-    return row === undefined ? undefined : { id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }
+      | { id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended' } | undefined
+    return row === undefined ? undefined : { id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at, status: row.status }
   }
 
   findUserByEmail(tenantId: string, email: string): { id: string; role: Role } | undefined {
@@ -459,6 +469,7 @@ export class ControlPlane {
   }
 
   issueSession(input: { tenantId: string; userId: string; role: Role }): string {
+    if (this.tenantRow(input.tenantId).status === 'suspended') throw new ControlPlaneError(403, 'TENANT_SUSPENDED', 'tenant is suspended')
     const user = this.#db.prepare('SELECT id, role FROM users WHERE id = ? AND tenant_id = ?').get(input.userId, input.tenantId) as
       | { id: string; role: string } | undefined
     if (user === undefined) throw new ControlPlaneError(401, 'USER_NOT_FOUND', 'user is not a member of this tenant')
@@ -491,6 +502,8 @@ export class ControlPlane {
     if (typeof value.jti === 'string' && this.#db.prepare('SELECT 1 FROM revoked_sessions WHERE session_id = ? AND expires_at > ?').get(value.jti, this.#now()) !== undefined) {
       throw new ControlPlaneError(401, 'SESSION_REVOKED', 'session revoked')
     }
+    const tenant = this.#db.prepare('SELECT status FROM tenants WHERE id = ?').get(value.tenantId) as { status: string } | undefined
+    if (tenant?.status === 'suspended') throw new ControlPlaneError(403, 'TENANT_SUSPENDED', 'tenant is suspended')
     const user = this.#db.prepare('SELECT role FROM users WHERE id = ? AND tenant_id = ?').get(value.userId, value.tenantId) as { role: Role } | undefined
     if (user === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'user no longer exists')
     return { tenantId: value.tenantId, userId: value.userId, role: user.role }

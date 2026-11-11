@@ -138,10 +138,12 @@ async function loadTenants() {
   const data = await api('/v1/admin/tenants');
   tenantsCache = data.tenants;
   const host = document.getElementById('tenants'); host.textContent = '';
-  const table = document.createElement('table'); table.append(row(['Name','Tenant','Issuer','Users','Devices','Device tickets','Cloud tickets','']));
+  const table = document.createElement('table'); table.append(row(['Name','Tenant','Issuer','Status','Users','Devices','Device tickets','Cloud tickets','']));
   for (const tenant of data.tenants) {
-    const tr = row([tenant.name, tenant.id, tenant.idpIssuer, tenant.usage.users, tenant.usage.devices, tenant.usage.deviceTickets, tenant.usage.cloudTickets]);
-    const button = document.createElement('button'); button.textContent = 'Users'; button.onclick = () => loadUsers(tenant.id); const td = document.createElement('td'); td.append(button); tr.append(td); table.append(tr);
+    const tr = row([tenant.name, tenant.id, tenant.idpIssuer, tenant.status, tenant.usage.users, tenant.usage.devices, tenant.usage.deviceTickets, tenant.usage.cloudTickets]);
+    const button = document.createElement('button'); button.textContent = 'Users'; button.onclick = () => loadUsers(tenant.id); const td = document.createElement('td'); td.append(button);
+    const toggle = document.createElement('button'); toggle.textContent = tenant.status === 'active' ? 'Suspend' : 'Resume'; toggle.onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenant.id) + '/status', {method:'POST', body: JSON.stringify({status: tenant.status === 'active' ? 'suspended' : 'active'})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
+    td.append(toggle); tr.append(td); table.append(tr);
   }
   host.append(table);
 }
@@ -171,7 +173,12 @@ async function loadUsers(tenantId) {
   const add = document.createElement('div'); add.innerHTML = '<input id="newEmail" placeholder="User email"><select id="newRole"><option>member</option><option>admin</option></select><button id="addUser">Add user</button>'; host.append(add);
   add.querySelector('#addUser').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users', {method:'POST', body: JSON.stringify({email: add.querySelector('#newEmail').value, role: add.querySelector('#newRole').value})}); await loadUsers(tenantId); } catch (e) { err(e); } };
   const table = document.createElement('table'); table.append(row(['Email','Role','User ID']));
-  for (const user of data.users) table.append(row([user.email, user.role, user.userId]));
+  for (const user of data.users) {
+    const tr = row([user.email, user.role, user.userId]);
+    const select = document.createElement('select'); select.innerHTML = '<option>member</option><option>admin</option>'; select.value = user.role;
+    select.onchange = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users/' + encodeURIComponent(user.userId) + '/role', {method:'PUT', body: JSON.stringify({role: select.value})}); await loadUsers(tenantId); await loadPlatformAudit(); } catch (e) { err(e); } };
+    tr.children[1].textContent = ''; tr.children[1].append(select); table.append(tr);
+  }
   host.append(table);
 }
 document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit(), loadSupportRequests()]); } catch (e) { err(e); } };
@@ -263,6 +270,14 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           })
           control.recordPlatformAudit({ actor: 'platform', action: 'tenant.create', target: tenant.id, detail: tenant.name })
           write(response, 201, { tenant })
+          return
+        }
+        if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'status' && parts[5] === undefined) {
+          const body = await readJson(request)
+          if (body.status !== 'active' && body.status !== 'suspended') throw new Error('status must be active or suspended')
+          const tenant = control.setTenantStatus(parts[3], body.status)
+          control.recordPlatformAudit({ actor: 'platform', action: 'tenant.status', target: tenant.id, detail: body.status })
+          write(response, 200, { tenant })
           return
         }
         if (request.method === 'PUT' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === undefined) {

@@ -493,4 +493,17 @@ describe('control plane', () => {
     expect(() => plane.decideSupportRequest(tenant.id, created.id, false, 'admin@support.example')).toThrow('approved')
   })
 
+  it('suspends a tenant and invalidates its sessions', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-suspend', name: 'Suspend', idpIssuer: 'https://idp.example', adminEmail: 'admin@suspend.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@suspend.example')!
+    const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    expect(plane.verifySession(token).tenantId).toBe(tenant.id)
+    expect(plane.setTenantStatus(tenant.id, 'suspended').status).toBe('suspended')
+    expect(() => plane.verifySession(token)).toThrow('tenant is suspended')
+    expect(() => plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })).toThrow('tenant is suspended')
+    expect(plane.setTenantStatus(tenant.id, 'active').status).toBe('active')
+    expect(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })).toBeTruthy()
+  })
+
 })
