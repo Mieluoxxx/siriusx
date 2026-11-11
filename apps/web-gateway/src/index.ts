@@ -52,6 +52,18 @@ export interface WebGateway {
   close(): Promise<void>
 }
 
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function requestOrigin(request: IncomingMessage): string {
+  const forwardedProto = headerValue(request.headers['x-forwarded-proto'])?.split(',', 1)[0]?.trim()
+  const proto = forwardedProto ?? ((request.socket as { encrypted?: boolean }).encrypted === true ? 'https' : 'http')
+  const forwardedHost = headerValue(request.headers['x-forwarded-host'])?.split(',', 1)[0]?.trim()
+  const host = forwardedHost ?? request.headers.host ?? '127.0.0.1'
+  return `${proto}://${host}`
+}
+
 function parseCookies(header: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {}
   for (const part of (header ?? '').split(';')) {
@@ -149,7 +161,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
     void (async () => {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       const origin = request.headers.origin
-      if (origin !== undefined && origin !== url.origin) {
+      if (origin !== undefined && origin !== requestOrigin(request)) {
         response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }).end('cross-origin request rejected')
         return
       }
@@ -322,8 +334,7 @@ document.getElementById('f').onsubmit = async (event) => {
   server.on('upgrade', (request, socket, head) => {
     void (async () => {
       const origin = request.headers.origin
-      const expected = `http://${request.headers.host ?? '127.0.0.1'}`
-      if (origin !== undefined && origin !== expected) { socket.write('HTTP/1.1 403 Forbidden\r\n\r\n'); socket.destroy(); return }
+      if (origin !== undefined && origin !== requestOrigin(request)) { socket.write('HTTP/1.1 403 Forbidden\r\n\r\n'); socket.destroy(); return }
       const token = await authenticated(request)
       if (token === undefined) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); socket.destroy(); return }
       request.headers.cookie = `${dshCookie}; ${request.headers.cookie ?? ''}`
