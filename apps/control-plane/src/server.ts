@@ -105,6 +105,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
 <h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
 <div id="error" style="color:#b00020"></div>
 <script>
+let tenantsCache = [];
 const token = () => sessionStorage.getItem('platformToken') || '';
 const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'application/json'});
 const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
@@ -127,6 +128,7 @@ async function loadModels() {
 async function loadTenants() {
   err('');
   const data = await api('/v1/admin/tenants');
+  tenantsCache = data.tenants;
   const host = document.getElementById('tenants'); host.textContent = '';
   const table = document.createElement('table'); table.append(row(['Name','Tenant','Issuer','Users','Devices','Device tickets','Cloud tickets','']));
   for (const tenant of data.tenants) {
@@ -140,6 +142,10 @@ async function loadUsers(tenantId) {
   const data = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users');
   const host = document.getElementById('users'); host.textContent = '';
   const h = document.createElement('h3'); h.textContent = tenantId; host.append(h);
+  const currentTenant = tenantsCache.find(item => item.id === tenantId) || { name: '', idpIssuer: '' };
+  const config = document.createElement('div'); config.innerHTML = '<h4>Tenant config</h4><input id="tenantName" placeholder="Tenant name"><input id="tenantIssuer" placeholder="IdP issuer"><button id="saveTenant">Save tenant</button>'; host.append(config);
+  config.querySelector('#tenantName').value = currentTenant.name; config.querySelector('#tenantIssuer').value = currentTenant.idpIssuer;
+  config.querySelector('#saveTenant').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId), {method:'PUT', body: JSON.stringify({name: config.querySelector('#tenantName').value, idpIssuer: config.querySelector('#tenantIssuer').value})}); await loadTenants(); await loadUsers(tenantId); await loadPlatformAudit(); } catch (e) { err(e); } };
   const quota = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota');
   const q = document.createElement('div'); q.innerHTML = '<h4>Quota</h4><input id="maxUsers" placeholder="Max users"><input id="maxDevices" placeholder="Max devices"><input id="maxCloud" placeholder="Max cloud/day"><input id="maxDevice" placeholder="Max device tickets/day"><button id="saveQuota">Save quota</button>'; host.append(q);
   q.querySelector('#maxUsers').value = quota.quota.maxUsers; q.querySelector('#maxDevices').value = quota.quota.maxDevices; q.querySelector('#maxCloud').value = quota.quota.maxCloudTicketsPerDay; q.querySelector('#maxDevice').value = quota.quota.maxDeviceTicketsPerDay;
@@ -236,6 +242,16 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           })
           control.recordPlatformAudit({ actor: 'platform', action: 'tenant.create', target: tenant.id, detail: tenant.name })
           write(response, 201, { tenant })
+          return
+        }
+        if (request.method === 'PUT' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === undefined) {
+          const body = await readJson(request)
+          const tenant = control.updateTenant(parts[3], {
+            ...(typeof body.name === 'string' ? { name: body.name } : {}),
+            ...(typeof body.idpIssuer === 'string' ? { idpIssuer: body.idpIssuer } : {}),
+          })
+          control.recordPlatformAudit({ actor: 'platform', action: 'tenant.update', target: tenant.id, detail: JSON.stringify({ name: tenant.name, idpIssuer: tenant.idpIssuer }) })
+          write(response, 200, { tenant })
           return
         }
         if (parts[2] === 'models' && parts[3] === undefined) {

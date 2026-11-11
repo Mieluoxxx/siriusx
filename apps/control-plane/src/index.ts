@@ -262,6 +262,14 @@ export class ControlPlane {
     return { id, name: input.name, idpIssuer: input.idpIssuer, createdAt: now }
   }
 
+  updateTenant(tenantId: string, patch: { name?: string; idpIssuer?: string }): Tenant {
+    const current = this.tenantRow(tenantId)
+    const name = patch.name ?? current.name
+    const idpIssuer = patch.idpIssuer ?? current.idp_issuer
+    this.#db.prepare('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?').run(name, idpIssuer, tenantId)
+    return { id: tenantId, name, idpIssuer, createdAt: current.created_at }
+  }
+
   listTenants(): Tenant[] {
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; idp_issuer: string; created_at: number
