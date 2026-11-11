@@ -1,13 +1,18 @@
 # PostgreSQL management-plane schema
 
-This is the first cutover stage: a PostgreSQL schema and an offline
-SQLite → PostgreSQL migration tool.
+This directory contains the PostgreSQL schema (27 tables), an offline
+SQLite → PostgreSQL migration tool, and runtime support.
 
-The control-plane runtime is still SQLite-backed. Full runtime cutover requires
-making the storage layer asynchronous and replacing SQLite-specific SQL
-(`PRAGMA`, `INSERT OR IGNORE`, `strftime`, `VACUUM INTO`, synchronous
-`DatabaseSync` calls). Until that refactor lands, run this only for a
-maintenance-window export, reporting copy, or migration rehearsal.
+Runtime services now accept `DATABASE_URL`:
+
+- control-plane
+- tool-gateway
+- autobot
+
+SQLite remains the default offline/single-box backend. PostgreSQL mode keeps
+tenant/user/settings/quota cache state in sync with LISTEN/NOTIFY plus a timer,
+and stores autobot tickets/assignments/events/inputs/outbox and tool-gateway
+approvals/policies/audit in PostgreSQL.
 
 ## Start a rehearsal database
 
@@ -40,8 +45,8 @@ psql "$DATABASE_URL" -c 'select count(*) from tenants;'
 psql "$DATABASE_URL" -c 'select count(*) from platform_audit;'
 ```
 
-## Runtime cutover gate
+## Runtime verification
 
-Do not point production traffic at PostgreSQL until the control-plane,
-autobot and tool-gateway storage adapters have been migrated and tested against
-a real PostgreSQL instance. This directory does not claim that cutover.
+All three services have real PostgreSQL 18 tests in their package suites. Run
+the migration and preflight scripts before pointing production traffic at a
+new database, and keep a SQLite backup until cutover is signed off.

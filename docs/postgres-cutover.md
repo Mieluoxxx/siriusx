@@ -2,12 +2,13 @@
 
 ## Current state
 
-- Control-plane, autobot, tool-gateway and CloudExecutor assignment stores still use `node:sqlite`.
-- PostgreSQL schema and offline migration are implemented:
-  - `deploy/postgres/schema.sql`
-  - `scripts/migrate-sqlite-to-postgres.mjs`
-  - `scripts/postgres-preflight.mjs`
-- The control-plane runtime is **not yet cut over**.
+- PostgreSQL schema and offline migration are implemented.
+- Runtime PostgreSQL support is implemented for:
+  - control-plane management state
+  - tool-gateway approvals/policies/audit
+  - autobot tickets/assignments/events/inputs/outbox
+- SQLite remains the default offline/single-box backend.
+- CloudExecutor assignment storage remains SQLite-backed.
 
 ## Why runtime cutover is a separate project
 
