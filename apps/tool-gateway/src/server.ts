@@ -110,7 +110,7 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
       if (request.method === 'GET' && url.pathname === '/v1/audit') {
         const ticketId = url.searchParams.get('ticketId')
         if (ticketId === null) throw new Error('ticketId is required')
-        write(response, 200, { audit: gateway.auditForTicket(ticketId) })
+        write(response, 200, { audit: gateway.auditForTicket(ticketId, context.tenantId) })
         return
       }
       write(response, 404, { error: 'not found', code: 'NOT_FOUND' })

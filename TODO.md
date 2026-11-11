@@ -41,6 +41,7 @@
 - [x] Device 心跳超时清理（close 4002）
 - [x] Compose `/ready` healthcheck（control-plane/tool-gateway/web-gateway）
 - [x] Cloud repo URL 校验（scheme + credentials）
+- [x] Tool audit 查询按 tenant 隔离
 - [x] Cloud follow-up 浏览器端到端（Team panel Send → 新 assignment → person/review）
 - [x] 许可证策略门禁（阻断 GPL/AGPL/SSPL/BUSL）
 - [x] macOS DMG 交叉构建阻塞证据

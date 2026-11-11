@@ -269,9 +269,11 @@ export class ToolGateway {
     return { status: 'approved', result }
   }
 
-  auditForTicket(ticketId: string): unknown[] {
-    return (this.#db.prepare('SELECT * FROM audit WHERE ticket_id = ? ORDER BY created_at, rowid').all(ticketId) as Array<Record<string, unknown>>)
-      .map(row => ({ ...row }))
+  auditForTicket(ticketId: string, tenantId?: string): unknown[] {
+    const rows = tenantId === undefined
+      ? this.#db.prepare('SELECT * FROM audit WHERE ticket_id = ? ORDER BY created_at, rowid').all(ticketId)
+      : this.#db.prepare('SELECT * FROM audit WHERE ticket_id = ? AND tenant_id = ? ORDER BY created_at, rowid').all(ticketId, tenantId)
+    return (rows as Array<Record<string, unknown>>).map(row => ({ ...row }))
   }
 
   executed(): readonly ActionRequest[] { return this.#executed }

@@ -118,4 +118,14 @@ describe('tool gateway policy', () => {
     gateway.close()
   })
 
+  it('scopes ticket audit queries by tenant', async () => {
+    const gateway = new ToolGateway({ dbPath: await db(), connectors: { github: { execute: async () => ({ result: { ok: true } }) } } })
+    await gateway.propose({ ...base, tenantId: 'tenant-a', ticketId: 'shared-ticket', actionClass: 'read' }, { ...context, tenantId: 'tenant-a' })
+    await gateway.propose({ ...base, tenantId: 'tenant-b', ticketId: 'shared-ticket', actionClass: 'read' }, { ...context, tenantId: 'tenant-b' })
+    expect(gateway.auditForTicket('shared-ticket', 'tenant-a')).toHaveLength(1)
+    expect(gateway.auditForTicket('shared-ticket', 'tenant-b')).toHaveLength(1)
+    expect(gateway.auditForTicket('shared-ticket')).toHaveLength(2)
+    gateway.close()
+  })
+
 })
