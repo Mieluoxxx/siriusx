@@ -85,6 +85,17 @@ curl -s http://127.0.0.1:8080/ready
 
 Open `http://127.0.0.1:8080/login`, or the configured Ingress host.
 
+## Admin frontend
+
+`admin-web.yaml` deploys the standalone platform admin SPA and proxies only
+`/v1/admin/*` to the control-plane. Build it with:
+
+```bash
+./deploy/offline/build-admin-web-image.sh
+```
+
+The example Ingress host is `admin.siriusx.example`.
+
 ## Backups
 
 `backup-cronjob.yaml` runs daily at 02:00 UTC and writes compressed SQLite

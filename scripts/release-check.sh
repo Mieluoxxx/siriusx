@@ -16,6 +16,8 @@ python3 scripts/check-k8s-manifests.py
 python3 scripts/check-observability.py
 python3 scripts/check-ci.py
 python3 scripts/check-logging-config.py
+echo '== admin web build'
+pnpm --filter @siriusx/admin-web build
 echo '== plugin bundle'
 OUT="$(mktemp -d)" ./deploy/release/build-plugin-bundle.sh
 echo '== update feed syntax'

@@ -13,3 +13,13 @@
 - macOS/Windows 桌面安装包（需在对应 OS 上构建）。
 
 真实离线环境验收仍需：目标机无外网、无 npm registry、无 Docker Hub。
+
+
+Standalone platform admin:
+
+```bash
+OUT=/tmp/admin-web ./deploy/offline/build-admin-web-image.sh
+```
+
+The image serves the SPA on port 8090 and proxies only `/v1/admin/*` to the
+control-plane. The full Compose profile starts it as `admin-web`.

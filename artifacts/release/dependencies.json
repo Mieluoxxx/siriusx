@@ -32,6 +32,37 @@
     }
   },
   {
+    "name": "@siriusx/admin-web",
+    "version": "0.0.0",
+    "path": "/root/siriusx/apps/admin-web",
+    "private": true,
+    "devDependencies": {
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      }
+    }
+  },
+  {
     "name": "@siriusx/autobot",
     "version": "0.0.0",
     "path": "/root/siriusx/apps/autobot",

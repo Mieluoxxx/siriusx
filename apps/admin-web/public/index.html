@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SiriusX Platform Admin</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>SiriusX</strong> Platform Admin</div>
+    <div class="auth">
+      <input id="token" type="password" autocomplete="off" placeholder="X-SiriusX-Platform-Token">
+      <button id="load">Load</button>
+    </div>
+  </header>
+  <main id="app">
+    <section class="empty">Enter the platform admin token to load tenants.</section>
+  </main>
+  <div id="error" class="error" role="alert"></div>
+</body>
+</html>

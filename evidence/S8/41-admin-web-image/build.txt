@@ -1,0 +1,1 @@
+built siriusx/admin-web:offline and wrote /root/siriusx/artifacts/admin-web/admin-web-image.tar

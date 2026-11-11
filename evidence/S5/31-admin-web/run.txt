@@ -1,0 +1,9 @@
+{
+  "tenant": true,
+  "config": true,
+  "quota": true,
+  "billing": true,
+  "usage": true,
+  "audit": true,
+  "errors": []
+}

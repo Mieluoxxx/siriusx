@@ -43,11 +43,17 @@ jobs:
           DSH_IMAGE="ghcr.io/${{ github.repository }}/dsh-web:${{ github.sha }}"
           NODE_DIR="$NODE_DIR" OUT=/tmp/siriusx-dsh-web IMAGE="$DSH_IMAGE" ./deploy/offline/build-dsh-web-image.sh
           docker push "$DSH_IMAGE"
+      - name: Build admin-web image
+        run: |
+          ADMIN_IMAGE="ghcr.io/${{ github.repository }}/admin-web:${{ github.sha }}"
+          OUT=/tmp/siriusx-admin-web IMAGE="$ADMIN_IMAGE" ./deploy/offline/build-admin-web-image.sh
+          docker push "$ADMIN_IMAGE"
       - name: Write image metadata
         run: |
           mkdir -p artifacts/images
           printf 'control-plane=ghcr.io/%s/control-plane:%s\n' "${{ github.repository }}" "${{ github.sha }}" > artifacts/images/tags.txt
           printf 'dsh-web=ghcr.io/%s/dsh-web:%s\n' "${{ github.repository }}" "${{ github.sha }}" >> artifacts/images/tags.txt
+          printf 'admin-web=ghcr.io/%s/admin-web:%s\n' "${{ github.repository }}" "${{ github.sha }}" >> artifacts/images/tags.txt
       - name: Upload image metadata
         uses: actions/upload-artifact@v4
         with:

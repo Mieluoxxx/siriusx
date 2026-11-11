@@ -51,6 +51,22 @@ services:
       retries: 18
     volumes:
       - dsh-web-data:/data
+  admin-web:
+    image: ${SIRIUSX_ADMIN_WEB_IMAGE:-siriusx/admin-web:offline}
+    profiles: ["full"]
+    restart: unless-stopped
+    depends_on: [control-plane]
+    environment:
+      CONTROL_PLANE_URL: http://control-plane:4320
+      PORT: "8090"
+      HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:8090:8090"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
   tool-gateway:
     image: ${SIRIUSX_IMAGE:-siriusx/control-plane:offline}
     restart: unless-stopped
