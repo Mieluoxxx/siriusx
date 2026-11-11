@@ -565,4 +565,26 @@ describe('control plane', () => {
     expect(second).toMatchObject({ accepted: false, duplicate: true })
   })
 
+  it('ingests Feishu and Teams message webhooks', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-im-webhook-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'im-webhook', platformAdminToken: 'platform-secret', sourceWebhookToken: 'source-secret' })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ tenantId: 'tenant-im', name: 'IM', idpIssuer: 'https://idp.example', adminEmail: 'admin@im.example' })
+    const platform = { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }
+    await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: platform, body: JSON.stringify({ provider: 'feishu', externalId: 'chat-1', tenantId: tenant.id }) })
+    await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: platform, body: JSON.stringify({ provider: 'teams', externalId: 'conv-1', tenantId: tenant.id }) })
+    const headers = { 'content-type': 'application/json', 'x-siriusx-source-token': 'source-secret' }
+    const challenge = await fetch(`${server.url}/v1/sources/feishu/webhook`, { method: 'POST', headers, body: JSON.stringify({ type: 'url_verification', challenge: 'abc' }) }).then(response => response.json()) as { challenge: string }
+    expect(challenge.challenge).toBe('abc')
+    const feishu = { header: { event_id: 'feishu-1', event_type: 'im.message.receive_v1' }, event: { message: { chat_id: 'chat-1', content: JSON.stringify({ text: 'hello feishu' }) } } }
+    const first = await fetch(`${server.url}/v1/sources/feishu/webhook`, { method: 'POST', headers, body: JSON.stringify(feishu) }).then(response => response.json()) as { accepted: boolean }
+    const second = await fetch(`${server.url}/v1/sources/feishu/webhook`, { method: 'POST', headers, body: JSON.stringify(feishu) }).then(response => response.json()) as { accepted: boolean; duplicate: boolean }
+    expect(first.accepted).toBe(true)
+    expect(second).toMatchObject({ accepted: false, duplicate: true })
+    const teams = { id: 'teams-1', type: 'message', conversation: { id: 'conv-1' }, text: 'hello teams' }
+    const accepted = await fetch(`${server.url}/v1/sources/teams/webhook`, { method: 'POST', headers, body: JSON.stringify(teams) }).then(response => response.json()) as { accepted: boolean }
+    expect(accepted.accepted).toBe(true)
+  })
+
 })

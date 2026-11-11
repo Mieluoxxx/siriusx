@@ -10,6 +10,7 @@
 - platform `/admin` 可创建 source binding
 - tenant admin 可查看 `/v1/source-events`
 - binding 可开启 `autoDispatch`，自动生成 cloud ticket
+- Feishu / Teams 共享同一套 source binding/event 存储
 
 验证：
 

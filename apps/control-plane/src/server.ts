@@ -494,6 +494,53 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
         return
       }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'sources' && (parts[2] === 'feishu' || parts[2] === 'teams') && parts[3] === 'webhook') {
+        if (sourceWebhookToken === undefined) throw new ControlPlaneError(503, 'SOURCE_WEBHOOK_DISABLED', 'source webhook token is not configured')
+        if (request.headers['x-siriusx-source-token'] !== sourceWebhookToken) throw new ControlPlaneError(401, 'SOURCE_UNAUTHORIZED', 'invalid source webhook token')
+        const body = await readJson(request)
+        if (parts[2] === 'feishu' && body.type === 'url_verification') {
+          write(response, 200, { challenge: body.challenge })
+          return
+        }
+        const provider = parts[2]
+        let externalId: string | undefined
+        let deliveryId: string | undefined
+        let eventType: string | undefined
+        let prompt = ''
+        if (provider === 'feishu') {
+          const event = typeof body.event === 'object' && body.event !== null ? body.event as Record<string, unknown> : undefined
+          const message = typeof event?.message === 'object' && event.message !== null ? event.message as Record<string, unknown> : undefined
+          externalId = typeof message?.chat_id === 'string' ? message.chat_id : typeof event?.chat_id === 'string' ? event.chat_id : undefined
+          const header = typeof body.header === 'object' && body.header !== null ? body.header as Record<string, unknown> : undefined
+          deliveryId = typeof header?.event_id === 'string' ? header.event_id : undefined
+          eventType = typeof header?.event_type === 'string' ? header.event_type : 'feishu.message'
+          if (typeof message?.content === 'string') { try { const content = JSON.parse(message.content) as { text?: unknown }; if (typeof content.text === 'string') prompt = content.text } catch { /* keep empty */ } }
+        } else {
+          externalId = typeof body.conversation === 'object' && body.conversation !== null && typeof (body.conversation as Record<string, unknown>).id === 'string' ? String((body.conversation as Record<string, unknown>).id) : undefined
+          deliveryId = typeof body.id === 'string' ? body.id : undefined
+          eventType = typeof body.type === 'string' ? body.type : 'teams.message'
+          prompt = typeof body.text === 'string' ? body.text : ''
+        }
+        if (externalId === undefined) throw new ControlPlaneError(400, 'INVALID_SOURCE_EVENT', `${provider} conversation id is required`)
+        const binding = control.findSourceBinding(provider, externalId)
+        if (binding === undefined) { write(response, 202, { accepted: false, ignored: 'no source binding' }); return }
+        const id = deliveryId ?? createHash('sha256').update(JSON.stringify(body)).digest('hex')
+        const recorded = control.recordSourceEvent({ provider, deliveryId: id, bindingId: binding.id, tenantId: binding.tenantId, eventType: eventType ?? 'message', payload: body })
+        let ticketId: string | undefined
+        let dispatchError: string | undefined
+        if (recorded.accepted && binding.autoDispatch && binding.repoUrl !== null) {
+          try {
+            const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: `app:source-${provider}`, channel: provider, repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `${provider}: ${prompt}` })
+            ticketId = ticket.ticketId
+            control.markSourceEvent(recorded.id, 'dispatched', ticketId)
+          } catch (error) {
+            dispatchError = error instanceof Error ? error.message : String(error)
+            control.markSourceEvent(recorded.id, 'failed')
+          }
+        }
+        write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
+        return
+      }
       const session = sessionOf(control, request)
       if (request.method === 'GET' && url.pathname === '/v1/me') {
         write(response, 200, session)

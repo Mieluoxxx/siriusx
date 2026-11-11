@@ -77,6 +77,7 @@
 - [x] Source bindings + GitLab webhook idempotent ingestion
 - [x] GitLab webhook auto-dispatch → cloud ticket（Docker 验证）
 - [x] GitHub webhook HMAC + idempotent ingestion
+- [x] Feishu/Teams inbound webhook base（token + binding + idempotency）
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS
