@@ -1,0 +1,11 @@
+Scope: 5 of 27 workspace projects
+plugins/client-ui-team build$ node scripts/build.mjs
+plugins/client-ui-tickets build$ node scripts/build.mjs
+plugins/client-ui-bots build$ node scripts/build.mjs
+plugins/client-ui-sessions build$ node scripts/build.mjs
+plugins/client-ui-tickets build: Done
+plugins/client-ui-approvals build$ node scripts/build.mjs
+plugins/client-ui-team build: Done
+plugins/client-ui-sessions build: Done
+plugins/client-ui-bots build: Done
+plugins/client-ui-approvals build: Done

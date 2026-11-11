@@ -87,6 +87,9 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
   const [rotatedToken, setRotatedToken] = useState<{ deviceId: string; token: string } | undefined>()
+  const [pairName, setPairName] = useState('')
+  const [pairCode, setPairCode] = useState('')
+  const [pairingCode, setPairingCode] = useState<{ code: string; expiresAt: number } | undefined>()
 
   const selectedTicket = useMemo(() => selected ?? tickets.find(ticket => ticket.ticketId === selectedId), [selected, tickets, selectedId])
   const selectedEvents = selected?.events ?? []
@@ -179,6 +182,25 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally { setBusy(false) }
+  }
+
+  const startDevicePairing = async (): Promise<void> => {
+    if (pairName.trim() === '') return
+    setBusy(true)
+    try {
+      const pairing = await json<{ code: string; expiresAt: number }>('/api/devices/pair/start', { method: 'POST', body: JSON.stringify({ name: pairName.trim() }) })
+      setPairingCode(pairing)
+      setPairName('')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const confirmDevicePairing = async (): Promise<void> => {
+    if (pairCode.trim() === '') return
+    setBusy(true)
+    try {
+      await json('/api/devices/pair/confirm', { method: 'POST', body: JSON.stringify({ code: pairCode.trim().toUpperCase() }) })
+      setPairCode(''); setPairingCode(undefined); await refresh()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
 
   const rotateDevice = async (id: string): Promise<void> => {
@@ -308,6 +330,21 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
       {tab === 'devices' ? (
         <div style={{ padding: 18, overflow: 'auto' }}>
           <h2 style={{ fontSize: 16 }}>Devices</h2>
+          <div style={styles.form}>
+            <div style={styles.row}>
+              <input style={styles.input} placeholder="New device name" value={pairName} onChange={event => setPairName(event.target.value)} />
+              <button style={styles.button} disabled={busy || pairName.trim() === ''} onClick={() => { void startDevicePairing() }}>Pair device</button>
+            </div>
+            {pairingCode === undefined ? null : (
+              <div style={{ ...styles.report, display: 'grid', gap: 8 }}>
+                <div>Pairing code: <strong>{pairingCode.code}</strong></div>
+                <div style={styles.row}>
+                  <input style={styles.input} placeholder="Pairing code" value={pairCode} onChange={event => setPairCode(event.target.value)} />
+                  <button style={styles.button} disabled={busy || pairCode.trim() === ''} onClick={() => { void confirmDevicePairing() }}>Confirm pairing</button>
+                </div>
+              </div>
+            )}
+          </div>
           {devices.length === 0 ? <p style={{ opacity: 0.65 }}>No paired devices for this tenant.</p> : null}
           {devices.map(device => (
             <div key={device.id} style={{ ...styles.ticket, cursor: 'default', opacity: device.revoked ? 0.55 : 1 }}>

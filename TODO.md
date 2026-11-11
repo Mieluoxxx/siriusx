@@ -44,8 +44,8 @@
    - 单 CloudExecutor 复用 + 清空旧 report + ticket-global 事件序号
    - 第二次 assignment 完成回到 person/review
 2. [x] Device 管理 UI
-   - Devices tab：最后在线时间、Rotate token、Revoke
-   - 浏览器实测通过
+   - Devices tab：配对、最后在线时间、Rotate token、Revoke
+   - 浏览器实测配对成功
 3. [x] Full-stack 干净 volume/network 复跑
    - `down -v` + 删除 `.env` + `install-full.sh`
    - 4 服务 Up、3 个 health 通过；真正全新 OS 仍保留为外部 blocker
