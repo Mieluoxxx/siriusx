@@ -10,12 +10,28 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 export type TeamTab = 'tickets' | 'bots' | 'devices' | 'approvals' | 'admin'
 const DEFAULT_API = 'http://127.0.0.1:4319'
 const DEFAULT_CONTROL_API = 'http://127.0.0.1:4320'
+let controlSession: { baseUrl: string; token: string } | undefined
+let controlBootstrap: Promise<void> | undefined
+
+async function ensureControlSession(): Promise<void> {
+  if (controlSession !== undefined || controlToken() !== undefined || gatewayMode()) return
+  controlBootstrap ??= fetch('/__siriusx/control-plane', { cache: 'no-store' })
+    .then(async response => {
+      if (!response.ok) return
+      const body = await response.json() as { baseUrl?: unknown; token?: unknown }
+      if (typeof body.baseUrl === 'string' && typeof body.token === 'string') controlSession = { baseUrl: body.baseUrl, token: body.token }
+    })
+    .catch(() => undefined)
+    .finally(() => { if (controlSession === undefined) controlBootstrap = undefined })
+  await controlBootstrap
+}
 
 function gatewayMode(): boolean {
   try { return localStorage.getItem('siriusx.gatewayAuth') === '1' } catch { return false }
 }
 
 function apiBase(): string {
+  if (controlSession !== undefined) return controlSession.baseUrl
   try {
     const control = localStorage.getItem('siriusx.controlToken')
     if (control !== null && control !== '') return localStorage.getItem('siriusx.controlApi') ?? DEFAULT_CONTROL_API
@@ -25,6 +41,7 @@ function apiBase(): string {
 }
 
 function controlToken(): string | undefined {
+  if (controlSession !== undefined) return controlSession.token
   try {
     const token = localStorage.getItem('siriusx.controlToken')
     return token === null || token === '' ? undefined : token
@@ -116,6 +133,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
 
   const refresh = async (): Promise<void> => {
     try {
+      await ensureControlSession()
       const [botResult, ticketResult, approvalResult, deviceResult] = await Promise.all([
         json<{ bots: BotSummary[] }>('/api/bots'),
         json<{ tickets: TicketSummary[] }>('/api/tickets'),

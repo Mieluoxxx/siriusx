@@ -46,6 +46,21 @@ interface StoredGrant {
   readonly claims: SsoClaims
 }
 
+interface ControlPlaneModel {
+  readonly id: string
+  readonly provider: string
+  readonly model: string
+}
+
+interface ControlPlaneSession {
+  readonly baseUrl: string
+  readonly token: string
+  readonly tenantId: string
+  readonly role: 'admin' | 'member'
+  readonly model: ControlPlaneModel | null
+  readonly modelGatewayUrl?: string
+}
+
 interface AttemptState {
   readonly state: string
   readonly nonce: string
@@ -77,6 +92,9 @@ export class SiriusXTenantContext extends Service {
   tenantId: string | undefined
   subjectId: string | undefined
   roles: readonly string[] = []
+  controlPlaneUrl: string | undefined
+  controlPlaneToken: string | undefined
+  model: ControlPlaneModel | null = null
   authenticated = false
 
   constructor(ctx: Context) {
@@ -94,6 +112,9 @@ export class SiriusXTenantContext extends Service {
     this.tenantId = undefined
     this.subjectId = undefined
     this.roles = []
+    this.controlPlaneUrl = undefined
+    this.controlPlaneToken = undefined
+    this.model = null
     this.authenticated = false
   }
 }
@@ -125,6 +146,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
   private readonly tenant: SiriusXTenantContext
   private readonly watchers = new Set<(view: AccountView) => void>()
   private attempt: AttemptState | undefined
+  private controlSession: ControlPlaneSession | undefined
   private loaded: Promise<StoredGrant | undefined> | undefined
 
   constructor(ctx: Context) {
@@ -167,6 +189,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
           const grant: StoredGrant = { version: 1, issuer, accessToken: token.access_token, idToken: token.id_token, claims }
           await this.ctx.credentials.modifyRecord(KEY, async () => ({ kind: 'grant', payload: grant }))
           this.tenant.update(claims)
+          await this.exchangeControlPlane(grant)
           this.setState({
             status: 'credential-stored',
             links: this.state.links,
@@ -200,9 +223,52 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
           tenantId: this.tenant.tenantId ?? null,
           subjectId: this.tenant.subjectId ?? null,
           roles: this.tenant.roles,
+          model: this.tenant.model,
+          controlPlaneUrl: this.tenant.controlPlaneUrl ?? null,
         }))
       },
     }), 'siriusx-account-sso: tenant probe')
+    ctx.effect(() => ctx.webServer.register({
+      kind: 'exact',
+      path: '/__siriusx/control-plane',
+      handler: (request, response) => {
+        const remote = request.socket.remoteAddress
+        if (remote !== '127.0.0.1' && remote !== '::1' && remote !== '::ffff:127.0.0.1') { response.writeHead(403).end(); return }
+        const session = this.controlSession
+        response.writeHead(session === undefined ? 404 : 200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+        response.end(JSON.stringify(session === undefined ? { error: 'control-plane session unavailable' } : {
+          baseUrl: session.baseUrl, token: session.token, tenantId: session.tenantId, role: session.role,
+          model: session.model, ...(session.modelGatewayUrl === undefined ? {} : { modelGatewayUrl: session.modelGatewayUrl }),
+        }))
+      },
+    }), 'siriusx-account-sso: control-plane session')
+  }
+
+  private async exchangeControlPlane(grant: StoredGrant): Promise<void> {
+    const baseUrl = process.env.SIRIUSX_CONTROL_PLANE_URL?.trim()
+    if (baseUrl === undefined || baseUrl === '') return
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/$/u, '')}/v1/sso/desktop/exchange`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ idToken: grant.idToken }),
+      })
+      if (!response.ok) throw new Error(`control-plane SSO exchange failed: HTTP ${response.status}`)
+      const body = await response.json() as { token?: unknown; tenantId?: unknown; role?: unknown; model?: unknown; modelGatewayUrl?: unknown }
+      if (typeof body.token !== 'string' || typeof body.tenantId !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('control-plane SSO exchange returned an invalid session')
+      const model = typeof body.model === 'object' && body.model !== null && typeof (body.model as Record<string, unknown>).id === 'string' && typeof (body.model as Record<string, unknown>).provider === 'string' && typeof (body.model as Record<string, unknown>).model === 'string'
+        ? { id: (body.model as Record<string, unknown>).id as string, provider: (body.model as Record<string, unknown>).provider as string, model: (body.model as Record<string, unknown>).model as string }
+        : null
+      this.controlSession = {
+        baseUrl: baseUrl.replace(/\/$/u, ''), token: body.token, tenantId: body.tenantId, role: body.role,
+        model, ...(typeof body.modelGatewayUrl === 'string' ? { modelGatewayUrl: body.modelGatewayUrl } : {}),
+      }
+      this.tenant.controlPlaneUrl = this.controlSession.baseUrl
+      this.tenant.controlPlaneToken = this.controlSession.token
+      this.tenant.model = model
+    } catch (error) {
+      if (process.env.SIRIUSX_CONTROL_PLANE_REQUIRED === '1') throw error
+    }
   }
 
   private setState(view: AccountView): void {
@@ -217,6 +283,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
       const grant = record.payload as unknown as StoredGrant
       if (grant.version !== 1) throw new Error('siriusx-account-sso: unsupported grant')
       this.tenant.update(grant.claims)
+      if (this.controlSession === undefined) void this.exchangeControlPlane(grant)
       return grant
     })
     return this.loaded
@@ -286,6 +353,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
     this.loaded = undefined
     this.attempt = undefined
     this.tenant.clear()
+    this.controlSession = undefined
     await this.ctx.credentials.deleteRecord(KEY)
     this.setState({ status: 'signed-out', links: this.state.links, attempt: null })
     return this.state

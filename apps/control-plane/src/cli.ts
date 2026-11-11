@@ -40,6 +40,10 @@ const dataDir = flags.get('data-dir') ?? process.env.SIRIUSX_DATA_DIR ?? '/tmp/s
 mkdirSync(dataDir, { recursive: true })
 const databaseUrl = process.env.DATABASE_URL?.trim()
 const storage = databaseUrl === undefined || databaseUrl === '' ? undefined : new PostgresStorage(databaseUrl)
+const desktopSsoIssuer = process.env.SIRIUSX_DESKTOP_SSO_ISSUER ?? process.env.SIRIUSX_SSO_ISSUER
+const desktopSsoClientId = process.env.SIRIUSX_DESKTOP_SSO_CLIENT_ID ?? process.env.SIRIUSX_SSO_CLIENT_ID
+const desktopSsoJwksUri = process.env.SIRIUSX_DESKTOP_SSO_JWKS_URI ?? process.env.SIRIUSX_SSO_JWKS_URI
+const desktopSsoHs256Secret = process.env.SIRIUSX_DESKTOP_SSO_HS256_SECRET ?? process.env.SIRIUSX_SSO_HS256_SECRET
 const control = new ControlPlane({
   dbPath,
   dataDir,
@@ -98,6 +102,7 @@ try {
       ...(process.env.SIRIUSX_GITHUB_WEBHOOK_SECRET === undefined || process.env.SIRIUSX_GITHUB_WEBHOOK_SECRET === '' ? {} : { githubWebhookSecret: process.env.SIRIUSX_GITHUB_WEBHOOK_SECRET }),
       ...(storage === undefined ? {} : { storage }),
       ...(process.env.SIRIUSX_CACHE_REFRESH_MS === undefined ? {} : { cacheRefreshMs: Number(process.env.SIRIUSX_CACHE_REFRESH_MS) }),
+      ...(desktopSsoIssuer === undefined || desktopSsoIssuer === '' || desktopSsoClientId === undefined || desktopSsoClientId === '' ? {} : { desktopSso: { issuer: desktopSsoIssuer, clientId: desktopSsoClientId, ...(desktopSsoJwksUri === undefined || desktopSsoJwksUri === '' ? {} : { jwksUri: desktopSsoJwksUri }), ...(desktopSsoHs256Secret === undefined || desktopSsoHs256Secret === '' ? {} : { hs256Secret: desktopSsoHs256Secret }), ...(process.env.SIRIUSX_SSO_TENANT_CLAIM === undefined ? {} : { tenantClaim: process.env.SIRIUSX_SSO_TENANT_CLAIM }), ...(process.env.SIRIUSX_SSO_ADMIN_ROLE === undefined ? {} : { adminRole: process.env.SIRIUSX_SSO_ADMIN_ROLE }), ...(process.env.SIRIUSX_MODEL_GATEWAY_URL === undefined ? {} : { modelGatewayUrl: process.env.SIRIUSX_MODEL_GATEWAY_URL }) } }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,

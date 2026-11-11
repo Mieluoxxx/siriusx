@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { createHmac } from 'node:crypto'
+import { SignJWT } from 'jose'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ControlPlane } from '../src/index.ts'
 import { startControlPlaneServer, type ControlPlaneServer } from '../src/server.ts'
@@ -853,6 +854,28 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       await planeA.stopCacheInvalidation(); await planeB.stopCacheInvalidation()
       await storageA.close(); await storageB.close()
     }
+  })
+
+  it('exchanges a desktop OIDC token for a control-plane session with model metadata', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-desktop-sso-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({
+      dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'desktop-sso',
+      desktopSso: { issuer: 'https://idp.example', clientId: 'siriusx-desktop', hs256Secret: 'desktop-secret', modelGatewayUrl: 'http://127.0.0.1:4321' },
+    })
+    servers.push(server)
+    const tenant = await server.control.provisionTenant({ tenantId: 'tenant-desktop-sso', name: 'Desktop SSO', idpIssuer: 'https://idp.example', adminEmail: 'admin@desktop.example' })
+    await server.control.addModel({ id: 'desktop-model', name: 'Desktop Model', provider: 'openai', model: 'gpt-desktop' })
+    await server.control.bindTenantModel(tenant.id, 'desktop-model', true)
+    const idToken = await new SignJWT({ tenant_id: tenant.id, email: 'admin@desktop.example', roles: ['admin'] })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('https://idp.example')
+      .setAudience('siriusx-desktop')
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode('desktop-secret'))
+    const exchanged = await fetch(`${server.url}/v1/sso/desktop/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ idToken }) }).then(response => response.json()) as { token: string; tenantId: string; role: string; model: { id: string; provider: string } }
+    expect(exchanged).toMatchObject({ tenantId: tenant.id, role: 'admin', model: { id: 'desktop-model', provider: 'openai' } })
+    expect(server.control.verifySession(exchanged.token)).toMatchObject({ tenantId: tenant.id, role: 'admin' })
   })
 
 })

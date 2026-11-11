@@ -101,6 +101,10 @@
 - [x] Postgres Stage 3b.1：autobot migration preflight（真实 PG）
 - [x] Postgres Stage 3c：autobot 运行时 cutover（真实 PG 测试）
 - [x] Postgres 全运行时：control-plane + tool-gateway + autobot（SQLite 保留离线模式）
+- [x] Desktop Enterprise SSO → control-plane session exchange
+- [x] Team Panel 自动 bootstrap control-plane session
+- [x] SSO tenant model metadata 注入与本地 Executor model provider 注入
+- [ ] Desktop SSO token refresh / control-plane logout revocation
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

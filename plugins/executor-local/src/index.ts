@@ -46,7 +46,11 @@ export async function apply(ctx: Context): Promise<void> {
 
   const backend = new DshBackend({
     open: async target => {
-      const selection = defaults.currentSelection()
+      const tenant = ctx.get('siriusxTenant') as { model?: { id?: string } } | undefined
+      const enterpriseProvider = process.env.SIRIUSX_ENTERPRISE_MODEL_PROVIDER
+      const selection = tenant?.model?.id !== undefined && enterpriseProvider !== undefined && enterpriseProvider !== ''
+        ? { provider: enterpriseProvider, model: tenant.model.id }
+        : defaults.currentSelection()
       if (target.kind === 'resume') {
         const sessionId = target.sessionId as never
         const live = ctx.agents.get(sessionId)
@@ -65,7 +69,11 @@ export async function apply(ctx: Context): Promise<void> {
       return { agent: created.agent, dispose: () => created.dispose() }
     },
   })
-  const executor = new LocalExecutor({ tenantId: 'tenant-local', backend, capacity: 2 })
+  const tenantId = (): string => {
+    const tenant = ctx.get('siriusxTenant') as { tenantId?: string } | undefined
+    return tenant?.tenantId ?? 'tenant-local'
+  }
+  const executor = new LocalExecutor({ tenantId: tenantId(), backend, capacity: 2 })
   const botDb = process.env.SIRIUSX_BOT_DB ?? join(process.env.DSH_HOME ?? '/tmp', 'siriusx-host-bot.sqlite')
   const bot = new BotService({ dbPath: botDb, executor, autoRetryLost: process.env.SIRIUSX_AUTO_RETRY_LOST === '1' })
   ctx.effect(() => () => bot.close(), 'siriusx-executor-local: bot store')
@@ -81,7 +89,7 @@ export async function apply(ctx: Context): Promise<void> {
         if (typeof body.path !== 'string' || !body.path.startsWith('/')) throw new Error('path must be absolute')
         if (typeof body.prompt !== 'string' || body.prompt.trim() === '') throw new Error('prompt is required')
         const ticketId = await bot.createTicket({
-          tenantId: 'tenant-local',
+          tenantId: tenantId(),
           workspace: { kind: 'local_dir', deviceId: 'local-device', path: body.path },
           prompt: body.prompt,
         })

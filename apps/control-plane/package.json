@@ -21,19 +21,20 @@
   "dependencies": {
     "@siriusx/app-contract": "workspace:*",
     "@siriusx/autobot": "workspace:*",
-    "@siriusx/fake-kernel": "workspace:*",
-    "@siriusx/executor-local": "workspace:*",
-    "zod": "4.4.3",
-    "ws": "8.18.3",
-    "@siriusx/contracts": "workspace:*",
     "@siriusx/cloud-executor": "workspace:*",
+    "@siriusx/contracts": "workspace:*",
+    "@siriusx/executor-local": "workspace:*",
+    "@siriusx/fake-kernel": "workspace:*",
     "@siriusx/kernel-acp": "workspace:*",
-    "@siriusx/storage": "workspace:*"
+    "@siriusx/storage": "workspace:*",
+    "jose": "6.2.17",
+    "ws": "8.18.3",
+    "zod": "4.4.3"
   },
   "devDependencies": {
+    "@types/ws": "8.18.1",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "vitest": "4.1.11",
-    "@types/ws": "8.18.1"
+    "vitest": "4.1.11"
   }
 }

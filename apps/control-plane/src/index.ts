@@ -3,6 +3,7 @@ import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { Storage } from '@siriusx/storage'
 import { BotService } from '@siriusx/autobot/bot-service'
 import { FakeKernel } from '@siriusx/fake-kernel'
@@ -15,8 +16,19 @@ import { fileURLToPath } from 'node:url'
 
 export type Role = 'admin' | 'member'
 
+export interface DesktopSsoConfig {
+  readonly issuer: string
+  readonly clientId: string
+  readonly jwksUri?: string
+  readonly hs256Secret?: string
+  readonly tenantClaim?: string
+  readonly adminRole?: string
+  readonly modelGatewayUrl?: string
+}
+
 export interface ControlPlaneOptions {
   readonly storage?: Storage
+  readonly desktopSso?: DesktopSsoConfig
   readonly dbPath: string
   readonly dataDir: string
   readonly sessionSecret?: string
@@ -247,6 +259,7 @@ function safeEqual(left: string, right: string): boolean {
 export class ControlPlane {
   readonly #db: DatabaseSync
   readonly #storage: Storage | undefined
+  readonly #desktopSso: DesktopSsoConfig | undefined
   readonly #tenantCache = new Map<string, Tenant>()
   readonly #userCache = new Map<string, { id: string; tenantId: string; email: string; role: Role; createdAt: number }>()
   readonly #settingsCache = new Map<string, { nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>()
@@ -267,6 +280,7 @@ export class ControlPlane {
     mkdirSync(options.dataDir, { recursive: true })
     this.#db = new DatabaseSync(options.dbPath)
     this.#storage = options.storage
+    this.#desktopSso = options.desktopSso
     this.#db.exec(SCHEMA)
     const tenantColumns = this.#db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>
     if (!tenantColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE tenants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
@@ -738,6 +752,43 @@ export class ControlPlane {
   }
 
   /** Trusted service-to-service SSO identity exchange; never exposed to browsers. */
+  /** Verify a desktop OIDC ID token and mint a tenant control-plane session. */
+  async ssoDesktopSession(idToken: string): Promise<{ token: string; userId: string; tenantId: string; role: Role; model: { id: string; provider: string; model: string } | null; modelGatewayUrl?: string }> {
+    const config = this.#desktopSso
+    if (config === undefined) throw new ControlPlaneError(503, 'SSO_NOT_CONFIGURED', 'desktop SSO is not configured')
+    let payload: Record<string, unknown>
+    try {
+      if (config.hs256Secret !== undefined && config.hs256Secret !== '') {
+        const result = await jwtVerify(idToken, new TextEncoder().encode(config.hs256Secret), { issuer: config.issuer, audience: config.clientId })
+        payload = result.payload as Record<string, unknown>
+      } else if (config.jwksUri !== undefined && config.jwksUri !== '') {
+        const result = await jwtVerify(idToken, createRemoteJWKSet(new URL(config.jwksUri)), { issuer: config.issuer, audience: config.clientId })
+        payload = result.payload as Record<string, unknown>
+      } else {
+        throw new Error('desktop SSO has neither JWKS URI nor HS256 test secret')
+      }
+    } catch (error) {
+      throw new ControlPlaneError(401, 'SSO_TOKEN_INVALID', error instanceof Error ? error.message : 'invalid id_token')
+    }
+    const claim = config.tenantClaim ?? 'tenant_id'
+    const tenantId = typeof payload[claim] === 'string' ? payload[claim] as string : typeof payload.tenant_id === 'string' ? payload.tenant_id : typeof payload.org_id === 'string' ? payload.org_id : undefined
+    if (tenantId === undefined || tenantId === '') throw new ControlPlaneError(401, 'SSO_TENANT_MISSING', `id_token has no ${claim} claim`)
+    const email = typeof payload.email === 'string' ? payload.email : typeof payload.preferred_username === 'string' ? payload.preferred_username : undefined
+    if (email === undefined || email === '') throw new ControlPlaneError(401, 'SSO_EMAIL_MISSING', 'id_token has no email claim')
+    const roles = Array.isArray(payload.roles) ? payload.roles.filter((role): role is string => typeof role === 'string') : []
+    const adminRole = config.adminRole ?? 'admin'
+    const role: Role = roles.includes(adminRole) ? 'admin' : 'member'
+    const session = await this.ssoSession({ tenantId, email, role })
+    const models = await this.listTenantModels(tenantId)
+    const selected = models.find(model => model.isDefault) ?? models[0]
+    return {
+      ...session,
+      role,
+      model: selected === undefined ? null : { id: selected.id, provider: selected.provider, model: selected.model },
+      ...(config.modelGatewayUrl === undefined ? {} : { modelGatewayUrl: config.modelGatewayUrl }),
+    }
+  }
+
   async ssoSession(input: { tenantId: string; email: string; role: Role }): Promise<{ token: string; userId: string; tenantId: string }> {
     const tenant = this.#db.prepare('SELECT id FROM tenants WHERE id = ?').get(input.tenantId) as { id: string } | undefined
     if (tenant === undefined) throw new ControlPlaneError(404, 'TENANT_NOT_FOUND', input.tenantId)

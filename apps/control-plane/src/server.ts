@@ -3,6 +3,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import type { Storage } from '@siriusx/storage'
+import type { DesktopSsoConfig } from './index.ts'
 import { ControlPlane, ControlPlaneError, type Session } from './index.ts'
 import type { DeviceGateway } from './device-gateway.ts'
 
@@ -22,6 +23,7 @@ export interface ControlPlaneServerOptions {
   readonly githubWebhookSecret?: string
   readonly storage?: Storage
   readonly cacheRefreshMs?: number
+  readonly desktopSso?: DesktopSsoConfig
 }
 
 export interface ControlPlaneServer {
@@ -85,7 +87,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 }
 
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
-  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }), ...(options.storage === undefined ? {} : { storage: options.storage }) })
+  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }), ...(options.storage === undefined ? {} : { storage: options.storage }), ...(options.desktopSso === undefined ? {} : { desktopSso: options.desktopSso }) })
   await control.initialize()
   await control.startCacheInvalidation()
   const cacheRefreshTimer = options.storage === undefined ? undefined : setInterval(() => { void control.refreshCache().catch(() => undefined) }, options.cacheRefreshMs ?? 30_000)
@@ -271,6 +273,12 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         const body = await readJson(request)
         if (typeof body.ticketId !== 'string' || typeof body.tenantId !== 'string' || typeof body.approvalId !== 'string' || (body.status !== 'approved' && body.status !== 'rejected')) throw new Error('invalid approval callback')
         write(response, 200, { resumed: await control.resumeTicketFromApproval(body.tenantId, body.ticketId, body.approvalId, body.status) })
+        return
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/sso/desktop/exchange') {
+        const body = await readJson(request)
+        if (typeof body.idToken !== 'string' || body.idToken === '') throw new ControlPlaneError(401, 'SSO_TOKEN_REQUIRED', 'idToken is required')
+        write(response, 200, await control.ssoDesktopSession(body.idToken))
         return
       }
       if (request.method === 'POST' && url.pathname === '/v1/sso/session') {
