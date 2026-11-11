@@ -182,6 +182,7 @@ export class ControlPlane {
     this.#now = options.now ?? Date.now
     this.#botScenario = options.botScenario ?? 'ready'
     this.#sessionTtlMs = options.sessionTtlMs ?? 12 * 60 * 60 * 1000
+    this.reconcileCloudTickets()
   }
 
   close(): void {
@@ -521,7 +522,9 @@ export class ControlPlane {
       .run(ticketId, session.tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
     const image = process.env.SIRIUSX_SANDBOX_IMAGE ?? 'teams-bridge:0.2.0'
     const fixture = fileURLToPath(new URL('./fixtures/fake-acp-raw.mjs', import.meta.url))
+    mkdirSync(join(this.#dataDir, 'cloud'), { recursive: true })
     const executor = new CloudExecutor({
+      dbPath: join(this.#dataDir, 'cloud', `${ticketId}.sqlite`),
       provider: new DockerSandboxProvider({ image }),
       image,
       network: 'none',
@@ -616,6 +619,20 @@ export class ControlPlane {
     const events = (this.#db.prepare('SELECT event_json FROM cloud_ticket_events WHERE ticket_id = ? ORDER BY seq').all(ticketId) as Array<{ event_json: string }>)
       .map(row => JSON.parse(row.event_json) as unknown)
     return { ...ticket, events }
+  }
+
+  /** Mark cloud tickets whose process died as failed instead of leaving them running forever. */
+  private reconcileCloudTickets(): number {
+    const rows = this.#db.prepare("SELECT ticket_id, (SELECT COALESCE(MAX(seq) + 1, 0) FROM cloud_ticket_events e WHERE e.ticket_id = cloud_tickets.ticket_id) AS next_seq FROM cloud_tickets WHERE state NOT IN ('reported','cancelled','failed')").all() as Array<{ ticket_id: string; next_seq: number }>
+    for (const row of rows) {
+      const report = { kind: 'failed', summary: 'cloud executor interrupted', reason: 'control-plane restarted before the assignment reported' }
+      const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false, latest: { state: 'reported', reportKind: 'failed' } })
+      this.#db.prepare("UPDATE cloud_tickets SET state = 'reported', report_json = ?, stage = ?, updated_at = ? WHERE ticket_id = ?")
+        .run(JSON.stringify(report), stage, this.#now(), row.ticket_id)
+      this.#db.prepare('INSERT OR REPLACE INTO cloud_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
+        .run(row.ticket_id, row.next_seq, JSON.stringify({ type: 'report', seq: row.next_seq, at: new Date(this.#now()).toISOString(), report }))
+    }
+    return rows.length
   }
 
   cloudTicketTarget(tenantId: string, ticketId: string): { ticketId: string } | undefined {

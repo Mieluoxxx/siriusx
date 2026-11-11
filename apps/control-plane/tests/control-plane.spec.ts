@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ControlPlane } from '../src/index.ts'
 import { startControlPlaneServer, type ControlPlaneServer } from '../src/server.ts'
@@ -279,6 +280,27 @@ describe('control plane', () => {
     expect(anonymous.status).toBe(401)
     expect(anonymousTickets.status).toBe(401)
     expect(authorized.status).toBe(200)
+  })
+
+  it('settles cloud tickets left running across a control-plane restart', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'siriusx-cloud-restart-'))
+    roots.push(dir)
+    const dbPath = join(dir, 'control.sqlite')
+    const first = new ControlPlane({ dbPath, dataDir: join(dir, 'data') })
+    const tenant = first.provisionTenant({ tenantId: 'tenant-cloud-restart', name: 'Cloud', idpIssuer: 'https://idp.example', adminEmail: 'admin@cloud.example' })
+    first.close()
+    const db = new DatabaseSync(dbPath)
+    db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run('ticket-cloud-restart', tenant.id, 'assignment-cloud-restart', 'https://github.com/acme/repo.git', 'main', 'lost cloud task', 'working', 'running', Date.now(), Date.now())
+    db.close()
+    const second = new ControlPlane({ dbPath, dataDir: join(dir, 'data') })
+    planes.push(second)
+    const admin = second.findUserByEmail(tenant.id, 'admin@cloud.example')!
+    const session = second.verifySession(second.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
+    const tickets = second.listTickets(session) as Array<{ ticketId: string; stage: string; latestAssignment?: { state: string; report?: { kind: string } } }>
+    const recovered = tickets.find(ticket => ticket.ticketId === 'ticket-cloud-restart')
+    expect(recovered?.stage).toBe('person/blocked_failed')
+    expect(recovered?.latestAssignment).toMatchObject({ state: 'reported', report: { kind: 'failed' } })
   })
 
 })

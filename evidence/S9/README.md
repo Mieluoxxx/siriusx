@@ -136,3 +136,9 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - TLS 反向代理下设置 Secure cookie；
 - OIDC pending state 有 TTL/上限。
 - 证据：`13-cookie-hardening/run.txt`。
+
+## Cloud restart reconciliation
+
+- cloud ticket 的 executor state 落 SQLite；
+- control-plane 重启后把未报告 cloud ticket 结算为 failed；
+- 证据：`14-cloud-recovery/`。
