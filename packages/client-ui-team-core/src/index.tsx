@@ -41,6 +41,7 @@ function controlPath(path: string): string {
   if (path === '/api/audit-summary') return '/v1/audit-summary'
   if (path.startsWith('/api/audit/export')) return path.replace(/^\/api/u, '/v1')
   if (path === '/api/support-requests') return '/v1/support-requests'
+  if (path === '/api/source-events') return '/v1/source-events'
   return path.replace(/^\/api/, '/v1')
 }
 
@@ -102,6 +103,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
   const [policyEffect, setPolicyEffect] = useState<'approval' | 'deny'>('approval')
   const [auditSummary, setAuditSummary] = useState<{ total: number; decisions: Record<string, number> } | undefined>()
   const [supportRequests, setSupportRequests] = useState<Array<{ id: string; requestedBy: string; reason: string; status: string }>>([])
+  const [sourceEvents, setSourceEvents] = useState<Array<{ id: string; provider: string; eventType: string; status: string; ticketId: string | null }>>([])
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserRole, setNewUserRole] = useState<'admin' | 'member'>('member')
   const [pairName, setPairName] = useState('')
@@ -133,20 +135,22 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
         const current = await json<{ role: string }>('/api/me').catch(() => undefined)
         setMe(current)
         if (current?.role === 'admin') {
-          const [userResult, settingResult, policyResult, auditResult, supportResult] = await Promise.all([
+          const [userResult, settingResult, policyResult, auditResult, supportResult, sourceResult] = await Promise.all([
             json<{ users: Array<{ userId: string; email: string; role: string }> }>('/api/users').catch(() => ({ users: [] })),
             json<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>('/api/settings').catch(() => undefined),
             json<{ policies: Array<{ actionClass: string; effect: string }> }>('/api/tool-policies').catch(() => ({ policies: [] })),
             json<{ total: number; decisions: Record<string, number> }>('/api/audit-summary').catch(() => undefined),
             json<{ requests: Array<{ id: string; requestedBy: string; reason: string; status: string }> }>('/api/support-requests').catch(() => ({ requests: [] })),
+            json<{ events: Array<{ id: string; provider: string; eventType: string; status: string; ticketId: string | null }> }>('/api/source-events').catch(() => ({ events: [] })),
           ])
           setUsers(userResult.users)
           setSettings(settingResult)
           setToolPolicies(policyResult.policies)
           setAuditSummary(auditResult)
           setSupportRequests(supportResult.requests)
-        } else { setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined); setSupportRequests([]) }
-      } else { setMe(undefined); setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined); setSupportRequests([]) }
+          setSourceEvents(sourceResult.events)
+        } else { setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined); setSupportRequests([]); setSourceEvents([]) }
+      } else { setMe(undefined); setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined); setSupportRequests([]); setSourceEvents([]) }
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -314,6 +318,12 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
       link.click()
       URL.revokeObjectURL(link.href)
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+  }
+
+  const dispatchSourceEvent = async (id: string): Promise<void> => {
+    setBusy(true)
+    try { await json(`/api/source-events/${id}/dispatch`, { method: 'POST', body: '{}' }); await refresh() }
+    catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
 
   const cancel = async (): Promise<void> => {
@@ -517,6 +527,15 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
                   <div style={styles.row}><strong>{request.reason}</strong><span style={{ ...styles.stage, marginLeft: 'auto' }}>{request.status}</span></div>
                   <div style={styles.stage}>{request.requestedBy} · {request.id}</div>
                   <div style={styles.row}><button style={styles.button} disabled={busy || request.status !== 'pending'} onClick={() => { void decideSupportRequest(request.id, true) }}>Approve</button><button style={styles.button} disabled={busy || request.status !== 'pending'} onClick={() => { void decideSupportRequest(request.id, false) }}>Deny</button></div>
+                </div>
+              ))}
+              <h3 style={{ fontSize: 14, marginTop: 22 }}>Source events</h3>
+              {sourceEvents.length === 0 ? <p style={{ opacity: 0.65 }}>No source events.</p> : null}
+              {sourceEvents.map(event => (
+                <div key={event.id} style={{ ...styles.ticket, cursor: 'default', maxWidth: 620 }}>
+                  <div style={styles.row}><strong>{event.provider} · {event.eventType}</strong><span style={{ ...styles.stage, marginLeft: 'auto' }}>{event.status}</span></div>
+                  <div style={styles.stage}>{event.id}{event.ticketId === null ? '' : ` → ${event.ticketId}`}</div>
+                  <button style={styles.button} disabled={busy || event.status === 'dispatched'} onClick={() => { void dispatchSourceEvent(event.id) }}>Dispatch</button>
                 </div>
               ))}
             </>

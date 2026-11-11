@@ -387,6 +387,34 @@ export class ControlPlane {
     return row === undefined ? undefined : { id: row.id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: row.auto_dispatch === 1 }
   }
 
+  getSourceBinding(id: string): { id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean } | undefined {
+    const row = this.#db.prepare('SELECT * FROM source_bindings WHERE id = ?').get(id) as { id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number } | undefined
+    return row === undefined ? undefined : { id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: row.auto_dispatch === 1 }
+  }
+
+  getSourceEvent(tenantId: string, eventId: string): { id: string; provider: string; bindingId: string | null; eventType: string; payload: Record<string, unknown>; status: string; ticketId: string | null } | undefined {
+    const row = this.#db.prepare('SELECT * FROM source_events WHERE id = ? AND tenant_id = ?').get(eventId, tenantId) as { id: string; provider: string; binding_id: string | null; event_type: string; payload_json: string; status: string; ticket_id: string | null } | undefined
+    if (row === undefined) return undefined
+    return { id: row.id, provider: row.provider, bindingId: row.binding_id, eventType: row.event_type, payload: JSON.parse(row.payload_json) as Record<string, unknown>, status: row.status, ticketId: row.ticket_id }
+  }
+
+  dispatchSourceEvent(session: Session, eventId: string): { ticketId: string } {
+    if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
+    const event = this.getSourceEvent(session.tenantId, eventId)
+    if (event === undefined) throw new ControlPlaneError(404, 'SOURCE_EVENT_NOT_FOUND', eventId)
+    if (event.status === 'dispatched' && event.ticketId !== null) return { ticketId: event.ticketId }
+    if (event.bindingId === null) throw new ControlPlaneError(409, 'SOURCE_BINDING_MISSING', eventId)
+    const binding = this.getSourceBinding(event.bindingId)
+    if (binding === undefined || binding.repoUrl === null) throw new ControlPlaneError(409, 'SOURCE_BINDING_INCOMPLETE', eventId)
+    const attributes = typeof event.payload.object_attributes === 'object' && event.payload.object_attributes !== null ? event.payload.object_attributes as Record<string, unknown> : {}
+    const issue = typeof event.payload.issue === 'object' && event.payload.issue !== null ? event.payload.issue as Record<string, unknown> : {}
+    const message = typeof event.payload.event === 'object' && event.payload.event !== null ? (event.payload.event as Record<string, unknown>).message as Record<string, unknown> | undefined : undefined
+    const rawPrompt = typeof attributes.title === 'string' ? attributes.title : typeof issue.title === 'string' ? issue.title : typeof event.payload.text === 'string' ? event.payload.text : typeof message?.content === 'string' ? message.content : event.eventType
+    const ticket = this.createCloudTicketFromSource({ tenantId: session.tenantId, operatorId: `app:${session.userId}`, channel: binding.provider as 'gitlab' | 'github' | 'feishu' | 'teams', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `${event.provider} ${event.eventType}: ${rawPrompt}` })
+    this.markSourceEvent(event.id, 'dispatched', ticket.ticketId)
+    return ticket
+  }
+
   recordSourceEvent(input: { provider: string; deliveryId: string; bindingId?: string; tenantId?: string; eventType: string; payload: unknown }): { id: string; accepted: boolean } {
     const id = randomUUID()
     const result = this.#db.prepare('INSERT OR IGNORE INTO source_events (id, provider, delivery_id, binding_id, tenant_id, event_type, payload_json, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')

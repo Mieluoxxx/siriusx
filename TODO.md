@@ -79,6 +79,7 @@
 - [x] GitHub webhook HMAC + idempotent ingestion
 - [x] Feishu/Teams inbound webhook base（token + binding + idempotency）
 - [x] Tenant audit CSV export（tool-gateway + control-plane proxy + Admin UI）
+- [x] Source event manual dispatch + Tenant Admin UI
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

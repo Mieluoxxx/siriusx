@@ -583,6 +583,10 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         write(response, 200, { requests: control.listSupportRequests(session.tenantId) })
         return
       }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'source-events' && parts[2] !== undefined && parts[3] === 'dispatch') {
+        write(response, 202, control.dispatchSourceEvent(session, parts[2]))
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/source-events') {
         if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
         write(response, 200, { events: control.listSourceEvents(session.tenantId) })
