@@ -1,0 +1,56 @@
+name: images
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build control-plane image
+        run: |
+          OUT=/tmp/siriusx-offline ./deploy/offline/build-offline.sh
+          CP_IMAGE="ghcr.io/${{ github.repository }}/control-plane:${{ github.sha }}"
+          docker build -f deploy/single-box/Dockerfile.offline -t "$CP_IMAGE" /tmp/siriusx-offline/stage/app
+          docker push "$CP_IMAGE"
+      - name: Build DSH Web image
+        run: |
+          NODE_DIR="$(dirname "$(dirname "$(command -v node)")")"
+          DSH_IMAGE="ghcr.io/${{ github.repository }}/dsh-web:${{ github.sha }}"
+          NODE_DIR="$NODE_DIR" OUT=/tmp/siriusx-dsh-web IMAGE="$DSH_IMAGE" ./deploy/offline/build-dsh-web-image.sh
+          docker push "$DSH_IMAGE"
+      - name: Write image metadata
+        run: |
+          mkdir -p artifacts/images
+          printf 'control-plane=ghcr.io/%s/control-plane:%s\n' "${{ github.repository }}" "${{ github.sha }}" > artifacts/images/tags.txt
+          printf 'dsh-web=ghcr.io/%s/dsh-web:%s\n' "${{ github.repository }}" "${{ github.sha }}" >> artifacts/images/tags.txt
+      - name: Upload image metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: siriusx-image-tags
+          path: artifacts/images/
+          if-no-files-found: error
