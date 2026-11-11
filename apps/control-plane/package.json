@@ -27,7 +27,8 @@
     "ws": "8.18.3",
     "@siriusx/contracts": "workspace:*",
     "@siriusx/cloud-executor": "workspace:*",
-    "@siriusx/kernel-acp": "workspace:*"
+    "@siriusx/kernel-acp": "workspace:*",
+    "@siriusx/storage": "workspace:*"
   },
   "devDependencies": {
     "tsx": "4.23.13",

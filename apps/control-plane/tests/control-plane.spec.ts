@@ -588,3 +588,23 @@ describe('control plane', () => {
   })
 
 })
+
+const postgresEnabled = process.env.SIRIUSX_POSTGRES_TEST === '1' && process.env.DATABASE_URL !== undefined
+describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
+  it('writes platform audit to PostgreSQL', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-audit-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    try {
+      await plane.recordPlatformAudit({ actor: 'platform', action: 'test.audit', target: 'tenant-test', detail: 'postgres' })
+      const rows = await plane.listPlatformAudit(10)
+      expect(rows[0]).toMatchObject({ actor: 'platform', action: 'test.audit', target: 'tenant-test', detail: 'postgres' })
+      await storage.query("DELETE FROM platform_audit WHERE action = 'test.audit'")
+    } finally {
+      await storage.close()
+    }
+  })
+})

@@ -7,6 +7,7 @@ import { startControlPlaneServer } from './server.ts'
 import { startModelGateway } from './model-gateway.ts'
 import { startDeviceGateway } from './device-gateway.ts'
 import { DockerSandboxProvider } from '@siriusx/cloud-executor'
+import { PostgresStorage } from '@siriusx/storage'
 
 function usage(): never {
   console.error(`usage:
@@ -37,10 +38,12 @@ const flags = parseFlags(rest)
 const dbPath = flags.get('db') ?? process.env.SIRIUSX_DB ?? '/tmp/siriusx-control.sqlite'
 const dataDir = flags.get('data-dir') ?? process.env.SIRIUSX_DATA_DIR ?? '/tmp/siriusx-data'
 mkdirSync(dataDir, { recursive: true })
+const storage = process.env.DATABASE_URL === undefined ? undefined : new PostgresStorage(process.env.DATABASE_URL)
 const control = new ControlPlane({
   dbPath,
   dataDir,
   ...(process.env.SIRIUSX_SESSION_SECRET === undefined ? {} : { sessionSecret: process.env.SIRIUSX_SESSION_SECRET }),
+  ...(storage === undefined ? {} : { storage }),
 })
 
 try {

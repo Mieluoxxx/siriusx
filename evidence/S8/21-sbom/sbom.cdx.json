@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T06:12:50.289Z",
+    "timestamp": "2026-11-11T06:15:10.996Z",
     "tools": {
       "components": [
         {
@@ -832,6 +832,12 @@
           }
         }
       ]
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/storage",
+      "version": "link:../../packages/storage",
+      "purl": "pkg:npm/%40siriusx%2Fstorage@link:../../packages/storage"
     },
     {
       "type": "library",

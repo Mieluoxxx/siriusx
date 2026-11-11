@@ -3,6 +3,7 @@ import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import type { Storage } from '@siriusx/storage'
 import { BotService } from '@siriusx/autobot/bot-service'
 import { FakeKernel } from '@siriusx/fake-kernel'
 import { LocalExecutor } from '@siriusx/executor-local'
@@ -15,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 export type Role = 'admin' | 'member'
 
 export interface ControlPlaneOptions {
+  readonly storage?: Storage
   readonly dbPath: string
   readonly dataDir: string
   readonly sessionSecret?: string
@@ -244,6 +246,7 @@ function safeEqual(left: string, right: string): boolean {
 
 export class ControlPlane {
   readonly #db: DatabaseSync
+  readonly #storage: Storage | undefined
   readonly #dataDir: string
   readonly #secret: string
   readonly #now: () => number
@@ -257,6 +260,7 @@ export class ControlPlane {
   constructor(options: ControlPlaneOptions) {
     mkdirSync(options.dataDir, { recursive: true })
     this.#db = new DatabaseSync(options.dbPath)
+    this.#storage = options.storage
     this.#db.exec(SCHEMA)
     const tenantColumns = this.#db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>
     if (!tenantColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE tenants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
@@ -462,12 +466,20 @@ export class ControlPlane {
     return { id: requestId, status, expiresAt }
   }
 
-  recordPlatformAudit(input: { actor: string; action: string; target: string; detail?: string }): void {
+  async recordPlatformAudit(input: { actor: string; action: string; target: string; detail?: string }): Promise<void> {
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO platform_audit (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)', [input.actor, input.action, input.target, input.detail ?? null, this.#now()])
+      return
+    }
     this.#db.prepare('INSERT INTO platform_audit (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(input.actor, input.action, input.target, input.detail ?? null, this.#now())
   }
 
-  listPlatformAudit(limit = 100): Array<{ id: number; actor: string; action: string; target: string; detail: string | null; createdAt: number }> {
+  async listPlatformAudit(limit = 100): Promise<Array<{ id: number; actor: string; action: string; target: string; detail: string | null; createdAt: number }>> {
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query<{ id: string | number; actor: string; action: string; target: string; detail: string | null; created_at: string | number }>('SELECT id, actor, action, target, detail, created_at FROM platform_audit ORDER BY created_at DESC, id DESC LIMIT ?', [limit])
+      return result.rows.map(row => ({ id: Number(row.id), actor: row.actor, action: row.action, target: row.target, detail: row.detail, createdAt: Number(row.created_at) }))
+    }
     return (this.#db.prepare('SELECT * FROM platform_audit ORDER BY created_at DESC, rowid DESC LIMIT ?').all(limit) as Array<{
       id: number; actor: string; action: string; target: string; detail: string | null; created_at: number
     }>).map(row => ({ id: row.id, actor: row.actor, action: row.action, target: row.target, detail: row.detail, createdAt: row.created_at }))

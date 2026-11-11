@@ -206,6 +206,11 @@
         "version": "link:../../packages/kernel-acp",
         "path": "/root/siriusx/packages/kernel-acp"
       },
+      "@siriusx/storage": {
+        "from": "@siriusx/storage",
+        "version": "link:../../packages/storage",
+        "path": "/root/siriusx/packages/storage"
+      },
       "ws": {
         "from": "ws",
         "version": "8.18.3",

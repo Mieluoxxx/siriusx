@@ -33,6 +33,7 @@ boundary, not just a connection string.
 2. Add `SqliteStorage` wrapper preserving current behavior.
 3. Add `PostgresStorage` using `pg`.
 4. Migrate control-plane management reads/writes first:
+   - [x] platform_audit (runtime via `DATABASE_URL`; SQLite fallback)
    - tenants
    - users
    - quotas

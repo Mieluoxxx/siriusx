@@ -90,6 +90,9 @@ importers:
       '@siriusx/kernel-acp':
         specifier: workspace:*
         version: link:../../packages/kernel-acp
+      '@siriusx/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       ws:
         specifier: 8.18.3
         version: 8.18.3

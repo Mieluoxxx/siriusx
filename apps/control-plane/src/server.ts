@@ -284,16 +284,16 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           const body = await readJson(request)
           if (typeof body.reason !== 'string' || body.reason.trim() === '') throw new Error('reason is required')
           const supportRequest = control.createSupportRequest(parts[3], 'platform', body.reason.trim())
-          control.recordPlatformAudit({ actor: 'platform', action: 'support.request', target: `${parts[3]}/${supportRequest.id}`, detail: body.reason.trim() })
+          await control.recordPlatformAudit({ actor: 'platform', action: 'support.request', target: `${parts[3]}/${supportRequest.id}`, detail: body.reason.trim() })
           write(response, 201, supportRequest)
           return
         }
         if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === undefined) {
-          write(response, 200, { audit: control.listPlatformAudit() })
+          write(response, 200, { audit: await control.listPlatformAudit() })
           return
         }
         if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === 'export') {
-          const rows = control.listPlatformAudit()
+          const rows = await control.listPlatformAudit()
           if (url.searchParams.get('format') === 'csv') {
             const columns = ['id', 'actor', 'action', 'target', 'detail', 'createdAt']
             const escape = (value: unknown): string => { const text = value === null || value === undefined ? '' : String(value); return /[",\n]/u.test(text) ? `"${text.replace(/"/gu, '""')}"` : text }
@@ -318,7 +318,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
               ...(typeof body.baseRef === 'string' ? { baseRef: body.baseRef } : {}),
               ...(typeof body.autoDispatch === 'boolean' ? { autoDispatch: body.autoDispatch } : {}),
             })
-            control.recordPlatformAudit({ actor: 'platform', action: 'source.binding', target: binding.id, detail: `${body.provider}:${body.externalId}` })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'source.binding', target: binding.id, detail: `${body.provider}:${body.externalId}` })
             write(response, 201, binding)
             return
           }
@@ -334,7 +334,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             name: body.name, idpIssuer: body.idpIssuer, adminEmail: body.adminEmail,
             ...(typeof body.tenantId === 'string' ? { tenantId: body.tenantId } : {}),
           })
-          control.recordPlatformAudit({ actor: 'platform', action: 'tenant.create', target: tenant.id, detail: tenant.name })
+          await control.recordPlatformAudit({ actor: 'platform', action: 'tenant.create', target: tenant.id, detail: tenant.name })
           write(response, 201, { tenant })
           return
         }
@@ -342,7 +342,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           const body = await readJson(request)
           if (body.status !== 'active' && body.status !== 'suspended') throw new Error('status must be active or suspended')
           const tenant = control.setTenantStatus(parts[3], body.status)
-          control.recordPlatformAudit({ actor: 'platform', action: 'tenant.status', target: tenant.id, detail: body.status })
+          await control.recordPlatformAudit({ actor: 'platform', action: 'tenant.status', target: tenant.id, detail: body.status })
           write(response, 200, { tenant })
           return
         }
@@ -352,7 +352,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             ...(typeof body.name === 'string' ? { name: body.name } : {}),
             ...(typeof body.idpIssuer === 'string' ? { idpIssuer: body.idpIssuer } : {}),
           })
-          control.recordPlatformAudit({ actor: 'platform', action: 'tenant.update', target: tenant.id, detail: JSON.stringify({ name: tenant.name, idpIssuer: tenant.idpIssuer }) })
+          await control.recordPlatformAudit({ actor: 'platform', action: 'tenant.update', target: tenant.id, detail: JSON.stringify({ name: tenant.name, idpIssuer: tenant.idpIssuer }) })
           write(response, 200, { tenant })
           return
         }
@@ -362,7 +362,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             const body = await readJson(request)
             if (typeof body.name !== 'string' || typeof body.provider !== 'string' || typeof body.model !== 'string') throw new Error('name, provider and model are required')
             const model = control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) })
-            control.recordPlatformAudit({ actor: 'platform', action: 'model.create', target: model.id, detail: body.model })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'model.create', target: model.id, detail: body.model })
             write(response, 201, model)
             return
           }
@@ -372,7 +372,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           if (request.method === 'PUT' && parts[5] !== undefined) {
             const body = await readJson(request)
             control.bindTenantModel(parts[3], parts[5], body.isDefault === true)
-            control.recordPlatformAudit({ actor: 'platform', action: 'model.bind', target: `${parts[3]}/${parts[5]}`, detail: body.isDefault === true ? 'default' : 'bound' })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'model.bind', target: `${parts[3]}/${parts[5]}`, detail: body.isDefault === true ? 'default' : 'bound' })
             write(response, 200, { models: control.listTenantModels(parts[3]) })
             return
           }
@@ -393,7 +393,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
               ...(typeof body.deviceTicketCents === 'number' ? { deviceTicketCents: body.deviceTicketCents } : {}),
               ...(body.monthlyBudgetCents === null || typeof body.monthlyBudgetCents === 'number' ? { monthlyBudgetCents: body.monthlyBudgetCents } : {}),
             })
-            control.recordPlatformAudit({ actor: 'platform', action: 'billing.update', target: parts[3], detail: JSON.stringify(billing) })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'billing.update', target: parts[3], detail: JSON.stringify(billing) })
             write(response, 200, { billing, estimate: control.billingEstimate(parts[3]) })
             return
           }
@@ -414,7 +414,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
               ...(typeof body.maxDeviceTicketsPerDay === 'number' ? { maxDeviceTicketsPerDay: body.maxDeviceTicketsPerDay } : {}),
             }
             const quota = control.setQuota(parts[3], patch)
-            control.recordPlatformAudit({ actor: 'platform', action: 'quota.update', target: parts[3], detail: JSON.stringify(quota) })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'quota.update', target: parts[3], detail: JSON.stringify(quota) })
             write(response, 200, { quota, usage: control.tenantUsage(parts[3]) })
             return
           }
@@ -425,7 +425,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             const body = await readJson(request)
             if (typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('email and role are required')
             const user = control.addUser({ tenantId: parts[3], email: body.email, role: body.role })
-            control.recordPlatformAudit({ actor: 'platform', action: 'user.create', target: `${parts[3]}/${user.userId}`, detail: body.email })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'user.create', target: `${parts[3]}/${user.userId}`, detail: body.email })
             write(response, 201, user)
             return
           }
@@ -433,7 +433,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             const body = await readJson(request)
             if (body.role !== 'admin' && body.role !== 'member') throw new Error('role is required')
             control.updateUserRole(parts[3], parts[5], body.role)
-            control.recordPlatformAudit({ actor: 'platform', action: 'user.role', target: `${parts[3]}/${parts[5]}`, detail: body.role })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'user.role', target: `${parts[3]}/${parts[5]}`, detail: body.role })
             write(response, 200, { updated: true })
             return
           }
