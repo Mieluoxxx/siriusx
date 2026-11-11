@@ -38,6 +38,7 @@ boundary, not just a connection string.
    - [x] tenant_billing (runtime via `DATABASE_URL`; SQLite fallback)
    - [x] tenant/settings mirror on create/update/status
    - [x] users mirror on create/role update
+   - [x] model_catalog / tenant_models runtime reads+writes
    - tenants
    - users
    - quotas

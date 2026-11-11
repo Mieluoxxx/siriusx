@@ -51,7 +51,7 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         write(response, 200, {
           object: 'list',
           tenantId: session.tenantId,
-          data: options.control.listTenantModels(session.tenantId).map(model => ({ id: model.id, object: 'model', owned_by: session.tenantId, name: model.name, provider: model.provider, default: model.isDefault })),
+          data: (await options.control.listTenantModels(session.tenantId)).map(model => ({ id: model.id, object: 'model', owned_by: session.tenantId, name: model.name, provider: model.provider, default: model.isDefault })),
         })
         return
       }
@@ -66,7 +66,7 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
       const body = await bodyOf(request)
       let requestedModel: string | undefined
       try { const parsed = JSON.parse(body.toString('utf8')) as { model?: unknown }; if (typeof parsed.model === 'string') requestedModel = parsed.model } catch { /* upstream handles malformed JSON */ }
-      if (requestedModel !== undefined && !options.control.listTenantModels(session.tenantId).some(model => model.id === requestedModel)) {
+      if (requestedModel !== undefined && !(await options.control.listTenantModels(session.tenantId)).some(model => model.id === requestedModel)) {
         write(response, 400, { error: { message: `model is not bound to tenant: ${requestedModel}`, code: 'MODEL_NOT_BOUND' } })
         return
       }

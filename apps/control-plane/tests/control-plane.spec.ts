@@ -106,8 +106,8 @@ describe('control plane', () => {
     gateways.push(gateway)
     const models = await fetch(`${gateway.url}/v1/models`, { headers: { authorization: `Bearer ${token}` } }).then(response => response.json()) as { tenantId: string }
     expect(models.tenantId).toBe(tenant.id)
-    plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-a' })
-    plane.bindTenantModel(tenant.id, 'model-a')
+    await plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-a' })
+    await plane.bindTenantModel(tenant.id, 'model-a')
     const response = await fetch(`${gateway.url}/v1/chat/completions`, {
       method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: JSON.stringify({ model: 'tenant-default', messages: [] }),
@@ -464,10 +464,10 @@ describe('control plane', () => {
   it('binds tenant model catalog entries', async () => {
     const { plane } = await setup()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-models', name: 'Models', idpIssuer: 'https://idp.example', adminEmail: 'admin@models.example' })
-    expect(plane.listTenantModels(tenant.id)).toEqual([expect.objectContaining({ id: 'tenant-default', isDefault: true })])
-    plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-x' })
-    plane.bindTenantModel(tenant.id, 'model-a', true)
-    expect(plane.listTenantModels(tenant.id)).toEqual([
+    expect(await plane.listTenantModels(tenant.id)).toEqual([expect.objectContaining({ id: 'tenant-default', isDefault: true })])
+    await plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-x' })
+    await plane.bindTenantModel(tenant.id, 'model-a', true)
+    expect(await plane.listTenantModels(tenant.id)).toEqual([
       expect.objectContaining({ id: 'model-a', isDefault: true }),
       expect.objectContaining({ id: 'tenant-default', isDefault: false }),
     ])
@@ -622,6 +622,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await plane.decideSupportRequest(tenant.id, created.id, true, 'admin@pg.example')).status).toBe('approved')
       await storage.query('DELETE FROM support_requests WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -643,6 +644,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect(await plane.getBilling(tenant.id)).toMatchObject({ currency: 'EUR', cloudTicketCents: 100 })
       await storage.query('DELETE FROM tenant_billing WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -664,8 +666,32 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       await plane.updateUserRole(tenant.id, member.userId, 'admin')
       expect((await storage.query('SELECT role FROM users WHERE id = ?', [member.userId])).rows[0]).toEqual({ role: 'admin' })
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
+  it('mirrors model catalog and bindings to PostgreSQL', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-models-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-models', name: 'PG Models', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-models.example' })
+    try {
+      await plane.addModel({ id: 'model-pg', name: 'PG Model', provider: 'openai', model: 'gpt-pg' })
+      await plane.bindTenantModel(tenant.id, 'model-pg', true)
+      expect(await plane.listTenantModels(tenant.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'model-pg', isDefault: true })]))
+      expect((await storage.query('SELECT model_id, is_default FROM tenant_models WHERE tenant_id = ? ORDER BY is_default DESC', [tenant.id])).rows[0]).toMatchObject({ model_id: 'model-pg' })
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+      await storage.query('DELETE FROM model_catalog WHERE id = ?', ['model-pg'])
     } finally {
       await storage.close()
     }

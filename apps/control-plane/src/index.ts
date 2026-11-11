@@ -316,6 +316,7 @@ export class ControlPlane {
         await this.#storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [id, input.name, input.idpIssuer, 'active', now])
         await this.#storage.query('INSERT INTO settings (tenant_id) VALUES (?) ON CONFLICT (tenant_id) DO NOTHING', [id])
         await this.#storage.query('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (tenant_id, email) DO NOTHING', [adminUserId, id, input.adminEmail, 'admin', now])
+        await this.#storage.query('INSERT INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1) ON CONFLICT (tenant_id, model_id) DO NOTHING', [id, 'tenant-default'])
       }
       this.#db.exec('COMMIT')
     } catch (error) {
@@ -527,29 +528,42 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, actor: row.actor, action: row.action, target: row.target, detail: row.detail, createdAt: row.created_at }))
   }
 
-  listModelCatalog(): Array<{ id: string; name: string; provider: string; model: string; enabled: boolean }> {
+  async listModelCatalog(): Promise<Array<{ id: string; name: string; provider: string; model: string; enabled: boolean }>> {
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query<{ id: string; name: string; provider: string; model: string; enabled: number | string }>('SELECT * FROM model_catalog ORDER BY created_at, id')
+      return result.rows.map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: Number(row.enabled) === 1 }))
+    }
     return (this.#db.prepare('SELECT * FROM model_catalog ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; provider: string; model: string; enabled: number
     }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: row.enabled === 1 }))
   }
 
-  addModel(input: { id?: string; name: string; provider: string; model: string }): { id: string } {
+  async addModel(input: { id?: string; name: string; provider: string; model: string }): Promise<{ id: string }> {
     const id = input.id ?? randomUUID()
+    if (this.#storage !== undefined) await this.#storage.query('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)', [id, input.name, input.provider, input.model, this.#now()])
     this.#db.prepare('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)').run(id, input.name, input.provider, input.model, this.#now())
     return { id }
   }
 
-  listTenantModels(tenantId: string): Array<{ id: string; name: string; provider: string; model: string; isDefault: boolean }> {
+  async listTenantModels(tenantId: string): Promise<Array<{ id: string; name: string; provider: string; model: string; isDefault: boolean }>> {
     this.tenantRow(tenantId)
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query<{ id: string; name: string; provider: string; model: string; is_default: number | string }>('SELECT c.*, tm.is_default FROM tenant_models tm JOIN model_catalog c ON c.id = tm.model_id WHERE tm.tenant_id = ? AND c.enabled = 1 ORDER BY tm.is_default DESC, c.created_at', [tenantId])
+      return result.rows.map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: Number(row.is_default) === 1 }))
+    }
     return (this.#db.prepare('SELECT c.*, tm.is_default FROM tenant_models tm JOIN model_catalog c ON c.id = tm.model_id WHERE tm.tenant_id = ? AND c.enabled = 1 ORDER BY tm.is_default DESC, c.created_at').all(tenantId) as Array<{
       id: string; name: string; provider: string; model: string; is_default: number
     }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: row.is_default === 1 }))
   }
 
-  bindTenantModel(tenantId: string, modelId: string, isDefault = false): void {
+  async bindTenantModel(tenantId: string, modelId: string, isDefault = false): Promise<void> {
     this.tenantRow(tenantId)
     const model = this.#db.prepare('SELECT id FROM model_catalog WHERE id = ? AND enabled = 1').get(modelId) as { id: string } | undefined
     if (model === undefined) throw new ControlPlaneError(404, 'MODEL_NOT_FOUND', modelId)
+    if (this.#storage !== undefined) {
+      if (isDefault) await this.#storage.query('UPDATE tenant_models SET is_default = 0 WHERE tenant_id = ?', [tenantId])
+      await this.#storage.query('INSERT INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, ?) ON CONFLICT (tenant_id, model_id) DO UPDATE SET is_default = EXCLUDED.is_default', [tenantId, modelId, isDefault ? 1 : 0])
+    }
     if (isDefault) this.#db.prepare('UPDATE tenant_models SET is_default = 0 WHERE tenant_id = ?').run(tenantId)
     this.#db.prepare('INSERT OR REPLACE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, ?)').run(tenantId, modelId, isDefault ? 1 : 0)
   }

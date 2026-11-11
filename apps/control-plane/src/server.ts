@@ -357,23 +357,23 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           return
         }
         if (parts[2] === 'models' && parts[3] === undefined) {
-          if (request.method === 'GET') { write(response, 200, { models: control.listModelCatalog() }); return }
+          if (request.method === 'GET') { write(response, 200, { models: await control.listModelCatalog() }); return }
           if (request.method === 'POST') {
             const body = await readJson(request)
             if (typeof body.name !== 'string' || typeof body.provider !== 'string' || typeof body.model !== 'string') throw new Error('name, provider and model are required')
-            const model = control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) })
+            const model = await control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) })
             await control.recordPlatformAudit({ actor: 'platform', action: 'model.create', target: model.id, detail: body.model })
             write(response, 201, model)
             return
           }
         }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'models') {
-          if (request.method === 'GET' && parts[5] === undefined) { write(response, 200, { models: control.listTenantModels(parts[3]) }); return }
+          if (request.method === 'GET' && parts[5] === undefined) { write(response, 200, { models: await control.listTenantModels(parts[3]) }); return }
           if (request.method === 'PUT' && parts[5] !== undefined) {
             const body = await readJson(request)
-            control.bindTenantModel(parts[3], parts[5], body.isDefault === true)
+            await control.bindTenantModel(parts[3], parts[5], body.isDefault === true)
             await control.recordPlatformAudit({ actor: 'platform', action: 'model.bind', target: `${parts[3]}/${parts[5]}`, detail: body.isDefault === true ? 'default' : 'bound' })
-            write(response, 200, { models: control.listTenantModels(parts[3]) })
+            write(response, 200, { models: await control.listTenantModels(parts[3]) })
             return
           }
         }
@@ -614,13 +614,13 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/models') {
-        write(response, 200, { models: control.listTenantModels(session.tenantId) })
+        write(response, 200, { models: await control.listTenantModels(session.tenantId) })
         return
       }
       if (request.method === 'PUT' && parts[0] === 'v1' && parts[1] === 'models' && parts[2] !== undefined && parts[3] === 'default') {
         if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
-        control.bindTenantModel(session.tenantId, parts[2], true)
-        write(response, 200, { models: control.listTenantModels(session.tenantId) })
+        await control.bindTenantModel(session.tenantId, parts[2], true)
+        write(response, 200, { models: await control.listTenantModels(session.tenantId) })
         return
       }
       if (parts[0] === 'v1' && parts[1] === 'users') {

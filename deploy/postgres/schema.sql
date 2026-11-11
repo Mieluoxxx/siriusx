@@ -185,3 +185,8 @@ CREATE TABLE IF NOT EXISTS platform_audit (
   detail TEXT,
   created_at BIGINT NOT NULL
 );
+
+-- Default catalog entry used by tenant provisioning.
+INSERT INTO model_catalog (id, name, provider, model, enabled, created_at)
+VALUES ('tenant-default', 'Tenant default', 'upstream', 'tenant-default', 1, 0)
+ON CONFLICT (id) DO NOTHING;

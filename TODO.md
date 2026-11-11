@@ -90,7 +90,8 @@
 - [x] Postgres Stage 2.2c：tenant_billing 运行时迁移（真实 PG 测试）
 - [x] Postgres Stage 2.2d：tenants/settings 镜像写入（async provision/update/status）
 - [x] Postgres Stage 2.2e：tenants/settings/users 镜像写入（真实 PG 测试）
-- [ ] Postgres Stage 2.2f：tenants/users 主读取迁移
+- [x] Postgres Stage 2.2f：model_catalog/tenant_models 读写迁移（真实 PG 测试）
+- [ ] Postgres Stage 2.2g：tenants/users 主读取迁移
 - [ ] Postgres Stage 3：autobot/tool-gateway 运行时 cutover
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
