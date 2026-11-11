@@ -161,3 +161,8 @@
 
 - `scripts/check-install-coverage.sh` 校验 compose/bundle/offline/native installer 都覆盖当前服务。
 - 证据：`17-install-coverage/`。
+
+## Health metadata
+
+- 三个 HTTP 服务的 `/health` 带 version/commit；
+- 证据：`19-health-metadata/`。

@@ -1,0 +1,20 @@
+{
+  "controlPlane": {
+    "ok": true,
+    "service": "siriusx-control-plane",
+    "version": "9.8.7",
+    "commit": "abc1234"
+  },
+  "toolGateway": {
+    "ok": true,
+    "service": "siriusx-tool-gateway",
+    "version": "9.8.7",
+    "commit": "abc1234"
+  },
+  "webGateway": {
+    "ok": true,
+    "service": "siriusx-web-gateway",
+    "version": "9.8.7",
+    "commit": "abc1234"
+  }
+}

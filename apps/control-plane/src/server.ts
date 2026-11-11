@@ -71,7 +71,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       const parts = url.pathname.split('/').filter(Boolean)
       if (request.method === 'GET' && url.pathname === '/health') {
-        write(response, 200, { ok: true, service: 'siriusx-control-plane' })
+        write(response, 200, { ok: true, service: 'siriusx-control-plane', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' })
         return
       }
       if (request.method === 'POST' && url.pathname === '/v1/approvals/callback') {

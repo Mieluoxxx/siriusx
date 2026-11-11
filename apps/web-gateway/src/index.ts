@@ -138,7 +138,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }).end('cross-origin request rejected')
         return
       }
-      if (request.method === 'GET' && url.pathname === '/health') { json(response, 200, { ok: true, service: 'siriusx-web-gateway' }); return }
+      if (request.method === 'GET' && url.pathname === '/health') { json(response, 200, { ok: true, service: 'siriusx-web-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }
       if (request.method === 'GET' && url.pathname === '/auth/oidc/start' && oidcEnabled && oidc !== undefined && oidcMetadata !== undefined) {
         for (const [key, value] of pending) if (Date.now() - value.createdAt > 10 * 60 * 1000) pending.delete(key)
         if (pending.size >= 1000) { response.writeHead(429, { 'cache-control': 'no-store' }).end('too many pending OIDC states'); return }
