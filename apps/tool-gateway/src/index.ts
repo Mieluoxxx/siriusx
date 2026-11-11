@@ -105,6 +105,13 @@ CREATE TABLE IF NOT EXISTS approvals (
   created_at INTEGER NOT NULL,
   decided_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS tenant_tool_policies (
+  tenant_id TEXT NOT NULL,
+  action_class TEXT NOT NULL,
+  effect TEXT NOT NULL CHECK (effect IN ('approval', 'deny')),
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (tenant_id, action_class)
+);
 CREATE TABLE IF NOT EXISTS audit (
   id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
@@ -208,7 +215,10 @@ export class ToolGateway {
       this.audit(request, 'deny:policy-unavailable', undefined)
       throw new ToolGatewayError(503, 'POLICY_UNAVAILABLE', 'policy service unavailable; action denied')
     }
-    const decision = decidePolicy(request)
+    let decision = decidePolicy(request)
+    const tenantPolicy = (this.#db.prepare('SELECT effect FROM tenant_tool_policies WHERE tenant_id = ? AND action_class = ?').get(request.tenantId, request.actionClass) as { effect: 'approval' | 'deny' } | undefined)?.effect
+    if (tenantPolicy === 'deny') decision = { kind: 'deny', reason: 'tenant_policy' }
+    else if (tenantPolicy === 'approval' && decision.kind !== 'deny') decision = { kind: 'approval', reason: 'tenant_policy', risk: 'high' }
     if (decision.kind === 'deny') {
       this.audit(request, `deny:${decision.reason}`, undefined)
       throw new ToolGatewayError(403, 'POLICY_DENIED', decision.reason)
@@ -223,6 +233,19 @@ export class ToolGateway {
     const result = await this.execute(request)
     this.audit(request, `allow:${decision.reason}`, result)
     return { status: 'executed', result }
+  }
+
+  listToolPolicies(tenantId: string): Array<{ actionClass: string; effect: 'approval' | 'deny' }> {
+    return (this.#db.prepare('SELECT action_class, effect FROM tenant_tool_policies WHERE tenant_id = ? ORDER BY action_class').all(tenantId) as Array<{ action_class: string; effect: 'approval' | 'deny' }>)
+      .map(row => ({ actionClass: row.action_class, effect: row.effect }))
+  }
+
+  setToolPolicy(tenantId: string, actionClass: string, effect: 'approval' | 'deny'): void {
+    this.#db.prepare('INSERT OR REPLACE INTO tenant_tool_policies (tenant_id, action_class, effect, updated_at) VALUES (?, ?, ?, ?)').run(tenantId, actionClass, effect, this.#now())
+  }
+
+  deleteToolPolicy(tenantId: string, actionClass: string): void {
+    this.#db.prepare('DELETE FROM tenant_tool_policies WHERE tenant_id = ? AND action_class = ?').run(tenantId, actionClass)
   }
 
   private async execute(request: ActionRequest): Promise<unknown> {

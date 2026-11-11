@@ -150,4 +150,17 @@ describe('tool gateway policy', () => {
     gateway.close()
   })
 
+  it('applies tenant tool policy overrides without loosening the baseline', async () => {
+    const gateway = new ToolGateway({ dbPath: await db(), connectors: { github: { execute: async () => ({ result: { ok: true } }) } } })
+    gateway.setToolPolicy('tenant-a', 'send_email', 'deny')
+    await expect(gateway.propose({ ...base, actionClass: 'send_email' }, context)).rejects.toMatchObject({ code: 'POLICY_DENIED' })
+    gateway.setToolPolicy('tenant-a', 'read', 'approval')
+    const pending = await gateway.propose({ ...base, actionClass: 'read' }, context)
+    expect(pending.status).toBe('pending')
+    await expect(gateway.propose({ ...base, actionClass: 'delete_repository' }, context)).rejects.toMatchObject({ code: 'POLICY_DENIED' })
+    gateway.deleteToolPolicy('tenant-a', 'send_email')
+    expect(gateway.listToolPolicies('tenant-a')).toEqual([{ actionClass: 'read', effect: 'approval' }])
+    gateway.close()
+  })
+
 })

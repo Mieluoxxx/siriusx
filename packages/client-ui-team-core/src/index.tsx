@@ -37,6 +37,7 @@ function controlPath(path: string): string {
   if (path === '/api/me') return '/v1/me'
   if (path === '/api/users') return '/v1/users'
   if (path === '/api/settings') return '/v1/settings'
+  if (path === '/api/tool-policies') return '/v1/tool-policies'
   return path.replace(/^\/api/, '/v1')
 }
 
@@ -93,6 +94,9 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
   const [me, setMe] = useState<{ role: string } | undefined>()
   const [users, setUsers] = useState<Array<{ userId: string; email: string; role: string }>>([])
   const [settings, setSettings] = useState<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean } | undefined>()
+  const [toolPolicies, setToolPolicies] = useState<Array<{ actionClass: string; effect: string }>>([])
+  const [policyAction, setPolicyAction] = useState('')
+  const [policyEffect, setPolicyEffect] = useState<'approval' | 'deny'>('approval')
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserRole, setNewUserRole] = useState<'admin' | 'member'>('member')
   const [pairName, setPairName] = useState('')
@@ -124,14 +128,16 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
         const current = await json<{ role: string }>('/api/me').catch(() => undefined)
         setMe(current)
         if (current?.role === 'admin') {
-          const [userResult, settingResult] = await Promise.all([
+          const [userResult, settingResult, policyResult] = await Promise.all([
             json<{ users: Array<{ userId: string; email: string; role: string }> }>('/api/users').catch(() => ({ users: [] })),
             json<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>('/api/settings').catch(() => undefined),
+            json<{ policies: Array<{ actionClass: string; effect: string }> }>('/api/tool-policies').catch(() => ({ policies: [] })),
           ])
           setUsers(userResult.users)
           setSettings(settingResult)
-        } else { setUsers([]); setSettings(undefined) }
-      } else { setMe(undefined); setUsers([]); setSettings(undefined) }
+          setToolPolicies(policyResult.policies)
+        } else { setUsers([]); setSettings(undefined); setToolPolicies([]) }
+      } else { setMe(undefined); setUsers([]); setSettings(undefined); setToolPolicies([]) }
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -260,6 +266,23 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
     setBusy(true)
     try { await json(`/api/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }); await refresh() }
     catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const setToolPolicy = async (): Promise<void> => {
+    if (policyAction.trim() === '') return
+    setBusy(true)
+    try {
+      const result = await json<{ policies: Array<{ actionClass: string; effect: string }> }>(`/api/tool-policies/${encodeURIComponent(policyAction.trim())}`, { method: 'PUT', body: JSON.stringify({ effect: policyEffect }) })
+      setToolPolicies(result.policies); setPolicyAction('')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const deleteToolPolicy = async (actionClass: string): Promise<void> => {
+    setBusy(true)
+    try {
+      const result = await json<{ policies: Array<{ actionClass: string; effect: string }> }>(`/api/tool-policies/${encodeURIComponent(actionClass)}`, { method: 'DELETE' })
+      setToolPolicies(result.policies)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
 
   const cancel = async (): Promise<void> => {
@@ -439,6 +462,19 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
                       <option value="member">member</option><option value="admin">admin</option>
                     </select>
                   </div>
+                </div>
+              ))}
+              <h3 style={{ fontSize: 14, marginTop: 22 }}>Tool policies</h3>
+              <div style={{ ...styles.row, maxWidth: 620, marginBottom: 12 }}>
+                <input style={styles.input} placeholder="Action class" value={policyAction} onChange={event => setPolicyAction(event.target.value)} />
+                <select style={styles.input} value={policyEffect} onChange={event => setPolicyEffect(event.target.value === 'deny' ? 'deny' : 'approval')}>
+                  <option value="approval">approval</option><option value="deny">deny</option>
+                </select>
+                <button style={styles.button} disabled={busy || policyAction.trim() === ''} onClick={() => { void setToolPolicy() }}>Set policy</button>
+              </div>
+              {toolPolicies.map(policy => (
+                <div key={policy.actionClass} style={{ ...styles.ticket, cursor: 'default', maxWidth: 620 }}>
+                  <div style={styles.row}><strong>{policy.actionClass}</strong><span style={{ ...styles.stage, marginLeft: 'auto' }}>{policy.effect}</span><button style={styles.button} disabled={busy} onClick={() => { void deleteToolPolicy(policy.actionClass) }}>Delete</button></div>
                 </div>
               ))}
             </>

@@ -364,6 +364,20 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         write(response, 202, { ticketId: ticket.ticketId, delivered })
         return
       }
+      if (parts[0] === 'v1' && parts[1] === 'tool-policies') {
+        if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
+        const headers = { 'content-type': 'application/json', 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role }
+        const upstreamPath = `/v1/policies${parts[2] === undefined ? '' : `/${encodeURIComponent(parts[2])}`}`
+        const init: RequestInit = { method: request.method ?? 'GET', headers }
+        if (request.method === 'PUT') {
+          const body = await readJson(request)
+          if (body.effect !== 'approval' && body.effect !== 'deny') throw new Error('effect must be approval or deny')
+          init.body = JSON.stringify({ effect: body.effect })
+        }
+        const upstream = await fetch(`${toolGatewayUrl}${upstreamPath}`, init)
+        write(response, upstream.status, await upstream.json())
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/approvals') {
         if (toolGatewayUrl === undefined) { write(response, 200, { approvals: [] }); return }
         const upstream = await fetch(`${toolGatewayUrl}/v1/approvals`, {

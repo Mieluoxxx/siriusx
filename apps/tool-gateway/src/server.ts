@@ -111,16 +111,35 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
         return
       }
       const context = contextOf(request)
+      const parts = url.pathname.split('/').filter(Boolean)
       if (request.method === 'POST' && url.pathname === '/v1/actions') {
         const body = await readJson(request)
         write(response, 202, await gateway.propose(ActionRequestSchema.parse(body), context))
         return
       }
+      if (parts[0] === 'v1' && parts[1] === 'policies') {
+        if (request.method === 'GET' && parts[2] === undefined) {
+          write(response, 200, { policies: gateway.listToolPolicies(context.tenantId) })
+          return
+        }
+        if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
+        if (request.method === 'PUT' && parts[2] !== undefined) {
+          const body = await readJson(request)
+          if (body.effect !== 'approval' && body.effect !== 'deny') throw new ToolGatewayError(400, 'INVALID_POLICY', 'effect must be approval or deny')
+          gateway.setToolPolicy(context.tenantId, parts[2], body.effect)
+          write(response, 200, { policies: gateway.listToolPolicies(context.tenantId) })
+          return
+        }
+        if (request.method === 'DELETE' && parts[2] !== undefined) {
+          gateway.deleteToolPolicy(context.tenantId, parts[2])
+          write(response, 200, { policies: gateway.listToolPolicies(context.tenantId) })
+          return
+        }
+      }
       if (request.method === 'GET' && url.pathname === '/v1/approvals') {
         write(response, 200, { approvals: gateway.listApprovals(context.tenantId) })
         return
       }
-      const parts = url.pathname.split('/').filter(Boolean)
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'approvals' && parts[2] !== undefined && parts[3] === 'decide') {
         const body = await readJson(request)
         if (typeof body.approved !== 'boolean') throw new Error('approved is required')
