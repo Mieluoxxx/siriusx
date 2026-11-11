@@ -308,4 +308,20 @@ describe('control plane', () => {
     expect(recovered?.latestAssignment).toMatchObject({ state: 'reported', report: { kind: 'failed' } })
   })
 
+  it('rate-limits repeated pairing attempts', async () => {
+    let now = 2_000_000
+    const dir = await mkdtemp(join(tmpdir(), 'siriusx-pairing-rate-'))
+    roots.push(dir)
+    const plane = new ControlPlane({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data'), now: () => now })
+    planes.push(plane)
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-pair', name: 'Pair', idpIssuer: 'https://idp.example', adminEmail: 'admin@pair.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@pair.example')!
+    const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
+    const pairing = plane.startPairing(session, 'Device')
+    for (let attempt = 0; attempt < 5; attempt++) expect(() => plane.confirmPairing(session, `BAD${attempt}`)).toThrow()
+    expect(() => plane.confirmPairing(session, pairing.code)).toThrow('too many pairing attempts')
+    now += 5 * 60 * 1000 + 1
+    expect(plane.confirmPairing(session, pairing.code).deviceId).toBeTruthy()
+  })
+
 })

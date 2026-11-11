@@ -50,3 +50,8 @@
 - 未登录请求 `/v1/bots` 和 `/v1/tickets` 均为 401；
 - 服务端不依赖客户端插件状态。
 - 证据：`05-server-authority/`。
+
+## Pairing rate limit
+
+- 5 次失败后 5 分钟窗口内拒绝配对；
+- 证据：`07-pairing-rate-limit/`。

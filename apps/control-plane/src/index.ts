@@ -172,6 +172,7 @@ export class ControlPlane {
   readonly #sessionTtlMs: number
   readonly #runtimes = new Map<string, BotService>()
   readonly #cloudExecutors = new Map<string, CloudExecutor>()
+  readonly #pairingFailures = new Map<string, { count: number; resetAt: number }>()
 
   constructor(options: ControlPlaneOptions) {
     mkdirSync(options.dataDir, { recursive: true })
@@ -318,14 +319,27 @@ export class ControlPlane {
   }
 
   confirmPairing(session: Session, code: string): { deviceId: string; token: string } {
-    const row = this.#db.prepare('SELECT * FROM pairing_codes WHERE code = ? AND tenant_id = ? AND user_id = ?').get(code, session.tenantId, session.userId) as
-      | { device_id: string; expires_at: number; consumed_at: number | null } | undefined
-    if (row === undefined) throw new ControlPlaneError(404, 'PAIRING_NOT_FOUND', code)
-    if (row.consumed_at !== null) throw new ControlPlaneError(409, 'PAIRING_USED', code)
-    if (row.expires_at < this.#now()) throw new ControlPlaneError(410, 'PAIRING_EXPIRED', code)
+    const key = `${session.tenantId}/${session.userId}`
+    const now = this.#now()
+    const failures = this.#pairingFailures.get(key)
+    if (failures !== undefined && failures.resetAt > now && failures.count >= 5) {
+      throw new ControlPlaneError(429, 'PAIRING_RATE_LIMITED', 'too many pairing attempts; retry later')
+    }
+    let row: { device_id: string; expires_at: number; consumed_at: number | null } | undefined
+    try {
+      row = this.#db.prepare('SELECT * FROM pairing_codes WHERE code = ? AND tenant_id = ? AND user_id = ?').get(code, session.tenantId, session.userId) as
+        | { device_id: string; expires_at: number; consumed_at: number | null } | undefined
+      if (row === undefined) throw new ControlPlaneError(404, 'PAIRING_NOT_FOUND', code)
+      if (row.consumed_at !== null) throw new ControlPlaneError(409, 'PAIRING_USED', code)
+      if (row.expires_at < now) throw new ControlPlaneError(410, 'PAIRING_EXPIRED', code)
+    } catch (error) {
+      this.#pairingFailures.set(key, { count: (failures?.resetAt === undefined || failures.resetAt <= now ? 0 : failures.count) + 1, resetAt: now + 5 * 60 * 1000 })
+      throw error
+    }
+    this.#pairingFailures.delete(key)
     const token = randomBytes(32).toString('base64url')
-    this.#db.prepare('UPDATE pairing_codes SET consumed_at = ? WHERE code = ?').run(this.#now(), code)
-    this.#db.prepare('UPDATE devices SET token_hash = ?, last_seen_at = ? WHERE id = ?').run(tokenHash(token), this.#now(), row.device_id)
+    this.#db.prepare('UPDATE pairing_codes SET consumed_at = ? WHERE code = ?').run(now, code)
+    this.#db.prepare('UPDATE devices SET token_hash = ?, last_seen_at = ? WHERE id = ?').run(tokenHash(token), now, row.device_id)
     return { deviceId: row.device_id, token }
   }
 
