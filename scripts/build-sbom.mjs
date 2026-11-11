@@ -5,16 +5,18 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const raw = execFileSync('pnpm', ['list', '-r', '--depth', '1', '--json'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+const raw = execFileSync('pnpm', ['list', '-r', '--depth', 'Infinity', '--json'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 const projects = JSON.parse(raw)
 const components = new Map()
+const purlName = name => name.startsWith('@') ? `%40${name.slice(1).replace('/', '%2F')}` : name
 const add = (name, info) => {
   if (typeof name !== 'string' || info === undefined || info === null || typeof info.version !== 'string') return
   const key = `${name}@${info.version}`
   if (!components.has(key)) components.set(key, {
     type: 'library', name, version: info.version,
-    ...(typeof info.resolved === 'string' ? { purl: `pkg:npm/${name}@${info.version}` } : {}),
+    purl: `pkg:npm/${purlName(name)}@${info.version}`,
   })
+  for (const dependency of Object.values(info.dependencies ?? {})) add(dependency.from ?? '', dependency)
 }
 for (const project of projects) {
   for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {

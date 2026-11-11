@@ -48,8 +48,8 @@
    - 验证全服务、health、OIDC 可选配置
 4. [ ] 发布门禁覆盖 WSL/macOS/Windows 的脚本语法检查
    - 目前主要是 Linux 验证
-5. [ ] SBOM 深度
-   - 当前为 workspace 直接依赖；补 transitive 依赖/许可证信息
+5. [x] SBOM 深度
+   - 已递归 transitive 依赖（170 个组件）；许可证字段可在接入 license 数据后补
 
 ## 必须外部资源 / 人工等待
 
