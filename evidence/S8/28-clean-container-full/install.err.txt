@@ -1,4 +1,0 @@
-Unable to find image 'debian:bookworm' locally
-docker: Error response from daemon: Get "https://registry-1.docker.io/v2/": read tcp 192.168.14.39:32830->52.203.1.244:443: read: connection reset by peer
-
-Run 'docker run --help' for more information
