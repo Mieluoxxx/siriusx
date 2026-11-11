@@ -506,4 +506,13 @@ describe('control plane', () => {
     expect(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })).toBeTruthy()
   })
 
+  it('stores tenant billing rates and estimates usage cost', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-billing', name: 'Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@billing.example' })
+    expect(plane.getBilling(tenant.id)).toEqual({ currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null })
+    const billing = plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
+    expect(billing).toEqual({ currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
+    expect(plane.billingEstimate(tenant.id, 7)).toMatchObject({ currency: 'EUR', estimatedCents: 0, monthlyBudgetCents: 5000 })
+  })
+
 })

@@ -4,6 +4,7 @@
   "usage": true,
   "quota": true,
   "usageDaily": true,
+  "billing": true,
   "model": true,
   "audit": true,
   "user": true,

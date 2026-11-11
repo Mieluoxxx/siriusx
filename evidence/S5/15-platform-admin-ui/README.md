@@ -13,7 +13,7 @@ Control Plane 新增独立 `/admin` 页面：
 - 创建 `tenant-platform`
 - 页面显示 Platform Tenant 与 usage 计数
 - 新增 `member@platform.example`
-- 新增 Model UI，保存租户 quota，展示 14 天 usage，编辑 tenant name/issuer、Suspend/Resume，绑定模型，Platform audit 显示 tenant.create
+- 新增 Model UI，保存租户 quota，展示 14 天 usage、Billing 估算，编辑 tenant name/issuer、Suspend/Resume，绑定模型，Platform audit 显示 tenant.create
 - console errors 为空
 
 CSP：

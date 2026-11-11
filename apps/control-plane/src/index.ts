@@ -105,6 +105,13 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS tenant_billing (
+  tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
+  currency TEXT NOT NULL DEFAULT 'USD',
+  cloud_ticket_cents INTEGER NOT NULL DEFAULT 0,
+  device_ticket_cents INTEGER NOT NULL DEFAULT 0,
+  monthly_budget_cents INTEGER
+);
 CREATE TABLE IF NOT EXISTS support_requests (
   id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL REFERENCES tenants(id),
@@ -233,6 +240,7 @@ export class ControlPlane {
     this.#now = options.now ?? Date.now
     this.#db.prepare('INSERT OR IGNORE INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)').run('tenant-default', 'Tenant default', 'upstream', 'tenant-default', this.#now())
     this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) SELECT id, ?, 1 FROM tenants').run('tenant-default')
+    this.#db.prepare('INSERT OR IGNORE INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) SELECT id, \'USD\', 0, 0, NULL FROM tenants').run()
     this.#db.prepare('INSERT OR IGNORE INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) SELECT id, 50, 20, 100, 500, ? FROM tenants').run(this.#now())
     const deviceColumns = this.#db.prepare('PRAGMA table_info(devices)').all() as Array<{ name: string }>
     if (!deviceColumns.some(column => column.name === 'token_expires_at')) this.#db.exec('ALTER TABLE devices ADD COLUMN token_expires_at INTEGER')
@@ -265,6 +273,7 @@ export class ControlPlane {
         .run(id, input.name, input.idpIssuer, 'active', now)
       this.#db.prepare('INSERT INTO settings (tenant_id) VALUES (?)').run(id)
       this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1)').run(id, 'tenant-default')
+      this.#db.prepare('INSERT INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) VALUES (?, \'USD\', 0, 0, NULL)').run(id)
       this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
       this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
         .run(randomUUID(), id, input.adminEmail, 'admin', now)
@@ -294,6 +303,34 @@ export class ControlPlane {
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended'
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at, status: row.status }))
+  }
+
+  getBilling(tenantId: string): { currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null } {
+    this.tenantRow(tenantId)
+    const row = this.#db.prepare('SELECT * FROM tenant_billing WHERE tenant_id = ?').get(tenantId) as { currency: string; cloud_ticket_cents: number; device_ticket_cents: number; monthly_budget_cents: number | null } | undefined
+    return row === undefined
+      ? { currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null }
+      : { currency: row.currency, cloudTicketCents: row.cloud_ticket_cents, deviceTicketCents: row.device_ticket_cents, monthlyBudgetCents: row.monthly_budget_cents }
+  }
+
+  setBilling(tenantId: string, patch: Partial<{ currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }>): ReturnType<ControlPlane['getBilling']> {
+    this.tenantRow(tenantId)
+    const current = this.getBilling(tenantId)
+    const next = { ...current, ...patch }
+    if (next.currency.length < 3 || next.currency.length > 8) throw new ControlPlaneError(400, 'INVALID_BILLING', 'currency must be 3-8 characters')
+    for (const value of [next.cloudTicketCents, next.deviceTicketCents]) if (!Number.isSafeInteger(value) || value < 0) throw new ControlPlaneError(400, 'INVALID_BILLING', 'ticket prices must be non-negative integers')
+    if (next.monthlyBudgetCents !== null && (!Number.isSafeInteger(next.monthlyBudgetCents) || next.monthlyBudgetCents < 0)) throw new ControlPlaneError(400, 'INVALID_BILLING', 'monthly budget must be null or a non-negative integer')
+    this.#db.prepare('INSERT OR REPLACE INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) VALUES (?, ?, ?, ?, ?)')
+      .run(tenantId, next.currency, next.cloudTicketCents, next.deviceTicketCents, next.monthlyBudgetCents)
+    return next
+  }
+
+  billingEstimate(tenantId: string, days = 30): { currency: string; cloudTickets: number; deviceTickets: number; estimatedCents: number; monthlyBudgetCents: number | null } {
+    const billing = this.getBilling(tenantId)
+    const usage = this.usageDaily(tenantId, days)
+    const cloudTickets = usage.reduce((sum, day) => sum + day.cloudTickets, 0)
+    const deviceTickets = usage.reduce((sum, day) => sum + day.deviceTickets, 0)
+    return { currency: billing.currency, cloudTickets, deviceTickets, estimatedCents: cloudTickets * billing.cloudTicketCents + deviceTickets * billing.deviceTicketCents, monthlyBudgetCents: billing.monthlyBudgetCents }
   }
 
   createSupportRequest(tenantId: string, requestedBy: string, reason: string): { id: string; status: string; expiresAt: number | null } {

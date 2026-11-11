@@ -162,6 +162,11 @@ async function loadUsers(tenantId) {
   q.querySelector('#saveQuota').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota', {method:'PUT', body: JSON.stringify({maxUsers:Number(q.querySelector('#maxUsers').value), maxDevices:Number(q.querySelector('#maxDevices').value), maxCloudTicketsPerDay:Number(q.querySelector('#maxCloud').value), maxDeviceTicketsPerDay:Number(q.querySelector('#maxDevice').value)})}); await loadUsers(tenantId); } catch (e) { err(e); } };
   const support = document.createElement('div'); support.innerHTML = '<h4>Support access</h4><input id="supportReason" placeholder="Support reason"><button id="requestSupport">Request support</button>'; host.append(support);
   support.querySelector('#requestSupport').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/support-requests', {method:'POST', body: JSON.stringify({reason: support.querySelector('#supportReason').value})}); await loadSupportRequests(); await loadPlatformAudit(); } catch (e) { err(e); } };
+  const billing = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/billing');
+  const bill = document.createElement('div'); bill.innerHTML = '<h4>Billing</h4><input id="currency" placeholder="Currency"><input id="cloudCents" placeholder="Cloud ticket cents"><input id="deviceCents" placeholder="Device ticket cents"><input id="budget" placeholder="Monthly budget cents (blank = none)"><button id="saveBilling">Save billing</button><div id="billEstimate"></div>'; host.append(bill);
+  bill.querySelector('#currency').value = billing.billing.currency; bill.querySelector('#cloudCents').value = billing.billing.cloudTicketCents; bill.querySelector('#deviceCents').value = billing.billing.deviceTicketCents; bill.querySelector('#budget').value = billing.billing.monthlyBudgetCents ?? '';
+  bill.querySelector('#billEstimate').textContent = 'Estimate: ' + billing.estimate.estimatedCents + ' ' + billing.estimate.currency;
+  bill.querySelector('#saveBilling').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/billing', {method:'PUT', body: JSON.stringify({currency: bill.querySelector('#currency').value, cloudTicketCents: Number(bill.querySelector('#cloudCents').value), deviceTicketCents: Number(bill.querySelector('#deviceCents').value), monthlyBudgetCents: bill.querySelector('#budget').value === '' ? null : Number(bill.querySelector('#budget').value)})}); await loadUsers(tenantId); await loadPlatformAudit(); } catch (e) { err(e); } };
   const daily = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/usage-daily?days=14');
   const trend = document.createElement('div'); trend.innerHTML = '<h4>Usage (14d)</h4>'; host.append(trend);
   const ttable = document.createElement('table'); ttable.append(row(['Date','Cloud tickets','Device tickets'])); for (const day of daily.usage) ttable.append(row([day.date, day.cloudTickets, day.deviceTickets])); trend.append(ttable);
@@ -317,6 +322,21 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           write(response, upstream.status, await upstream.json())
           return
         }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'billing' && parts[5] === undefined) {
+          if (request.method === 'GET') { write(response, 200, { billing: control.getBilling(parts[3]), estimate: control.billingEstimate(parts[3]) }); return }
+          if (request.method === 'PUT') {
+            const body = await readJson(request)
+            const billing = control.setBilling(parts[3], {
+              ...(typeof body.currency === 'string' ? { currency: body.currency } : {}),
+              ...(typeof body.cloudTicketCents === 'number' ? { cloudTicketCents: body.cloudTicketCents } : {}),
+              ...(typeof body.deviceTicketCents === 'number' ? { deviceTicketCents: body.deviceTicketCents } : {}),
+              ...(body.monthlyBudgetCents === null || typeof body.monthlyBudgetCents === 'number' ? { monthlyBudgetCents: body.monthlyBudgetCents } : {}),
+            })
+            control.recordPlatformAudit({ actor: 'platform', action: 'billing.update', target: parts[3], detail: JSON.stringify(billing) })
+            write(response, 200, { billing, estimate: control.billingEstimate(parts[3]) })
+            return
+          }
+        }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'usage-daily' && parts[5] === undefined) {
           const days = url.searchParams.get('days') === null ? 30 : Number(url.searchParams.get('days'))
           write(response, 200, { days, usage: control.usageDaily(parts[3], days) })
@@ -372,6 +392,10 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       if (request.method === 'GET' && url.pathname === '/v1/usage-daily') {
         const days = url.searchParams.get('days') === null ? 30 : Number(url.searchParams.get('days'))
         write(response, 200, { days, usage: control.usageDaily(session.tenantId, days) })
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/billing') {
+        write(response, 200, { billing: control.getBilling(session.tenantId), estimate: control.billingEstimate(session.tenantId) })
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit-summary') {

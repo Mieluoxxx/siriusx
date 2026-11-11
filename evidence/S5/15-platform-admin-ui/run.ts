@@ -37,6 +37,9 @@ try {
   await page.waitForTimeout(400)
   await page.getByRole('button', { name: 'Set default' }).last().click()
   await page.waitForTimeout(300)
+  await page.getByPlaceholder('Cloud ticket cents').fill('10')
+  await page.getByRole('button', { name: 'Save billing' }).click()
+  await page.waitForTimeout(300)
   await page.getByPlaceholder('Tenant name').fill('Platform Tenant 2')
   await page.getByRole('button', { name: 'Save tenant' }).click()
   await page.waitForTimeout(400)
@@ -48,9 +51,9 @@ try {
   await page.waitForTimeout(500)
   const body = await page.locator('body').innerText()
   await page.screenshot({ path: '/root/siriusx/evidence/S5/15-platform-admin-ui/admin.png', fullPage: true })
-  const result = { tenant: body.includes('tenant-platform'), suspended, usage: body.includes('Platform Tenant 2'), quota: body.includes('Quota') && body.includes('Save quota'), usageDaily: body.includes('Usage (14d)'), model: body.includes('Model UI') && body.includes('Catalog models'), audit: body.includes('Platform audit') && body.includes('tenant.create'), user: body.includes('member@platform.example'), errors }
+  const result = { tenant: body.includes('tenant-platform'), suspended, usage: body.includes('Platform Tenant 2'), quota: body.includes('Quota') && body.includes('Save quota'), usageDaily: body.includes('Usage (14d)'), billing: body.includes('Billing') && body.includes('Estimate:'), model: body.includes('Model UI') && body.includes('Catalog models'), audit: body.includes('Platform audit') && body.includes('tenant.create'), user: body.includes('member@platform.example'), errors }
   console.log(JSON.stringify(result, null, 2))
-  if (!result.tenant || !result.suspended || !result.usage || !result.quota || !result.usageDaily || !result.model || !result.audit || !result.user || errors.length > 0) process.exitCode = 1
+  if (!result.tenant || !result.suspended || !result.usage || !result.quota || !result.usageDaily || !result.billing || !result.model || !result.audit || !result.user || errors.length > 0) process.exitCode = 1
 } finally {
   await browser.close(); await server.close(); await rm(root, { recursive: true, force: true })
 }
