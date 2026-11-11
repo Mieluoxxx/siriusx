@@ -800,4 +800,28 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     }
   })
 
+  it('refreshes tenant/user/settings/quota caches from PostgreSQL', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-refresh-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    await plane.initialize()
+    try {
+      await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?)', ['tenant-pg-refresh', 'Refresh', 'https://refresh.example', 'active', Date.now()])
+      await storage.query('INSERT INTO settings (tenant_id, native_conversation_enabled, byok_enabled, local_execution_enabled) VALUES (?, 0, 1, 1)', ['tenant-pg-refresh'])
+      await storage.query('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 4, 2, 3, 1, ?)', ['tenant-pg-refresh', Date.now()])
+      await plane.refreshCache()
+      expect(plane.listTenants()).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'tenant-pg-refresh' })]))
+      expect(plane.getSettings('tenant-pg-refresh').nativeConversationEnabled).toBe(false)
+      expect(plane.getQuota('tenant-pg-refresh')).toMatchObject({ maxUsers: 4, maxCloudTicketsPerDay: 3 })
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', ['tenant-pg-refresh'])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', ['tenant-pg-refresh'])
+      await storage.query('DELETE FROM tenants WHERE id = ?', ['tenant-pg-refresh'])
+    } finally {
+      await storage.close()
+    }
+  })
+
 })

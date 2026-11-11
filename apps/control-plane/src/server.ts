@@ -2,6 +2,7 @@
 import { createHash, createHmac } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { readFile } from 'node:fs/promises'
+import type { Storage } from '@siriusx/storage'
 import { ControlPlane, ControlPlaneError, type Session } from './index.ts'
 import type { DeviceGateway } from './device-gateway.ts'
 
@@ -19,6 +20,8 @@ export interface ControlPlaneServerOptions {
   readonly platformAdminToken?: string
   readonly sourceWebhookToken?: string
   readonly githubWebhookSecret?: string
+  readonly storage?: Storage
+  readonly cacheRefreshMs?: number
 }
 
 export interface ControlPlaneServer {
@@ -82,8 +85,10 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 }
 
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
-  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }) })
+  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }), ...(options.storage === undefined ? {} : { storage: options.storage }) })
   await control.initialize()
+  const cacheRefreshTimer = options.storage === undefined ? undefined : setInterval(() => { void control.refreshCache().catch(() => undefined) }, options.cacheRefreshMs ?? 30_000)
+  cacheRefreshTimer?.unref()
   let deviceGateway: DeviceGateway | undefined
   const toolGatewayUrl = options.toolGatewayUrl
   const analyticsPath = options.analyticsPath
@@ -893,6 +898,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
     },
     close: async () => {
       await new Promise<void>((resolve, reject) => server.close(error => { error === undefined ? resolve() : reject(error) }))
+      if (cacheRefreshTimer !== undefined) clearInterval(cacheRefreshTimer)
       for (const timer of offlineTimers.values()) clearTimeout(timer)
       offlineTimers.clear()
       control.close()

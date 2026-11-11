@@ -1245,8 +1245,8 @@ export class ControlPlane {
     return rows.length
   }
 
-  /** Load tenant/user primary reads from PostgreSQL when the storage boundary is enabled. */
-  async initialize(): Promise<void> {
+  /** Reload the process read model from PostgreSQL. */
+  async refreshCache(): Promise<void> {
     if (this.#storage === undefined) return
     const tenants = await this.#storage.query<{ id: string; name: string; idp_issuer: string; status: 'active' | 'suspended'; created_at: string | number }>('SELECT id, name, idp_issuer, status, created_at FROM tenants ORDER BY created_at, id')
     const users = await this.#storage.query<{ id: string; tenant_id: string; email: string; role: Role; created_at: string | number }>('SELECT id, tenant_id, email, role, created_at FROM users ORDER BY created_at, id')
@@ -1260,6 +1260,8 @@ export class ControlPlane {
     for (const row of quotas.rows) this.#quotaCache.set(row.tenant_id, { maxUsers: Number(row.max_users), maxDevices: Number(row.max_devices), maxCloudTicketsPerDay: Number(row.max_cloud_tickets_per_day), maxDeviceTicketsPerDay: Number(row.max_device_tickets_per_day) })
     this.#cacheReady = true
   }
+
+  async initialize(): Promise<void> { await this.refreshCache() }
 
   ready(): { database: 'ok' } {
     this.#db.prepare('SELECT 1').get()
