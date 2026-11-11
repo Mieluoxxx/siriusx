@@ -11,6 +11,7 @@ echo '== fork discipline'
 ./scripts/check-fork-discipline.sh
 echo '== install coverage'
 ./scripts/check-install-coverage.sh
+./scripts/check-script-portability.sh
 echo '== plugin bundle'
 OUT="$(mktemp -d)" ./deploy/release/build-plugin-bundle.sh
 echo '== update feed syntax'

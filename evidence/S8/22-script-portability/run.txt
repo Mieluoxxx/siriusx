@@ -1,0 +1,1 @@
+script portability OK: 63 shell, 39 ESM
