@@ -118,6 +118,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
     if ('writeHead' in response && !response.headersSent) response.writeHead(502).end()
   })
 
+  const loginFailures = new Map<string, { count: number; resetAt: number }>()
   const oidc = options.oidc
   const oidcMetadata = oidc === undefined ? undefined : await discoverOidc(oidc)
   const pending = new Map<string, PendingOidc>()
@@ -225,10 +226,17 @@ document.getElementById('f').onsubmit = async (event) => {
         return
       }
       if (request.method === 'POST' && url.pathname === '/auth/session') {
+        const client = request.socket.remoteAddress ?? 'unknown'
+        const failures = loginFailures.get(client)
+        if (failures !== undefined && failures.resetAt > Date.now() && failures.count >= 5) {
+          json(response, 429, { error: 'too many login attempts' }); return
+        }
         const payload = await body(request)
         if (typeof payload.token !== 'string' || payload.token === '' || !(await accountFor(controlPlaneUrl, payload.token))) {
+          loginFailures.set(client, { count: (failures?.resetAt === undefined || failures.resetAt <= Date.now() ? 0 : failures.count) + 1, resetAt: Date.now() + 5 * 60 * 1000 })
           json(response, 401, { error: 'invalid session' }); return
         }
+        loginFailures.delete(client)
         response.writeHead(204, {
           'set-cookie': `${cookieName}=${encodeURIComponent(payload.token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secureFlag(request)}`,
           'cache-control': 'no-store',

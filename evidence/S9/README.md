@@ -148,3 +148,8 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - upgrade 请求校验 Origin；
 - 恶意 Origin 返回 403。
 - 证据：`16-ws-origin/run.txt`。
+
+## Login rate limit
+
+- 5 次登录失败后短时拒绝；
+- 证据：`17-login-rate-limit/run.txt`。
