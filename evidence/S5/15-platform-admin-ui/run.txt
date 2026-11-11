@@ -3,6 +3,7 @@
   "usage": true,
   "quota": true,
   "model": true,
+  "audit": true,
   "user": true,
   "errors": []
 }

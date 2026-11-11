@@ -103,6 +103,14 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS platform_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target TEXT NOT NULL,
+  detail TEXT,
+  created_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS model_catalog (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -258,6 +266,17 @@ export class ControlPlane {
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; idp_issuer: string; created_at: number
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
+  }
+
+  recordPlatformAudit(input: { actor: string; action: string; target: string; detail?: string }): void {
+    this.#db.prepare('INSERT INTO platform_audit (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(input.actor, input.action, input.target, input.detail ?? null, this.#now())
+  }
+
+  listPlatformAudit(limit = 100): Array<{ id: number; actor: string; action: string; target: string; detail: string | null; createdAt: number }> {
+    return (this.#db.prepare('SELECT * FROM platform_audit ORDER BY created_at DESC, rowid DESC LIMIT ?').all(limit) as Array<{
+      id: number; actor: string; action: string; target: string; detail: string | null; created_at: number
+    }>).map(row => ({ id: row.id, actor: row.actor, action: row.action, target: row.target, detail: row.detail, createdAt: row.created_at }))
   }
 
   listModelCatalog(): Array<{ id: string; name: string; provider: string; model: string; enabled: boolean }> {

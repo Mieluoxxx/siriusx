@@ -100,6 +100,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
 <div><input id="token" type="password" placeholder="X-SiriusX-Platform-Token"><button id="load">Load</button></div>
 <div id="create"><h2>Create tenant</h2><input id="name" placeholder="Name"><input id="issuer" placeholder="IdP issuer"><input id="email" placeholder="Admin email"><input id="tenantId" placeholder="Tenant id (optional)"><button id="createTenant">Create</button></div>
 <div id="models"><h2>Model catalog</h2><input id="modelId" placeholder="Model id (optional)"><input id="modelName" placeholder="Display name"><input id="modelProvider" placeholder="Provider"><input id="modelNameId" placeholder="Provider model id"><button id="createModel">Add model</button><div id="modelList">Load to begin.</div></div>
+<h2>Platform audit</h2><div id="platformAudit">Load to begin.</div>
 <h2>Tenants</h2><div id="tenants">Load to begin.</div>
 <h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
 <div id="error" style="color:#b00020"></div>
@@ -109,6 +110,13 @@ const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'ap
 const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
 async function api(path, init = {}) { const r = await fetch(path, {...init, headers: headers()}); const v = await r.json(); if (!r.ok) throw new Error(v.error || ('HTTP ' + r.status)); return v; }
 function row(text) { const tr = document.createElement('tr'); for (const value of text) { const td = document.createElement('td'); td.textContent = String(value); tr.append(td); } return tr; }
+async function loadPlatformAudit() {
+  const data = await api('/v1/admin/audit');
+  const host = document.getElementById('platformAudit'); host.textContent = '';
+  const table = document.createElement('table'); table.append(row(['Actor','Action','Target','Detail']));
+  for (const event of data.audit) table.append(row([event.actor, event.action, event.target, event.detail ?? '']));
+  host.append(table);
+}
 async function loadModels() {
   const data = await api('/v1/admin/models');
   const host = document.getElementById('modelList'); host.textContent = '';
@@ -147,9 +155,9 @@ async function loadUsers(tenantId) {
   for (const user of data.users) table.append(row([user.email, user.role, user.userId]));
   host.append(table);
 }
-document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels()]); } catch (e) { err(e); } };
+document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit()]); } catch (e) { err(e); } };
 document.getElementById('createModel').onclick = async () => { try { await api('/v1/admin/models', {method:'POST', body: JSON.stringify({id: document.getElementById('modelId').value || undefined, name: document.getElementById('modelName').value, provider: document.getElementById('modelProvider').value, model: document.getElementById('modelNameId').value})}); await loadModels(); } catch (e) { err(e); } };
-document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); } catch (e) { err(e); } };
+document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
 </script>`)
         return
       }
@@ -208,6 +216,10 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       }
       if (parts[0] === 'v1' && parts[1] === 'admin') {
         requirePlatformAdmin(request)
+        if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === undefined) {
+          write(response, 200, { audit: control.listPlatformAudit() })
+          return
+        }
         if (request.method === 'GET' && parts[2] === 'tenants' && parts[3] === undefined) {
           write(response, 200, { tenants: control.listTenants().map(tenant => ({ ...tenant, usage: control.tenantUsage(tenant.id) })) })
           return
@@ -219,6 +231,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             name: body.name, idpIssuer: body.idpIssuer, adminEmail: body.adminEmail,
             ...(typeof body.tenantId === 'string' ? { tenantId: body.tenantId } : {}),
           })
+          control.recordPlatformAudit({ actor: 'platform', action: 'tenant.create', target: tenant.id, detail: tenant.name })
           write(response, 201, { tenant })
           return
         }
@@ -227,7 +240,9 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           if (request.method === 'POST') {
             const body = await readJson(request)
             if (typeof body.name !== 'string' || typeof body.provider !== 'string' || typeof body.model !== 'string') throw new Error('name, provider and model are required')
-            write(response, 201, control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) }))
+            const model = control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) })
+            control.recordPlatformAudit({ actor: 'platform', action: 'model.create', target: model.id, detail: body.model })
+            write(response, 201, model)
             return
           }
         }
@@ -236,6 +251,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           if (request.method === 'PUT' && parts[5] !== undefined) {
             const body = await readJson(request)
             control.bindTenantModel(parts[3], parts[5], body.isDefault === true)
+            control.recordPlatformAudit({ actor: 'platform', action: 'model.bind', target: `${parts[3]}/${parts[5]}`, detail: body.isDefault === true ? 'default' : 'bound' })
             write(response, 200, { models: control.listTenantModels(parts[3]) })
             return
           }
@@ -256,7 +272,9 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
               ...(typeof body.maxCloudTicketsPerDay === 'number' ? { maxCloudTicketsPerDay: body.maxCloudTicketsPerDay } : {}),
               ...(typeof body.maxDeviceTicketsPerDay === 'number' ? { maxDeviceTicketsPerDay: body.maxDeviceTicketsPerDay } : {}),
             }
-            write(response, 200, { quota: control.setQuota(parts[3], patch), usage: control.tenantUsage(parts[3]) })
+            const quota = control.setQuota(parts[3], patch)
+            control.recordPlatformAudit({ actor: 'platform', action: 'quota.update', target: parts[3], detail: JSON.stringify(quota) })
+            write(response, 200, { quota, usage: control.tenantUsage(parts[3]) })
             return
           }
         }
@@ -265,13 +283,16 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           if (request.method === 'POST' && parts[5] === undefined) {
             const body = await readJson(request)
             if (typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('email and role are required')
-            write(response, 201, control.addUser({ tenantId: parts[3], email: body.email, role: body.role }))
+            const user = control.addUser({ tenantId: parts[3], email: body.email, role: body.role })
+            control.recordPlatformAudit({ actor: 'platform', action: 'user.create', target: `${parts[3]}/${user.userId}`, detail: body.email })
+            write(response, 201, user)
             return
           }
           if (request.method === 'PUT' && parts[5] !== undefined && parts[6] === 'role') {
             const body = await readJson(request)
             if (body.role !== 'admin' && body.role !== 'member') throw new Error('role is required')
             control.updateUserRole(parts[3], parts[5], body.role)
+            control.recordPlatformAudit({ actor: 'platform', action: 'user.role', target: `${parts[3]}/${parts[5]}`, detail: body.role })
             write(response, 200, { updated: true })
             return
           }
