@@ -376,4 +376,21 @@ describe('control plane', () => {
     expect(closeCode).toBe(1009)
   })
 
+  it('closes a device websocket after the heartbeat timeout', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-heartbeat', name: 'Heartbeat', idpIssuer: 'https://idp.example', adminEmail: 'admin@heartbeat.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@heartbeat.example')!
+    const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
+    const pairing = plane.startPairing(session, 'Device')
+    const paired = plane.confirmPairing(session, pairing.code)
+    const gateway = await startDeviceGateway({ control: plane, port: 0, heartbeatTimeoutMs: 60 })
+    deviceGateways.push(gateway)
+    const closeCode = await new Promise<number>(resolve => {
+      const socket = new WebSocket(`${gateway.url}?token=${encodeURIComponent(paired.token)}`)
+      socket.on('close', code => resolve(code))
+      socket.on('error', () => undefined)
+    })
+    expect(closeCode).toBe(4002)
+  })
+
 })

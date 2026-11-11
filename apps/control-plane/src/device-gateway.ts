@@ -6,6 +6,7 @@ export interface DeviceGatewayOptions {
   readonly control: ControlPlane
   readonly port?: number
   readonly host?: string
+  readonly heartbeatTimeoutMs?: number
 }
 
 export interface DeviceGateway {
@@ -26,6 +27,7 @@ interface Connection {
   readonly tenantId: string
   readonly userId: string
   readonly token: string
+  lastSeenAt: number
 }
 
 export async function startDeviceGateway(options: DeviceGatewayOptions): Promise<DeviceGateway> {
@@ -54,11 +56,12 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
       socket.close(4001, 'invalid or revoked device token')
       return
     }
-    const connection: Connection = { socket, deviceId: auth.deviceId, tenantId: auth.tenantId, userId: auth.userId, token }
+    const connection: Connection = { socket, deviceId: auth.deviceId, tenantId: auth.tenantId, userId: auth.userId, token, lastSeenAt: Date.now() }
     connections.set(auth.deviceId, connection)
     socket.send(JSON.stringify({ type: 'registered', deviceId: auth.deviceId, tenantId: auth.tenantId, userId: auth.userId }))
     connectHandler?.(auth)
     socket.on('message', raw => {
+      connection.lastSeenAt = Date.now()
       try {
         // Re-check the token on every heartbeat/message; revocation closes the
         // long connection even when the device does not reconnect.
@@ -85,6 +88,15 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
       }
     })
   })
+  const heartbeatTimeoutMs = options.heartbeatTimeoutMs ?? 90_000
+  const heartbeatTimer = setInterval(() => {
+    const now = Date.now()
+    for (const connection of connections.values()) {
+      if (now - connection.lastSeenAt > heartbeatTimeoutMs) connection.socket.close(4002, 'heartbeat timeout')
+    }
+  }, Math.max(10, Math.min(30_000, Math.floor(heartbeatTimeoutMs / 2))))
+  heartbeatTimer.unref()
+
   const address = server.address()
   const port = typeof address === 'object' && address !== null ? address.port : options.port ?? 4322
   return {
@@ -104,6 +116,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
     close: async () => {
       for (const connection of connections.values()) connection.socket.terminate()
       connections.clear()
+      clearInterval(heartbeatTimer)
       await new Promise<void>((resolve, reject) => server.close(error => { error === undefined ? resolve() : reject(error) }))
     },
   }
