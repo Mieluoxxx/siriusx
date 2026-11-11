@@ -35,7 +35,7 @@
 
 待定：纯浏览器端与手机端没有本机 Host，这套插件界面在它们上面怎么提供（见待验证第 5 条）。
 
-实施状态与剩余验收项见 [docs/status.md](docs/status.md)；外部资源/真机验收步骤见 [docs/manual-acceptance.md](docs/manual-acceptance.md)。
+实施状态与剩余验收项见 [docs/status.md](docs/status.md)；当前待办见 [TODO.md](TODO.md)；外部资源/真机验收步骤见 [docs/manual-acceptance.md](docs/manual-acceptance.md)。
 
 ## 仓库布局
 

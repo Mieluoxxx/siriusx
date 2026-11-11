@@ -16,11 +16,13 @@
 
 ## 下一步优先级（不需要人工等待的）
 
-1. 用本地 OIDC provider 验证 RS256/JWKS，而不是只测 HS256。
-2. 增加 Vault/KMS 的本地 mock 接口与轮换/失败测试。
-3. 把 Azure/GitLab 真实 connector 补齐到与 GitHub 相同的 issue→branch→PR 路径。
-4. 完成全栈 Compose + 离线 bundle 的干净机器一键安装演练。
-5. 准备 mac/win 构建机与签名/公证凭据，完成 S8 真机安装。
+1. 修复 cloud ticket follow-up：第二次 assignment 在控制面复用时挂起，当前未提交。
+2. 补 device 管理 UI：token 轮换、撤销、最后在线时间。
+3. 在全新主机/Docker 环境跑 `install-full.sh` 全栈安装演练。
+4. 补 WSL/macOS/Windows 脚本语法检查。
+5. 把 SBOM 扩展到 transitive 依赖与许可证信息。
+
+同步维护：[TODO.md](../TODO.md)。
 
 人工步骤见 [manual-acceptance.md](manual-acceptance.md)。
 
