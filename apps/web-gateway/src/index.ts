@@ -99,10 +99,24 @@ function json(response: ServerResponse, status: number, value: unknown): void {
   response.end(body)
 }
 
-async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
+class BodyLimitError extends Error {
+  readonly status = 413
+}
+
+async function collectBody(request: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = []
-  for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  const text = Buffer.concat(chunks).toString('utf8')
+  let total = 0
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    total += buffer.byteLength
+    if (total > 1024 * 1024) throw new BodyLimitError('request body exceeds 1 MiB')
+    chunks.push(buffer)
+  }
+  return Buffer.concat(chunks)
+}
+
+async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
+  const text = (await collectBody(request)).toString('utf8')
   if (text === '') return {}
   return JSON.parse(text) as Record<string, unknown>
 }
@@ -264,15 +278,14 @@ document.getElementById('f').onsubmit = async (event) => {
         return
       }
       if (url.pathname.startsWith('/v1/')) {
-        const chunks: Buffer[] = []
-        for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+        const chunks = await collectBody(request)
         const upstream = await fetch(`${controlPlaneUrl}${url.pathname}${url.search}`, {
           method: request.method ?? 'GET',
           headers: {
             'content-type': request.headers['content-type'] ?? 'application/json',
             authorization: `Bearer ${token}`,
           },
-          ...(request.method === 'GET' || request.method === 'HEAD' ? {} : { body: new Uint8Array(Buffer.concat(chunks)) }),
+          ...(request.method === 'GET' || request.method === 'HEAD' ? {} : { body: new Uint8Array(chunks) }),
         })
         const headers: Record<string, string> = { 'content-type': upstream.headers.get('content-type') ?? 'application/json', 'cache-control': 'no-store' }
         response.writeHead(upstream.status, headers)
@@ -285,7 +298,8 @@ document.getElementById('f').onsubmit = async (event) => {
       if (request.headers.origin !== undefined) request.headers.origin = dshWebUrl.origin
       proxy.web(request, response)
     })().catch(error => {
-      if (!response.headersSent) json(response, 500, { error: error instanceof Error ? error.message : String(error) })
+      const status = error instanceof BodyLimitError ? error.status : 500
+      if (!response.headersSent) json(response, status, { error: error instanceof Error ? error.message : String(error) })
       else response.end()
     })
   })

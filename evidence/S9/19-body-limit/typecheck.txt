@@ -1,0 +1,5 @@
+Scope: 2 of 27 workspace projects
+apps/control-plane typecheck$ tsc -p tsconfig.json --noEmit
+apps/tool-gateway typecheck$ tsc -p tsconfig.json --noEmit
+apps/tool-gateway typecheck: Done
+apps/control-plane typecheck: Done

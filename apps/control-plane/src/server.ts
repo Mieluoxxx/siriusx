@@ -32,9 +32,17 @@ const CORS = {
   'cache-control': 'no-store',
 }
 
+const MAX_JSON_BODY_BYTES = 1024 * 1024
+
 async function readJson(request: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = []
-  for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  let total = 0
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    total += buffer.byteLength
+    if (total > MAX_JSON_BODY_BYTES) throw new ControlPlaneError(413, 'PAYLOAD_TOO_LARGE', 'request body exceeds 1 MiB')
+    chunks.push(buffer)
+  }
   const text = Buffer.concat(chunks).toString('utf8')
   if (text === '') return {}
   const value: unknown = JSON.parse(text)
