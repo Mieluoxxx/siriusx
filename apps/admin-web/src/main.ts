@@ -6,6 +6,7 @@ type Model = { id: string; name: string; provider: string; model: string; enable
 type Binding = { id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean }
 type SupportRequest = { id: string; tenantId: string; requestedBy: string; reason: string; status: string }
 type Audit = { id: number; actor: string; action: string; target: string; detail: string | null; createdAt: number }
+type Upstream = { id: string; modelId: string; name: string; protocol: string; baseUrl: string; upstreamModel: string; priority: number; enabled: boolean; hasApiKey: boolean }
 type User = { userId: string; email: string; role: string }
 type Quota = { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }
 type Billing = { currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }
@@ -231,7 +232,7 @@ async function loadAll(): Promise<void> {
 async function openTenant(tenantId: string): Promise<void> {
   const tenant = tenants.find(item => item.id === tenantId)
   if (tenant === undefined) return
-  const [userResult, quotaResult, dailyResult, billingResult, tenantModelResult, auditResult, supportResult] = await Promise.all([
+  const [userResult, quotaResult, dailyResult, billingResult, tenantModelResult, auditResult, supportResult, upstreamResult] = await Promise.all([
     api<{ users: User[] }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/users`),
     api<{ quota: Quota; usage: Json }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/quota`),
     api<{ days: number; usage: Array<{ date: string; cloudTickets: number; deviceTickets: number }> }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/usage-daily?days=14`),
@@ -239,6 +240,7 @@ async function openTenant(tenantId: string): Promise<void> {
     api<{ models: Array<{ id: string; name: string; isDefault: boolean }> }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models`),
     api<{ total: number; decisions: Record<string, number> }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/audit-summary`).catch(() => ({ total: 0, decisions: {} })),
     api<{ requests: SupportRequest[] }>('/v1/admin/support-requests'),
+    api<{ upstreams: Upstream[] }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/model-upstreams`).catch(() => ({ upstreams: [] })),
   ])
   const host = document.getElementById('tenant-detail')!
   host.innerHTML = `
@@ -250,6 +252,7 @@ async function openTenant(tenantId: string): Promise<void> {
       </div>
       <h3>Users</h3><div class="form"><input id="new-user-email" placeholder="User email"><select id="new-user-role"><option value="member">member</option><option value="admin">admin</option></select><button id="add-user">Add user</button></div><div id="detail-users"></div>
       <h3>Models</h3><div id="detail-models"></div>
+      <h3>Model upstreams</h3><div class="form"><select id="up-model"></select><input id="up-name" placeholder="Upstream name"><select id="up-protocol"><option value="chat">chat</option><option value="responses">responses</option><option value="claude">claude</option></select><input id="up-url" placeholder="https://upstream/v1 (base URL)"><input id="up-remote-model" placeholder="Upstream model"><input id="up-key" type="password" placeholder="API key (leave blank to keep)"><input id="up-priority" type="number" placeholder="Priority" value="0"><label><input id="up-enabled" type="checkbox" checked> enabled</label><button id="add-upstream" class="primary">Add upstream</button></div><div id="detail-upstreams"></div>
       <h3>Support access</h3><div class="form"><input id="support-reason" placeholder="Support reason"><button id="request-support">Request support</button></div><div id="detail-support"></div>
       <h3>Usage (14d)</h3><div id="detail-usage"></div>
       <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>
@@ -273,6 +276,14 @@ async function openTenant(tenantId: string): Promise<void> {
   document.getElementById('add-user')!.addEventListener('click', () => { void addUser(tenantId).catch(showError) })
   document.getElementById('request-support')!.addEventListener('click', () => { void requestSupport(tenantId).catch(showError) })
   ;(document.getElementById('detail-users') as HTMLElement).replaceChildren(table(['Email', 'Role', 'User ID'], userResult.users.map(user => [user.email, user.role, user.userId])))
+  const upstreamSelect = document.getElementById('up-model') as HTMLSelectElement
+  for (const model of tenantModelResult.models) upstreamSelect.append(new Option(model.id, model.id))
+  document.getElementById('add-upstream')!.addEventListener('click', () => { void addUpstream(tenantId).catch(showError) })
+  const upstreamHost = document.getElementById('detail-upstreams')!
+  upstreamHost.replaceChildren(table(['Model', 'Name', 'Protocol', 'URL', 'Upstream model', 'Priority', 'Enabled', 'Key', ''], upstreamResult.upstreams.map(upstream => {
+    const remove = button('Delete', async () => { await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models/${encodeURIComponent(upstream.modelId)}/upstreams/${encodeURIComponent(upstream.id)}`, { method: 'DELETE' }); await openTenant(tenantId) })
+    return [upstream.modelId, upstream.name, upstream.protocol, upstream.baseUrl, upstream.upstreamModel, String(upstream.priority), String(upstream.enabled), upstream.hasApiKey ? 'configured' : '—', remove]
+  })))
   const bound = new Map(tenantModelResult.models.map(model => [model.id, model]))
   ;(document.getElementById('detail-models') as HTMLElement).replaceChildren(table(['ID', 'Name', 'Default', ''], models.map(model => {
     const action = button(bound.has(model.id) ? 'Set default' : 'Bind', async () => {
@@ -284,6 +295,22 @@ async function openTenant(tenantId: string): Promise<void> {
   document.getElementById('detail-usage')!.replaceChildren(table(['Date', 'Cloud tickets', 'Device tickets'], dailyResult.usage.map(day => [day.date, String(day.cloudTickets), String(day.deviceTickets)])))
   document.getElementById('detail-audit')!.textContent = JSON.stringify(auditResult, undefined, 2)
   document.getElementById('detail-support')!.replaceChildren(table(['Reason', 'Status', 'Requested by'], supportResult.requests.filter(request => request.tenantId === tenantId).map(request => [request.reason, request.status, request.requestedBy])))
+}
+
+async function addUpstream(tenantId: string): Promise<void> {
+  const modelId = (document.getElementById('up-model') as HTMLSelectElement).value
+  if (modelId === '') throw new Error('bind a model to the tenant first')
+  const key = (document.getElementById('up-key') as HTMLInputElement).value
+  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models/${encodeURIComponent(modelId)}/upstreams`, { method: 'POST', body: JSON.stringify({
+    name: (document.getElementById('up-name') as HTMLInputElement).value,
+    protocol: (document.getElementById('up-protocol') as HTMLSelectElement).value,
+    baseUrl: (document.getElementById('up-url') as HTMLInputElement).value,
+    upstreamModel: (document.getElementById('up-remote-model') as HTMLInputElement).value,
+    ...(key === '' ? {} : { apiKey: key }),
+    priority: Number((document.getElementById('up-priority') as HTMLInputElement).value || '0'),
+    enabled: (document.getElementById('up-enabled') as HTMLInputElement).checked,
+  }) })
+  await openTenant(tenantId)
 }
 
 async function saveTenant(tenantId: string): Promise<void> {

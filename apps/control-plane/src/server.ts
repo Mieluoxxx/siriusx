@@ -24,6 +24,9 @@ export interface ControlPlaneServerOptions {
   readonly storage?: Storage
   readonly cacheRefreshMs?: number
   readonly desktopSso?: DesktopSsoConfig
+  readonly secretsKey?: string
+  readonly modelRouterConfigPath?: string
+  readonly modelRouterKey?: string
 }
 
 export interface ControlPlaneServer {
@@ -87,7 +90,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 }
 
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
-  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }), ...(options.storage === undefined ? {} : { storage: options.storage }), ...(options.desktopSso === undefined ? {} : { desktopSso: options.desktopSso }) })
+  const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }), ...(options.storage === undefined ? {} : { storage: options.storage }), ...(options.desktopSso === undefined ? {} : { desktopSso: options.desktopSso }), ...(options.secretsKey === undefined ? {} : { secretsKey: options.secretsKey }), ...(options.modelRouterConfigPath === undefined ? {} : { modelRouterConfigPath: options.modelRouterConfigPath }), ...(options.modelRouterKey === undefined ? {} : { modelRouterKey: options.modelRouterKey }) })
   await control.initialize()
   await control.startCacheInvalidation()
   const cacheRefreshTimer = options.storage === undefined ? undefined : setInterval(() => { void control.refreshCache().catch(() => undefined) }, options.cacheRefreshMs ?? 30_000)
@@ -379,6 +382,38 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             const model = await control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) })
             await control.recordPlatformAudit({ actor: 'platform', action: 'model.create', target: model.id, detail: body.model })
             write(response, 201, model)
+            return
+          }
+        }
+        if (request.method === 'GET' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'model-upstreams') {
+          write(response, 200, { upstreams: await control.listTenantModelUpstreams(parts[3]) })
+          return
+        }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'models' && parts[5] !== undefined && parts[6] === 'upstreams') {
+          if (request.method === 'GET' && parts[7] === undefined) {
+            write(response, 200, { upstreams: await control.listTenantModelUpstreams(parts[3], parts[5]) })
+            return
+          }
+          if ((request.method === 'POST' || request.method === 'PUT') && parts[7] === undefined) {
+            const body = await readJson(request)
+            if (typeof body.name !== 'string' || typeof body.baseUrl !== 'string' || typeof body.upstreamModel !== 'string') throw new Error('name, baseUrl and upstreamModel are required')
+            if (body.protocol !== undefined && body.protocol !== 'chat' && body.protocol !== 'responses' && body.protocol !== 'claude') throw new Error('protocol must be chat, responses or claude')
+            const upstream = await control.upsertTenantModelUpstream(parts[3], parts[5], {
+              name: body.name, baseUrl: body.baseUrl, upstreamModel: body.upstreamModel,
+              protocol: body.protocol === 'responses' || body.protocol === 'claude' ? body.protocol : 'chat',
+              ...(typeof body.id === 'string' ? { id: body.id } : {}),
+              ...(typeof body.apiKey === 'string' || body.apiKey === null ? { apiKey: body.apiKey } : {}),
+              ...(typeof body.priority === 'number' ? { priority: body.priority } : {}),
+              ...(typeof body.enabled === 'boolean' ? { enabled: body.enabled } : {}),
+            })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'model.upstream', target: `${parts[3]}/${parts[5]}/${upstream.id}`, detail: `${body.protocol ?? 'chat'}:${body.baseUrl}` })
+            write(response, 200, upstream)
+            return
+          }
+          if (request.method === 'DELETE' && parts[7] !== undefined) {
+            await control.deleteTenantModelUpstream(parts[3], parts[5], parts[7])
+            await control.recordPlatformAudit({ actor: 'platform', action: 'model.upstream.delete', target: `${parts[3]}/${parts[5]}/${parts[7]}` })
+            write(response, 204, {})
             return
           }
         }

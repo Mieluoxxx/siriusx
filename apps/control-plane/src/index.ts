@@ -1,7 +1,7 @@
 /** SiriusX control plane: tenants, users, devices, bots, settings, and per-tenant Bot runtimes. */
-import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { Storage } from '@siriusx/storage'
@@ -35,6 +35,9 @@ export interface ControlPlaneOptions {
   readonly now?: () => number
   readonly botScenario?: 'ready' | 'waiting'
   readonly sessionTtlMs?: number
+  readonly secretsKey?: string
+  readonly modelRouterConfigPath?: string
+  readonly modelRouterKey?: string
 }
 
 export interface Session {
@@ -177,6 +180,22 @@ CREATE TABLE IF NOT EXISTS model_catalog (
   enabled INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tenant_model_upstreams (
+  tenant_id TEXT NOT NULL,
+  model_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  protocol TEXT NOT NULL DEFAULT 'chat',
+  base_url TEXT NOT NULL,
+  upstream_model TEXT NOT NULL,
+  api_key_cipher TEXT,
+  priority INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (tenant_id, model_id, id),
+  FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  FOREIGN KEY (model_id) REFERENCES model_catalog(id)
+);
 CREATE TABLE IF NOT EXISTS tenant_models (
   tenant_id TEXT NOT NULL REFERENCES tenants(id),
   model_id TEXT NOT NULL REFERENCES model_catalog(id),
@@ -260,6 +279,9 @@ export class ControlPlane {
   readonly #db: DatabaseSync
   readonly #storage: Storage | undefined
   readonly #desktopSso: DesktopSsoConfig | undefined
+  readonly #secretsKey: Buffer
+  readonly #modelRouterConfigPath: string | undefined
+  readonly #modelRouterKey: string
   readonly #tenantCache = new Map<string, Tenant>()
   readonly #userCache = new Map<string, { id: string; tenantId: string; email: string; role: Role; createdAt: number }>()
   readonly #settingsCache = new Map<string, { nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>()
@@ -281,6 +303,9 @@ export class ControlPlane {
     this.#db = new DatabaseSync(options.dbPath)
     this.#storage = options.storage
     this.#desktopSso = options.desktopSso
+    this.#secretsKey = createHash('sha256').update(options.secretsKey ?? options.sessionSecret ?? 'siriusx-local-secret').digest()
+    this.#modelRouterConfigPath = options.modelRouterConfigPath
+    this.#modelRouterKey = options.modelRouterKey ?? 'sk-siriusx-router'
     this.#db.exec(SCHEMA)
     const tenantColumns = this.#db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>
     if (!tenantColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE tenants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
@@ -604,7 +629,7 @@ export class ControlPlane {
   }
 
   async addModel(input: { id?: string; name: string; provider: string; model: string }): Promise<{ id: string }> {
-    const id = input.id ?? randomUUID()
+    const id = input.id === undefined || input.id === '' ? randomUUID() : input.id
     if (this.#storage !== undefined) await this.#storage.query('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)', [id, input.name, input.provider, input.model, this.#now()])
     this.#db.prepare('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)').run(id, input.name, input.provider, input.model, this.#now())
     return { id }
@@ -631,6 +656,122 @@ export class ControlPlane {
     }
     if (isDefault) this.#db.prepare('UPDATE tenant_models SET is_default = 0 WHERE tenant_id = ?').run(tenantId)
     this.#db.prepare('INSERT OR REPLACE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, ?)').run(tenantId, modelId, isDefault ? 1 : 0)
+    await this.rebuildModelRouterConfig()
+  }
+
+  async upsertTenantModelUpstream(tenantId: string, modelId: string, input: {
+    id?: string
+    name: string
+    protocol: 'chat' | 'responses' | 'claude'
+    baseUrl: string
+    upstreamModel: string
+    apiKey?: string | null
+    priority?: number
+    enabled?: boolean
+  }): Promise<{ id: string }> {
+    this.tenantRow(tenantId)
+    const bound = this.#storage !== undefined
+      ? (await this.#storage.query('SELECT 1 FROM tenant_models WHERE tenant_id = ? AND model_id = ?', [tenantId, modelId])).rows.length > 0
+      : this.#db.prepare('SELECT 1 FROM tenant_models WHERE tenant_id = ? AND model_id = ?').get(tenantId, modelId) !== undefined
+    if (!bound) throw new ControlPlaneError(404, 'MODEL_NOT_BOUND', modelId)
+    let parsed: URL
+    try { parsed = new URL(input.baseUrl) } catch { throw new ControlPlaneError(400, 'INVALID_UPSTREAM_URL', 'baseUrl must be an absolute URL') }
+    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.username !== '' || parsed.password !== '') throw new ControlPlaneError(400, 'INVALID_UPSTREAM_URL', 'baseUrl must be http(s) without credentials')
+    if (input.name.trim() === '' || input.upstreamModel.trim() === '') throw new ControlPlaneError(400, 'INVALID_UPSTREAM', 'name and upstreamModel are required')
+    const id = input.id === undefined || input.id === '' ? randomUUID() : input.id
+    const existingCipher = this.#storage !== undefined
+      ? (await this.#storage.query<{ api_key_cipher: string | null }>('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?', [tenantId, modelId, id])).rows[0]?.api_key_cipher
+      : (this.#db.prepare('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?').get(tenantId, modelId, id) as { api_key_cipher: string | null } | undefined)?.api_key_cipher
+    const cipher = input.apiKey === undefined ? (existingCipher ?? null) : input.apiKey === null || input.apiKey === '' ? null : this.encryptSecret(input.apiKey)
+    const priority = input.priority ?? 0
+    const enabled = input.enabled === false ? 0 : 1
+    const values = [tenantId, modelId, id, input.name.trim(), input.protocol, parsed.href, input.upstreamModel.trim(), cipher, priority, enabled, this.#now()]
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO tenant_model_upstreams (tenant_id, model_id, id, name, protocol, base_url, upstream_model, api_key_cipher, priority, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, model_id, id) DO UPDATE SET name = EXCLUDED.name, protocol = EXCLUDED.protocol, base_url = EXCLUDED.base_url, upstream_model = EXCLUDED.upstream_model, api_key_cipher = EXCLUDED.api_key_cipher, priority = EXCLUDED.priority, enabled = EXCLUDED.enabled, updated_at = EXCLUDED.updated_at', values)
+    }
+    this.#db.prepare('INSERT INTO tenant_model_upstreams (tenant_id, model_id, id, name, protocol, base_url, upstream_model, api_key_cipher, priority, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, model_id, id) DO UPDATE SET name = excluded.name, protocol = excluded.protocol, base_url = excluded.base_url, upstream_model = excluded.upstream_model, api_key_cipher = excluded.api_key_cipher, priority = excluded.priority, enabled = excluded.enabled, updated_at = excluded.updated_at').run(...values as never[])
+    await this.rebuildModelRouterConfig()
+    return { id }
+  }
+
+  async listTenantModelUpstreams(tenantId: string, modelId?: string): Promise<Array<{ id: string; tenantId: string; modelId: string; name: string; protocol: string; baseUrl: string; upstreamModel: string; priority: number; enabled: boolean; hasApiKey: boolean; apiKeyMasked: string | null }>> {
+    this.tenantRow(tenantId)
+    const rows = this.#storage !== undefined
+      ? (await this.#storage.query<Record<string, unknown>>(modelId === undefined ? 'SELECT * FROM tenant_model_upstreams WHERE tenant_id = ? ORDER BY model_id, priority, name' : 'SELECT * FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? ORDER BY priority, name', modelId === undefined ? [tenantId] : [tenantId, modelId])).rows
+      : (modelId === undefined
+        ? this.#db.prepare('SELECT * FROM tenant_model_upstreams WHERE tenant_id = ? ORDER BY model_id, priority, name').all(tenantId)
+        : this.#db.prepare('SELECT * FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? ORDER BY priority, name').all(tenantId, modelId)) as Array<Record<string, unknown>>
+    return rows.map(row => ({
+      id: String(row.id), tenantId: String(row.tenant_id), modelId: String(row.model_id), name: String(row.name), protocol: String(row.protocol),
+      baseUrl: String(row.base_url), upstreamModel: String(row.upstream_model), priority: Number(row.priority), enabled: Number(row.enabled) === 1,
+      hasApiKey: row.api_key_cipher !== null && row.api_key_cipher !== undefined, apiKeyMasked: row.api_key_cipher === null || row.api_key_cipher === undefined ? null : '••••••••',
+    }))
+  }
+
+  async deleteTenantModelUpstream(tenantId: string, modelId: string, id: string): Promise<void> {
+    this.tenantRow(tenantId)
+    if (this.#storage !== undefined) await this.#storage.query('DELETE FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?', [tenantId, modelId, id])
+    this.#db.prepare('DELETE FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?').run(tenantId, modelId, id)
+    await this.rebuildModelRouterConfig()
+  }
+
+  async tenantModelUpstream(tenantId: string, modelId: string): Promise<{ url: string; key: string | undefined; upstreamModel: string; protocol: string } | undefined> {
+    const rows = await this.listTenantModelUpstreams(tenantId, modelId)
+    const selected = rows.find(row => row.enabled)
+    if (selected === undefined) return undefined
+    const cipher = this.#storage !== undefined
+      ? (await this.#storage.query<{ api_key_cipher: string | null }>('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?', [tenantId, modelId, selected.id])).rows[0]?.api_key_cipher
+      : (this.#db.prepare('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?').get(tenantId, modelId, selected.id) as { api_key_cipher: string | null } | undefined)?.api_key_cipher
+    return { url: selected.baseUrl, key: cipher === null || cipher === undefined ? undefined : this.decryptSecret(cipher), upstreamModel: selected.upstreamModel, protocol: selected.protocol }
+  }
+
+  private encryptSecret(value: string): string {
+    const iv = randomBytes(12)
+    const cipher = createCipheriv('aes-256-gcm', this.#secretsKey, iv)
+    const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()])
+    return `v1:${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${encrypted.toString('base64')}`
+  }
+
+  private decryptSecret(value: string): string {
+    const parts = value.split(':')
+    if (parts.length !== 4 || parts[0] !== 'v1') throw new ControlPlaneError(500, 'SECRET_INVALID', 'invalid encrypted secret')
+    const decipher = createDecipheriv('aes-256-gcm', this.#secretsKey, Buffer.from(parts[1]!, 'base64'))
+    decipher.setAuthTag(Buffer.from(parts[2]!, 'base64'))
+    return Buffer.concat([decipher.update(Buffer.from(parts[3]!, 'base64')), decipher.final()]).toString('utf8')
+  }
+
+  private async rebuildModelRouterConfig(): Promise<void> {
+    const path = this.#modelRouterConfigPath
+    if (path === undefined) return
+    const rows = this.#storage !== undefined
+      ? (await this.#storage.query<Record<string, unknown>>('SELECT * FROM tenant_model_upstreams')).rows
+      : this.#db.prepare('SELECT * FROM tenant_model_upstreams').all() as Array<Record<string, unknown>>
+    const sections: Record<'chat' | 'responses' | 'claude', Array<Record<string, unknown>>> = { chat: [], responses: [], claude: [] }
+    for (const row of rows) {
+      if (Number(row.enabled) !== 1) continue
+      const protocol = row.protocol === 'responses' || row.protocol === 'claude' ? row.protocol : 'chat'
+      const cipher = row.api_key_cipher
+      const apiKey = cipher === null || cipher === undefined ? undefined : (() => { try { return this.decryptSecret(String(cipher)) } catch { return undefined } })()
+      const name = String(row.name).replace(/[^a-zA-Z0-9_.-]/gu, '-')
+      sections[protocol].push({
+        name: `siriusx-${String(row.tenant_id)}-${String(row.model_id)}-${String(row.id)}-${name}`,
+        'base-url': String(row.base_url),
+        ...(apiKey === undefined ? {} : { 'api-key': apiKey }),
+        priority: Number(row.priority),
+        'failover-mode': 'provider',
+        models: [{ name: String(row.upstream_model), alias: `${String(row.tenant_id)}/${String(row.model_id)}` }],
+      })
+    }
+    const config = {
+      host: '0.0.0.0', port: 8317, 'api-keys': [this.#modelRouterKey], 'request-retry': 2,
+      ...(sections.chat.length === 0 ? {} : { 'openai-completions': sections.chat }),
+      ...(sections.responses.length === 0 ? {} : { 'openai-responses': sections.responses }),
+      ...(sections.claude.length === 0 ? {} : { 'anthropic-messages': sections.claude }),
+    }
+    mkdirSync(dirname(path), { recursive: true })
+    const temp = `${path}.${process.pid}.tmp`
+    writeFileSync(temp, JSON.stringify(config, undefined, 2), { mode: 0o600 })
+    renameSync(temp, path)
   }
 
   getQuota(tenantId: string): { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number } {
@@ -1317,7 +1458,7 @@ export class ControlPlane {
     this.#cacheReady = true
   }
 
-  async initialize(): Promise<void> { await this.refreshCache() }
+  async initialize(): Promise<void> { await this.refreshCache(); await this.rebuildModelRouterConfig() }
 
   async startCacheInvalidation(): Promise<void> {
     if (this.#storage?.listen === undefined || this.#cacheStop !== undefined) return

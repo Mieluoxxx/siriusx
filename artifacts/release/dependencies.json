@@ -57,15 +57,15 @@
       }
     },
     "unsavedDependencies": {
-      "tsx": {
-        "from": "tsx",
-        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
-        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
-      },
       "pg": {
         "from": "pg",
         "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
         "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
       },
       "vitest": {
         "from": "vitest",

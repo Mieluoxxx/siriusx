@@ -17,6 +17,12 @@ python3 scripts/check-postgres.py
 python3 scripts/check-observability.py
 python3 scripts/check-ci.py
 python3 scripts/check-logging-config.py
+echo '== model router'
+if command -v go >/dev/null 2>&1; then
+  (cd services/model-router && GOTOOLCHAIN=local go test ./internal/... && GOTOOLCHAIN=local go build -trimpath -o /tmp/siriusx-model-router-release ./cmd/lite-cpa)
+else
+  echo 'go not installed; model router build skipped'
+fi
 echo '== admin web build'
 pnpm --filter @siriusx/admin-web build
 echo '== plugin bundle'

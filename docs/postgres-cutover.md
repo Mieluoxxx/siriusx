@@ -92,3 +92,9 @@ writes, so support/billing foreign keys work for new tenants. Tenant/user primar
 `initialize()` has run. The cache is process-local and refreshable on a timer (default 30s); immediate cross-replica invalidation uses PostgreSQL
 LISTEN/NOTIFY; the timer remains a fallback. Settings/quota reads use the same PostgreSQL-backed cache. Operational
 ticket/device reads still use SQLite.
+
+
+## Model router
+
+`tenant_model_upstreams` is also served by the storage boundary. See
+[`model-router.md`](./model-router.md).

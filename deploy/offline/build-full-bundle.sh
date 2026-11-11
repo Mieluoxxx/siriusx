@@ -7,6 +7,7 @@ OUT="${OUT:-$ROOT/artifacts/full}"
 CP_IMAGE="${CP_IMAGE:-siriusx/control-plane:full}"
 DSH_IMAGE="${DSH_IMAGE:-siriusx/dsh-web:full}"
 ADMIN_IMAGE="${ADMIN_IMAGE:-siriusx/admin-web:full}"
+MODEL_ROUTER_IMAGE="${MODEL_ROUTER_IMAGE:-siriusx/model-router:full}"
 SANDBOX_IMAGE="${SIRIUSX_SANDBOX_IMAGE:-teams-bridge:0.2.0}"
 rm -rf "$OUT"; mkdir -p "$OUT/images"
 SIRIUSX_SANDBOX_IMAGE="$SANDBOX_IMAGE" OUT="$OUT/app" "$ROOT/deploy/offline/build-offline.sh" >"$OUT/app-build.log" 2>&1
@@ -17,6 +18,8 @@ SIRIUSX_SANDBOX_IMAGE="$SANDBOX_IMAGE" OUT="$OUT/app" "$ROOT/deploy/offline/buil
 docker save "$CP_IMAGE" -o "$OUT/images/control-plane.tar"
 IMAGE="$ADMIN_IMAGE" OUT="$OUT/admin-web" "$ROOT/deploy/offline/build-admin-web-image.sh" >"$OUT/admin-web-build.log" 2>&1
 cp "$OUT/admin-web/admin-web-image.tar" "$OUT/images/admin-web.tar"
+IMAGE="$MODEL_ROUTER_IMAGE" OUT="$OUT/model-router" "$ROOT/deploy/offline/build-model-router-image.sh" >"$OUT/model-router-build.log" 2>&1
+cp "$OUT/model-router/model-router-image.tar" "$OUT/images/model-router.tar"
 IMAGE="$DSH_IMAGE" OUT="$OUT/dsh-web" "$ROOT/deploy/offline/build-dsh-web-image.sh" >"$OUT/dsh-web-build.log" 2>&1
 cp "$OUT/dsh-web/dsh-web-image.tar" "$OUT/images/dsh-web.tar"
 cp "$OUT/app/stage/sandbox-image.tar" "$OUT/images/sandbox.tar"
@@ -33,6 +36,7 @@ SIRIUSX_SESSION_SECRET=$(openssl rand -base64 48 | tr -d '\n')
 SIRIUSX_IMAGE=${SIRIUSX_IMAGE:-siriusx/control-plane:full}
 SIRIUSX_DSH_WEB_IMAGE=${SIRIUSX_DSH_WEB_IMAGE:-siriusx/dsh-web:full}
 SIRIUSX_ADMIN_WEB_IMAGE=${SIRIUSX_ADMIN_WEB_IMAGE:-siriusx/admin-web:full}
+SIRIUSX_MODEL_ROUTER_IMAGE=${SIRIUSX_MODEL_ROUTER_IMAGE:-siriusx/model-router:full}
 ENV
 fi
 health() {

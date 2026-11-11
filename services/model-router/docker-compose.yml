@@ -1,0 +1,13 @@
+services:
+  lite-cpa:
+    build: .
+    image: lite-cpa:local
+    container_name: lite-cpa
+    ports:
+      - "8317:8317"
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

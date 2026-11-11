@@ -13,6 +13,10 @@ services:
       SIRIUSX_DATA_DIR: /data
       DATABASE_URL: ${DATABASE_URL:-}
       SIRIUSX_CACHE_REFRESH_MS: ${SIRIUSX_CACHE_REFRESH_MS:-30000}
+      SIRIUSX_MODEL_ROUTER_URL: http://model-router:8317
+      SIRIUSX_MODEL_ROUTER_CONFIG: /data/model-router/config.yaml
+      SIRIUSX_MODEL_ROUTER_KEY: ${SIRIUSX_MODEL_ROUTER_KEY:-sk-siriusx-router}
+      SIRIUSX_SECRETS_KEY: ${SIRIUSX_SECRETS_KEY:-}
     ports:
       - "127.0.0.1:4320:4320"
       - "127.0.0.1:4321:4321"
@@ -24,6 +28,15 @@ services:
       retries: 12
     volumes:
       - siriusx-data:/data
+  model-router:
+    image: ${SIRIUSX_MODEL_ROUTER_IMAGE:-siriusx/model-router:offline}
+    profiles: ["full"]
+    restart: unless-stopped
+    depends_on: [control-plane]
+    command: ["--config", "/data/model-router/config.yaml"]
+    volumes:
+      - siriusx-data:/data
+    # Internal only: no host port mapping.
   dsh-web:
     image: ${SIRIUSX_DSH_WEB_IMAGE:-siriusx/dsh-web:offline}
     profiles: ["full"]

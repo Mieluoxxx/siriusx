@@ -8,6 +8,8 @@ export interface ModelGatewayOptions {
   readonly host?: string
   readonly upstreamUrl?: string
   readonly upstreamKey?: string
+  readonly modelRouterUrl?: string
+  readonly modelRouterKey?: string
 }
 
 export interface ModelGateway {
@@ -55,28 +57,45 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         })
         return
       }
-      if (request.method !== 'POST' || url.pathname !== '/v1/chat/completions') {
+      if (request.method !== 'POST' || (url.pathname !== '/v1/chat/completions' && url.pathname !== '/v1/responses' && url.pathname !== '/v1/messages')) {
         write(response, 404, { error: { message: 'not found' } })
         return
       }
-      if (options.upstreamUrl === undefined) {
+      const body = await bodyOf(request)
+      let parsedBody: Record<string, unknown> | undefined
+      let requestedModel: string | undefined
+      try {
+        const parsed: unknown = JSON.parse(body.toString('utf8'))
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          parsedBody = parsed as Record<string, unknown>
+          if (typeof parsedBody.model === 'string') requestedModel = parsedBody.model
+        }
+      } catch { /* upstream handles malformed JSON */ }
+      const bound = await options.control.listTenantModels(session.tenantId)
+      const selected = requestedModel === undefined ? bound.find(model => model.isDefault) ?? bound[0] : bound.find(model => model.id === requestedModel)
+      if (selected === undefined) {
+        write(response, 400, { error: { message: requestedModel === undefined ? 'tenant has no default model' : `model is not bound to tenant: ${requestedModel}`, code: 'MODEL_NOT_BOUND' } })
+        return
+      }
+      const upstreamUrl = options.modelRouterUrl ?? options.upstreamUrl
+      if (upstreamUrl === undefined) {
         write(response, 503, { error: { message: 'tenant model upstream is not configured', code: 'UPSTREAM_NOT_CONFIGURED' } })
         return
       }
-      const body = await bodyOf(request)
-      let requestedModel: string | undefined
-      try { const parsed = JSON.parse(body.toString('utf8')) as { model?: unknown }; if (typeof parsed.model === 'string') requestedModel = parsed.model } catch { /* upstream handles malformed JSON */ }
-      if (requestedModel !== undefined && !(await options.control.listTenantModels(session.tenantId)).some(model => model.id === requestedModel)) {
-        write(response, 400, { error: { message: `model is not bound to tenant: ${requestedModel}`, code: 'MODEL_NOT_BOUND' } })
-        return
+      let forwardBody = body
+      if (options.modelRouterUrl !== undefined) {
+        parsedBody = { ...(parsedBody ?? {}), model: `${session.tenantId}/${selected.id}` }
+        forwardBody = Buffer.from(JSON.stringify(parsedBody))
       }
-      const upstream = await fetch(options.upstreamUrl, {
+      const upstream = await fetch(`${upstreamUrl.replace(/\/$/u, '')}${url.pathname}${url.search}`, {
         method: 'POST',
         headers: {
-          'content-type': request.headers['content-type'] ?? 'application/json',
-          ...(options.upstreamKey === undefined ? {} : { authorization: `Bearer ${options.upstreamKey}` }),
+          'content-type': 'application/json',
+          ...(options.modelRouterUrl === undefined
+            ? (options.upstreamKey === undefined ? {} : { authorization: `Bearer ${options.upstreamKey}` })
+            : { authorization: `Bearer ${options.modelRouterKey ?? 'sk-siriusx-router'}` }),
         },
-        body: new Uint8Array(body),
+        body: new Uint8Array(forwardBody),
       })
       response.writeHead(upstream.status, {
         ...CORS,

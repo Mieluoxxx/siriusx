@@ -49,6 +49,9 @@ const control = new ControlPlane({
   dataDir,
   ...(process.env.SIRIUSX_SESSION_SECRET === undefined ? {} : { sessionSecret: process.env.SIRIUSX_SESSION_SECRET }),
   ...(storage === undefined ? {} : { storage }),
+  ...(process.env.SIRIUSX_SECRETS_KEY === undefined || process.env.SIRIUSX_SECRETS_KEY === '' ? {} : { secretsKey: process.env.SIRIUSX_SECRETS_KEY }),
+  ...(process.env.SIRIUSX_MODEL_ROUTER_CONFIG === undefined || process.env.SIRIUSX_MODEL_ROUTER_CONFIG === '' ? {} : { modelRouterConfigPath: process.env.SIRIUSX_MODEL_ROUTER_CONFIG }),
+  ...(process.env.SIRIUSX_MODEL_ROUTER_KEY === undefined || process.env.SIRIUSX_MODEL_ROUTER_KEY === '' ? {} : { modelRouterKey: process.env.SIRIUSX_MODEL_ROUTER_KEY }),
 })
 
 await control.initialize()
@@ -102,6 +105,9 @@ try {
       ...(process.env.SIRIUSX_GITHUB_WEBHOOK_SECRET === undefined || process.env.SIRIUSX_GITHUB_WEBHOOK_SECRET === '' ? {} : { githubWebhookSecret: process.env.SIRIUSX_GITHUB_WEBHOOK_SECRET }),
       ...(storage === undefined ? {} : { storage }),
       ...(process.env.SIRIUSX_CACHE_REFRESH_MS === undefined ? {} : { cacheRefreshMs: Number(process.env.SIRIUSX_CACHE_REFRESH_MS) }),
+      ...(process.env.SIRIUSX_SECRETS_KEY === undefined || process.env.SIRIUSX_SECRETS_KEY === '' ? {} : { secretsKey: process.env.SIRIUSX_SECRETS_KEY }),
+      ...(process.env.SIRIUSX_MODEL_ROUTER_CONFIG === undefined || process.env.SIRIUSX_MODEL_ROUTER_CONFIG === '' ? {} : { modelRouterConfigPath: process.env.SIRIUSX_MODEL_ROUTER_CONFIG }),
+      ...(process.env.SIRIUSX_MODEL_ROUTER_KEY === undefined || process.env.SIRIUSX_MODEL_ROUTER_KEY === '' ? {} : { modelRouterKey: process.env.SIRIUSX_MODEL_ROUTER_KEY }),
       ...(desktopSsoIssuer === undefined || desktopSsoIssuer === '' || desktopSsoClientId === undefined || desktopSsoClientId === '' ? {} : { desktopSso: { issuer: desktopSsoIssuer, clientId: desktopSsoClientId, ...(desktopSsoJwksUri === undefined || desktopSsoJwksUri === '' ? {} : { jwksUri: desktopSsoJwksUri }), ...(desktopSsoHs256Secret === undefined || desktopSsoHs256Secret === '' ? {} : { hs256Secret: desktopSsoHs256Secret }), ...(process.env.SIRIUSX_SSO_TENANT_CLAIM === undefined ? {} : { tenantClaim: process.env.SIRIUSX_SSO_TENANT_CLAIM }), ...(process.env.SIRIUSX_SSO_ADMIN_ROLE === undefined ? {} : { adminRole: process.env.SIRIUSX_SSO_ADMIN_ROLE }), ...(process.env.SIRIUSX_MODEL_GATEWAY_URL === undefined ? {} : { modelGatewayUrl: process.env.SIRIUSX_MODEL_GATEWAY_URL }) } }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
@@ -110,6 +116,8 @@ try {
       ...(bindHost === undefined ? {} : { host: bindHost }),
       ...(process.env.SIRIUSX_UPSTREAM_MODEL_URL === undefined ? {} : { upstreamUrl: process.env.SIRIUSX_UPSTREAM_MODEL_URL }),
       ...(process.env.SIRIUSX_UPSTREAM_MODEL_KEY === undefined ? {} : { upstreamKey: process.env.SIRIUSX_UPSTREAM_MODEL_KEY }),
+      ...(process.env.SIRIUSX_MODEL_ROUTER_URL === undefined ? {} : { modelRouterUrl: process.env.SIRIUSX_MODEL_ROUTER_URL }),
+      ...(process.env.SIRIUSX_MODEL_ROUTER_KEY === undefined || process.env.SIRIUSX_MODEL_ROUTER_KEY === '' ? {} : { modelRouterKey: process.env.SIRIUSX_MODEL_ROUTER_KEY }),
     })
     const deviceGateway = flags.get('device-port') === undefined ? undefined : await startDeviceGateway({
       control: server.control,

@@ -1,0 +1,7 @@
+data: {"id":"chatcmpl-siriusx-1794402305139","object":"chat.completion.chunk","created":1794402305,"model":"siriusx-mock","choices":[{"index":0,"delta":{"role":"assistant","content":"SiriusX offline mock reply: S1 conversation OK."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-siriusx-1794402305139","object":"chat.completion.chunk","created":1794402305,"model":"siriusx-mock","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"chatcmpl-siriusx-1794402305139","object":"chat.completion.chunk","created":1794402305,"model":"siriusx-mock","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":8,"total_tokens":13}}
+
+data: [DONE]

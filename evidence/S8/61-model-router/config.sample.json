@@ -1,0 +1,23 @@
+{
+  "host": "0.0.0.0",
+  "port": 8317,
+  "api-keys": [
+    "sk-siriusx-router"
+  ],
+  "request-retry": 2,
+  "openai-completions": [
+    {
+      "name": "siriusx-tenant-acme-acme-default-b6f351f8-5406-4331-ab6f-3d0ebee2c7e4-local-mock",
+      "base-url": "http://127.0.0.1:18081/v1",
+      "api-key": "<redacted>",
+      "priority": 0,
+      "failover-mode": "provider",
+      "models": [
+        {
+          "name": "siriusx-mock",
+          "alias": "tenant-acme/acme-default"
+        }
+      ]
+    }
+  ]
+}

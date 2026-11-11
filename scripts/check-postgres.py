@@ -9,7 +9,7 @@ schema = (root / "deploy/postgres/schema.sql").read_text()
 expected = [
     "tenants", "users", "settings", "devices", "pairing_codes", "bots",
     "device_tickets", "device_ticket_events", "cloud_tickets", "cloud_ticket_events",
-    "revoked_sessions", "tenant_quotas", "model_catalog", "tenant_models",
+    "revoked_sessions", "tenant_quotas", "model_catalog", "tenant_models", "tenant_model_upstreams",
     "source_bindings", "source_events", "tenant_billing", "support_requests", "platform_audit",
     "tg_approvals", "tg_tenant_tool_policies", "tg_audit",
     "autobot_tickets", "autobot_assignments", "autobot_assignment_events",

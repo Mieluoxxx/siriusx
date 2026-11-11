@@ -124,6 +124,21 @@ CREATE TABLE IF NOT EXISTS model_catalog (
   created_at BIGINT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tenant_model_upstreams (
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  model_id TEXT NOT NULL REFERENCES model_catalog(id),
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  protocol TEXT NOT NULL DEFAULT 'chat',
+  base_url TEXT NOT NULL,
+  upstream_model TEXT NOT NULL,
+  api_key_cipher TEXT,
+  priority INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  updated_at BIGINT NOT NULL,
+  PRIMARY KEY (tenant_id, model_id, id)
+);
+
 CREATE TABLE IF NOT EXISTS tenant_models (
   tenant_id TEXT NOT NULL REFERENCES tenants(id),
   model_id TEXT NOT NULL REFERENCES model_catalog(id),

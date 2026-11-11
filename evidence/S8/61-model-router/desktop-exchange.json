@@ -1,0 +1,12 @@
+{
+  "token": "<redacted>",
+  "userId": "c9a5e707-7b12-4fd4-a60f-8e310275454a",
+  "tenantId": "tenant-acme",
+  "role": "admin",
+  "model": {
+    "id": "acme-default",
+    "provider": "openai",
+    "model": "gpt-4.1"
+  },
+  "modelGatewayUrl": "http://192.168.14.39:4321"
+}

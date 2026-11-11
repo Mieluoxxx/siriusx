@@ -1,0 +1,17 @@
+host: "0.0.0.0"
+port: 8317
+api-keys:
+  - "sk-siriusx-router"
+request-retry: 2
+debug: false
+
+# The SiriusX control-plane generates the real config.yaml from
+# tenant_model_upstreams. This example is only for local smoke tests.
+openai-completions:
+  - name: "example"
+    base-url: "https://api.example.com/v1"
+    api-key: "sk-example"
+    failover-mode: "provider"
+    models:
+      - name: "example-model"
+        alias: "example/example-model"

@@ -146,3 +146,16 @@
 ```
 
 包含：typecheck、test、fork discipline、安装覆盖、插件 bundle、更新 feed 语法、依赖清单、SBOM、发布清单。
+
+## Model router / 企业模型上游
+
+- [x] 基于 lite-cpa 的内部格式转换服务
+- [x] 多 upstream / priority fallback
+- [x] 管理面保存 URL / API Key / upstream model / protocol
+- [x] API Key AES-GCM 加密、列表只返回掩码
+- [x] Model Gateway 按租户和模型转发 lite-cpa
+- [x] 本地 mock upstream 端到端验证
+- [ ] 真实企业上游 URL / API Key 联调
+- [x] 管理面 upstream 配置 + 多上游 fallback + 本地 mock 端到端
+- [ ] 管理面 upstream 连通性测试按钮
+- [ ] 每 upstream 超时 / 权重 / 健康检查

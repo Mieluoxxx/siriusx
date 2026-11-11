@@ -1,0 +1,19 @@
+ok  	github.com/Mieluoxxx/lite-cpa/internal/access	0.006s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/affinity	0.088s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/config	0.196s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/executor	0.016s
+?   	github.com/Mieluoxxx/lite-cpa/internal/httpx	[no test files]
+ok  	github.com/Mieluoxxx/lite-cpa/internal/pool	0.005s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/registry	0.005s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/reqlog	0.059s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/server	0.939s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/thinking	0.005s
+ok  	github.com/Mieluoxxx/lite-cpa/internal/translator	0.012s
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/chat/claude	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/chat/responses	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/claude/chat	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/claude/responses	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/common	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/responses/chat	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/translator/responses/claude	[no test files]
+?   	github.com/Mieluoxxx/lite-cpa/internal/util	[no test files]

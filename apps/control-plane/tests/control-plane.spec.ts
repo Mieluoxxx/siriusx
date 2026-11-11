@@ -878,4 +878,43 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     expect(server.control.verifySession(exchanged.token)).toMatchObject({ tenantId: tenant.id, role: 'admin' })
   })
 
+  it('encrypts tenant model upstream keys and forwards via the model router', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-upstream-'))
+    roots.push(root)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data') })
+    planes.push(plane)
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-upstream', name: 'Upstream', idpIssuer: 'https://idp.example', adminEmail: 'admin@upstream.example' })
+    await plane.addModel({ id: 'router-model', name: 'Router Model', provider: 'openai', model: 'gpt-router' })
+    await plane.bindTenantModel(tenant.id, 'router-model', true)
+    const upstream = await plane.upsertTenantModelUpstream(tenant.id, 'router-model', { name: 'primary', protocol: 'chat', baseUrl: 'http://127.0.0.1:18081/v1', upstreamModel: 'upstream-model', apiKey: 'secret-key', priority: 0 })
+    const listed = await plane.listTenantModelUpstreams(tenant.id, 'router-model')
+    expect(listed[0]).toMatchObject({ id: upstream.id, hasApiKey: true, protocol: 'chat' })
+    expect(JSON.stringify(listed)).not.toContain('secret-key')
+    expect(await plane.tenantModelUpstream(tenant.id, 'router-model')).toMatchObject({ key: 'secret-key', upstreamModel: 'upstream-model' })
+
+    let seen: { authorization: string | undefined; body: Record<string, unknown> } | undefined
+    const router = createServer(async (request, response) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      seen = { authorization: request.headers.authorization, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown> }
+      const body = JSON.stringify({ id: 'chatcmpl-router', object: 'chat.completion', choices: [] })
+      response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) }).end(body)
+    })
+    await new Promise<void>((resolve, reject) => { router.once('error', reject); router.listen(0, '127.0.0.1', resolve) })
+    const address = router.address()
+    const routerUrl = `http://127.0.0.1:${typeof address === 'object' && address !== null ? address.port : 0}`
+    const gateway = await startModelGateway({ control: plane, port: 0, modelRouterUrl: routerUrl, modelRouterKey: 'router-key' })
+    try {
+      const admin = plane.findUserByEmail(tenant.id, 'admin@upstream.example')!
+      const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+      const response = await fetch(`${gateway.url}/v1/chat/completions`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'router-model', messages: [] }) }).then(value => value.json()) as { id: string }
+      expect(response.id).toBe('chatcmpl-router')
+      expect(seen?.authorization).toBe('Bearer router-key')
+      expect(seen?.body.model).toBe('tenant-upstream/router-model')
+    } finally {
+      await gateway.close()
+      await new Promise<void>((resolve, reject) => router.close(error => { error === undefined ? resolve() : reject(error) }))
+    }
+  })
+
 })
