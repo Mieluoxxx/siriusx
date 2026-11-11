@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: siriusx-control-data
+  labels:
+    app.kubernetes.io/name: control-plane
+    app.kubernetes.io/part-of: siriusx
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane
+  labels:
+    app.kubernetes.io/name: control-plane
+    app.kubernetes.io/part-of: siriusx
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: control-plane
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: control-plane
+        app.kubernetes.io/part-of: siriusx
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: control-plane
+          image: siriusx/control-plane:offline
+          imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - --import
+            - tsx
+            - apps/control-plane/src/cli.ts
+            - serve
+            - --db
+            - /data/control.sqlite
+            - --data-dir
+            - /data
+            - --host
+            - 0.0.0.0
+            - --port
+            - "4320"
+            - --gateway-port
+            - "4321"
+            - --device-port
+            - "4322"
+          ports:
+            - name: http
+              containerPort: 4320
+            - name: model
+              containerPort: 4321
+            - name: device-ws
+              containerPort: 4322
+          envFrom:
+            - configMapRef:
+                name: siriusx-config
+            - secretRef:
+                name: siriusx-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+            - name: docker-cli
+              mountPath: /usr/local/bin/docker
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: siriusx-control-data
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+        - name: docker-cli
+          hostPath:
+            path: /usr/bin/docker
+            type: File
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane
+  labels:
+    app.kubernetes.io/name: control-plane
+    app.kubernetes.io/part-of: siriusx
+spec:
+  selector:
+    app.kubernetes.io/name: control-plane
+  ports:
+    - name: http
+      port: 4320
+      targetPort: http
+    - name: model
+      port: 4321
+      targetPort: model
+    - name: device-ws
+      port: 4322
+      targetPort: device-ws

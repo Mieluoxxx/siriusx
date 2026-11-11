@@ -52,6 +52,7 @@
 - [x] Approval 过期自动标记（list 时 sweep）
 - [x] 容器内全栈离线安装（无 curl，node fetch fallback）
 - [x] Update feed realpath/path-traversal 防护
+- [x] Kubernetes/Kustomize 基础（4 服务、PVC、probe、NetworkPolicy、Ingress）
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

@@ -1,0 +1,16 @@
+{
+  "files": 9,
+  "documents": 19,
+  "kinds": [
+    "ConfigMap",
+    "Deployment",
+    "Ingress",
+    "Kustomization",
+    "Namespace",
+    "NetworkPolicy",
+    "PersistentVolumeClaim",
+    "Secret",
+    "Service"
+  ],
+  "resources": 7
+}

@@ -21,6 +21,8 @@ if [ -z "$url" ]; then
   kill "$pid" 2>/dev/null || true
   exit 1
 fi
-printf '%s' "$url" >/data/dsh-web-url
+URL_FILE="${DSH_WEB_URL_FILE:-/data/dsh-web-url}"
+mkdir -p "$(dirname "$URL_FILE")"
+printf '%s' "$url" > "$URL_FILE"
 cat /tmp/dsh-web.log
 wait "$pid"
