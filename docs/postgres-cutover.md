@@ -37,6 +37,7 @@ boundary, not just a connection string.
    - [x] support_requests (runtime via `DATABASE_URL`; SQLite fallback)
    - [x] tenant_billing (runtime via `DATABASE_URL`; SQLite fallback)
    - [x] tenant/settings mirror on create/update/status
+   - [x] users mirror on create/role update
    - tenants
    - users
    - quotas
@@ -73,8 +74,7 @@ preflight, not proof of runtime cutover.
 `tenants`, `users`, `settings`, `devices`, quotas, model catalog, source
 bindings/events and tickets still use SQLite at runtime.
 
-Tenant/settings rows are now mirrored to PostgreSQL during tenant creation,
-update and status changes, so support/billing foreign keys work for new
-tenants. SQLite is still the primary read source for tenant lookups. Do not use
-hybrid mode for production traffic until tenant/user reads and users are moved
-to the storage boundary.
+Tenant/settings/user rows are now mirrored to PostgreSQL during lifecycle
+writes, so support/billing foreign keys work for new tenants. SQLite is still
+the primary read source for tenant/user lookups. Do not use hybrid mode for
+production traffic until reads are moved to the storage boundary.

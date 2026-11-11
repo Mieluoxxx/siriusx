@@ -65,7 +65,7 @@ try {
     const email = flags.get('email')
     if (tenantId === undefined || email === undefined) usage()
     const role = flags.get('role') === 'admin' ? 'admin' : 'member'
-    console.log(JSON.stringify({ userId: control.addUser({ tenantId, email, role }).userId }, undefined, 2))
+    console.log(JSON.stringify({ userId: (await control.addUser({ tenantId, email, role })).userId }, undefined, 2))
   } else if (command === 'token' && subcommand === 'issue') {
     const tenantId = flags.get('tenant')
     const userId = flags.get('user')

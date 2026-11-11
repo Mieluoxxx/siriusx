@@ -309,11 +309,13 @@ export class ControlPlane {
       this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1)').run(id, 'tenant-default')
       this.#db.prepare('INSERT INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) VALUES (?, \'USD\', 0, 0, NULL)').run(id)
       this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
+      const adminUserId = randomUUID()
       this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
-        .run(randomUUID(), id, input.adminEmail, 'admin', now)
+        .run(adminUserId, id, input.adminEmail, 'admin', now)
       if (this.#storage !== undefined) {
         await this.#storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [id, input.name, input.idpIssuer, 'active', now])
         await this.#storage.query('INSERT INTO settings (tenant_id) VALUES (?) ON CONFLICT (tenant_id) DO NOTHING', [id])
+        await this.#storage.query('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (tenant_id, email) DO NOTHING', [adminUserId, id, input.adminEmail, 'admin', now])
       }
       this.#db.exec('COMMIT')
     } catch (error) {
@@ -619,8 +621,9 @@ export class ControlPlane {
     }>).map(row => ({ userId: row.id, email: row.email, role: row.role, createdAt: row.created_at }))
   }
 
-  updateUserRole(tenantId: string, userId: string, role: Role): void {
+  async updateUserRole(tenantId: string, userId: string, role: Role): Promise<void> {
     this.tenantRow(tenantId)
+    if (this.#storage !== undefined) await this.#storage.query('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?', [role, userId, tenantId])
     const result = this.#db.prepare('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?').run(role, userId, tenantId)
     if (result.changes === 0) throw new ControlPlaneError(404, 'USER_NOT_FOUND', userId)
   }
@@ -636,21 +639,24 @@ export class ControlPlane {
     return row
   }
 
-  addUser(input: { tenantId: string; email: string; role?: Role }): { userId: string } {
+  async addUser(input: { tenantId: string; email: string; role?: Role }): Promise<{ userId: string }> {
     this.tenantRow(input.tenantId)
     this.enforceQuota(input.tenantId, 'users')
     const userId = randomUUID()
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (tenant_id, email) DO NOTHING', [userId, input.tenantId, input.email, input.role ?? 'member', this.#now()])
+    }
     this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(userId, input.tenantId, input.email, input.role ?? 'member', this.#now())
     return { userId }
   }
 
   /** Trusted service-to-service SSO identity exchange; never exposed to browsers. */
-  ssoSession(input: { tenantId: string; email: string; role: Role }): { token: string; userId: string; tenantId: string } {
+  async ssoSession(input: { tenantId: string; email: string; role: Role }): Promise<{ token: string; userId: string; tenantId: string }> {
     const tenant = this.#db.prepare('SELECT id FROM tenants WHERE id = ?').get(input.tenantId) as { id: string } | undefined
     if (tenant === undefined) throw new ControlPlaneError(404, 'TENANT_NOT_FOUND', input.tenantId)
     const existing = this.findUserByEmail(input.tenantId, input.email)
-    const user = existing ?? this.addUser({ tenantId: input.tenantId, email: input.email, role: input.role })
+    const user = existing ?? await this.addUser({ tenantId: input.tenantId, email: input.email, role: input.role })
     const role = existing?.role ?? input.role
     const userId = existing?.id ?? (user as { userId: string }).userId
     return { token: this.issueSession({ tenantId: input.tenantId, userId, role }), userId, tenantId: input.tenantId }

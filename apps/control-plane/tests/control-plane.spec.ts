@@ -78,7 +78,7 @@ describe('control plane', () => {
     const { plane } = await setup()
     const tenant = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
-    const member = plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
+    const member = await plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
     const adminSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
     const memberSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: member.userId, role: 'member' }))
     plane.updateSettings(adminSession, { nativeConversationEnabled: false })
@@ -239,7 +239,7 @@ describe('control plane', () => {
     const { plane } = await setup()
     const tenant = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
-    const member = plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
+    const member = await plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
     const adminSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
     const memberSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: member.userId, role: 'member' }))
     const bot = plane.createBot(adminSession, 'Admin Bot')
@@ -453,7 +453,7 @@ describe('control plane', () => {
     const admin = plane.findUserByEmail(tenant.id, 'admin@quota.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     plane.setQuota(tenant.id, { maxUsers: 1, maxDevices: 1, maxCloudTicketsPerDay: 0, maxDeviceTicketsPerDay: 0 })
-    expect(() => plane.addUser({ tenantId: tenant.id, email: 'second@quota.example' })).toThrow('users quota exceeded')
+    await expect(plane.addUser({ tenantId: tenant.id, email: 'second@quota.example' })).rejects.toThrow('users quota exceeded')
     const pairing = plane.startPairing(session, 'Device')
     expect(() => plane.startPairing(session, 'Second')).toThrow('devices quota exceeded')
     const paired = plane.confirmPairing(session, pairing.code)
@@ -621,6 +621,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await plane.listSupportRequests(tenant.id))[0]).toMatchObject({ id: created.id, status: 'pending' })
       expect((await plane.decideSupportRequest(tenant.id, created.id, true, 'admin@pg.example')).status).toBe('approved')
       await storage.query('DELETE FROM support_requests WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -641,6 +642,28 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100 })).currency).toBe('EUR')
       expect(await plane.getBilling(tenant.id)).toMatchObject({ currency: 'EUR', cloudTicketCents: 100 })
       await storage.query('DELETE FROM tenant_billing WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
+  it('mirrors users to PostgreSQL when storage is configured', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-users-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-users', name: 'PG Users', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-users.example' })
+    try {
+      const member = await plane.addUser({ tenantId: tenant.id, email: 'member@pg-users.example', role: 'member' })
+      expect((await storage.query('SELECT role FROM users WHERE id = ?', [member.userId])).rows[0]).toEqual({ role: 'member' })
+      await plane.updateUserRole(tenant.id, member.userId, 'admin')
+      expect((await storage.query('SELECT role FROM users WHERE id = ?', [member.userId])).rows[0]).toEqual({ role: 'admin' })
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {

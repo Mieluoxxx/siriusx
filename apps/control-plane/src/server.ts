@@ -272,7 +272,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         }
         const body = await readJson(request)
         if (typeof body.tenantId !== 'string' || typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('tenantId, email and role are required')
-        write(response, 200, control.ssoSession({ tenantId: body.tenantId, email: body.email, role: body.role }))
+        write(response, 200, await control.ssoSession({ tenantId: body.tenantId, email: body.email, role: body.role }))
         return
       }
       if (parts[0] === 'v1' && parts[1] === 'admin') {
@@ -424,7 +424,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           if (request.method === 'POST' && parts[5] === undefined) {
             const body = await readJson(request)
             if (typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('email and role are required')
-            const user = control.addUser({ tenantId: parts[3], email: body.email, role: body.role })
+            const user = await control.addUser({ tenantId: parts[3], email: body.email, role: body.role })
             await control.recordPlatformAudit({ actor: 'platform', action: 'user.create', target: `${parts[3]}/${user.userId}`, detail: body.email })
             write(response, 201, user)
             return
@@ -432,7 +432,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           if (request.method === 'PUT' && parts[5] !== undefined && parts[6] === 'role') {
             const body = await readJson(request)
             if (body.role !== 'admin' && body.role !== 'member') throw new Error('role is required')
-            control.updateUserRole(parts[3], parts[5], body.role)
+            await control.updateUserRole(parts[3], parts[5], body.role)
             await control.recordPlatformAudit({ actor: 'platform', action: 'user.role', target: `${parts[3]}/${parts[5]}`, detail: body.role })
             write(response, 200, { updated: true })
             return
@@ -635,7 +635,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (request.method === 'PUT' && parts[2] !== undefined && parts[3] === 'role') {
           const body = await readJson(request)
           if (body.role !== 'admin' && body.role !== 'member') throw new Error('role is required')
-          control.updateUserRole(session.tenantId, parts[2], body.role)
+          await control.updateUserRole(session.tenantId, parts[2], body.role)
           write(response, 200, { updated: true })
           return
         }
