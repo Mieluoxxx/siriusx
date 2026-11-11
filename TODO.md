@@ -44,6 +44,7 @@
 - [x] Tool audit 查询按 tenant 隔离
 - [x] Tool gateway 默认关闭 wildcard CORS
 - [x] local_dir symlink 越界防护
+- [x] Server-side session revocation + logout 联动
 - [x] Cloud follow-up 浏览器端到端（Team panel Send → 新 assignment → person/review）
 - [x] 许可证策略门禁（阻断 GPL/AGPL/SSPL/BUSL）
 - [x] macOS DMG 交叉构建阻塞证据

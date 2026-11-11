@@ -235,6 +235,10 @@ document.getElementById('f').onsubmit = async (event) => {
         return
       }
       if ((request.method === 'GET' || request.method === 'POST') && url.pathname === '/auth/logout') {
+        const sessionToken = parseCookies(request.headers.cookie)[cookieName]
+        if (sessionToken !== undefined) {
+          await fetch(`${controlPlaneUrl}/v1/sessions/revoke`, { method: 'POST', headers: { authorization: `Bearer ${sessionToken}` } }).catch(() => undefined)
+        }
         let location = '/login'
         if (oidcEnabled && oidc !== undefined && oidcMetadata?.endSessionEndpoint !== undefined) {
           const endSession = new URL(oidcMetadata.endSessionEndpoint)

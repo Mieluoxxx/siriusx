@@ -402,4 +402,14 @@ describe('control plane', () => {
     expect(() => plane.createCloudTicket(session, { repoUrl: 'https://user:pass@github.com/acme/repo.git', baseRef: 'main', prompt: 'x' })).toThrow('must not contain credentials')
   })
 
+  it('revokes a server-side session token', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-revoke', name: 'Revoke', idpIssuer: 'https://idp.example', adminEmail: 'admin@revoke.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@revoke.example')!
+    const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    expect(plane.verifySession(token).userId).toBe(admin.id)
+    expect(plane.revokeSession(token)).toEqual({ revoked: true })
+    expect(() => plane.verifySession(token)).toThrow('session revoked')
+  })
+
 })

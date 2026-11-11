@@ -103,6 +103,10 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS revoked_sessions (
+  session_id TEXT PRIMARY KEY,
+  expires_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS bots (
   id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL REFERENCES tenants(id),
@@ -263,9 +267,20 @@ export class ControlPlane {
     const user = this.#db.prepare('SELECT id, role FROM users WHERE id = ? AND tenant_id = ?').get(input.userId, input.tenantId) as
       | { id: string; role: string } | undefined
     if (user === undefined) throw new ControlPlaneError(401, 'USER_NOT_FOUND', 'user is not a member of this tenant')
-    const payload = Buffer.from(JSON.stringify({ tenantId: input.tenantId, userId: input.userId, role: input.role, exp: this.#now() + this.#sessionTtlMs })).toString('base64url')
+    const payload = Buffer.from(JSON.stringify({ tenantId: input.tenantId, userId: input.userId, role: input.role, jti: randomUUID(), exp: this.#now() + this.#sessionTtlMs })).toString('base64url')
     const signature = createHmac('sha256', this.#secret).update(payload).digest('base64url')
     return `${payload}.${signature}`
+  }
+
+  revokeSession(token: string): { revoked: true } {
+    const [payload, signature] = token.split('.')
+    if (payload === undefined || signature === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session token')
+    const expected = createHmac('sha256', this.#secret).update(payload).digest('base64url')
+    if (!safeEqual(signature, expected)) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session token')
+    const value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { exp?: number; jti?: string }
+    if (typeof value.exp !== 'number' || typeof value.jti !== 'string') throw new ControlPlaneError(401, 'SESSION_NOT_REVOCABLE', 'session has no revocable id')
+    this.#db.prepare('INSERT OR REPLACE INTO revoked_sessions (session_id, expires_at) VALUES (?, ?)').run(value.jti, value.exp)
+    return { revoked: true }
   }
 
   verifySession(token: string): Session {
@@ -273,11 +288,14 @@ export class ControlPlane {
     if (payload === undefined || signature === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session token')
     const expected = createHmac('sha256', this.#secret).update(payload).digest('base64url')
     if (!safeEqual(signature, expected)) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session token')
-    const value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as Partial<Session> & { exp?: number }
+    const value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as Partial<Session> & { exp?: number; jti?: string }
     if (typeof value.tenantId !== 'string' || typeof value.userId !== 'string' || (value.role !== 'admin' && value.role !== 'member') || typeof value.exp !== 'number') {
       throw new ControlPlaneError(401, 'UNAUTHORIZED', 'invalid session claims')
     }
     if (value.exp <= this.#now()) throw new ControlPlaneError(401, 'SESSION_EXPIRED', 'session expired')
+    if (typeof value.jti === 'string' && this.#db.prepare('SELECT 1 FROM revoked_sessions WHERE session_id = ? AND expires_at > ?').get(value.jti, this.#now()) !== undefined) {
+      throw new ControlPlaneError(401, 'SESSION_REVOKED', 'session revoked')
+    }
     const user = this.#db.prepare('SELECT role FROM users WHERE id = ? AND tenant_id = ?').get(value.userId, value.tenantId) as { role: Role } | undefined
     if (user === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'user no longer exists')
     return { tenantId: value.tenantId, userId: value.userId, role: user.role }
