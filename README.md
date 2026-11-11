@@ -88,7 +88,7 @@ pnpm test
 ./scripts/release-check.sh
 ```
 
-会依次跑 typecheck、test、fork discipline、安装覆盖、插件 bundle、更新 feed 语法检查和依赖清单。
+会依次跑 typecheck、test、fork discipline、安装覆盖、插件 bundle、更新 feed 语法检查、依赖清单和发布清单。
 
 ## 魔改纪律
 

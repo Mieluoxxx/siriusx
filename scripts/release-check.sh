@@ -19,4 +19,5 @@ node --check deploy/release/update-feed/server.mjs
 echo '== sbom'
 mkdir -p artifacts/release
 pnpm list -r --depth 0 --json > artifacts/release/dependencies.json
-echo 'release checks OK'
+node scripts/build-release-manifest.mjs
+ echo 'release checks OK'

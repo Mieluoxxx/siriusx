@@ -1,0 +1,5 @@
+{
+  "manifest": "/root/siriusx/artifacts/release/manifest.json",
+  "siriusx": "79955c5ecc1a7b53cf095a7ebfe28e86a4f753a6",
+  "dsh": "dfe724634d5d6bef8f85783f50014cad1cc56ffb"
+}
