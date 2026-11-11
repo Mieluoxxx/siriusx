@@ -1,9 +1,9 @@
 {
   "schema": "siriusx.release-manifest/v1",
-  "generatedAt": "2026-11-11T01:50:05.661Z",
+  "generatedAt": "2026-11-11T02:03:43.341Z",
   "siriusx": {
-    "commit": "88b39bebf56df7f25d09783a88fc51d54a4af666",
-    "describe": "executor-v0.1.0-89-g88b39be"
+    "commit": "573f7ad1a597ac782ff5dea076fd0561e8046133",
+    "describe": "executor-v0.1.0-97-g573f7ad"
   },
   "dshFork": {
     "commit": "dfe724634d5d6bef8f85783f50014cad1cc56ffb",
@@ -13,8 +13,8 @@
     "tag": "executor-v0.1.0"
   },
   "images": {
-    "controlPlane": "siriusx/control-plane:offline",
-    "dshWeb": "siriusx/dsh-web:offline",
+    "controlPlane": "siriusx/control-plane:hc",
+    "dshWeb": "siriusx/dsh-web:full",
     "sandbox": "teams-bridge:0.2.0"
   },
   "versions": {

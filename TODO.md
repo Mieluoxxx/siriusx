@@ -36,6 +36,7 @@
 - [x] 服务 `/ready` 就绪探针（DB + 上游依赖）
 - [x] Device token 30 天 TTL + 过期后轮换恢复
 - [x] 1 MiB 请求体上限（control-plane/tool-gateway/web-gateway）
+- [x] 完整 release gate 重跑（68 shell + 42 ESM）
 - [x] Device WebSocket 1 MiB frame 上限（close 1009）
 - [x] Device 心跳超时清理（close 4002）
 - [x] Compose `/ready` healthcheck（control-plane/tool-gateway/web-gateway）
