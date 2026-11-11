@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -201,6 +201,22 @@ describe('local executor', () => {
     await executor.createAssignment(req)
     await expect(executor.readFile(req.workdirKey, 'escape.txt')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_WORKDIR' })
     await expect(executor.listFiles(req.workdirKey, 'escape.txt')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_WORKDIR' })
+  })
+
+  it('does not leak the host environment into previews', async () => {
+    const root = await gitRepo()
+    const output = join(root, 'preview-env.json')
+    process.env.SIRIUSX_PREVIEW_SECRET = 'should-not-leak'
+    try {
+      const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: reportScenario() })
+      const req = request(root)
+      await executor.createAssignment(req)
+      await executor.startPreview(req.workdirKey, process.execPath, ['-e', `require('node:fs').writeFileSync(${JSON.stringify(output)}, JSON.stringify(process.env))`], 45680)
+      await new Promise(resolve => setTimeout(resolve, 250))
+      const env = JSON.parse(await readFile(output, 'utf8')) as Record<string, string>
+      expect(env.SIRIUSX_PREVIEW_SECRET).toBeUndefined()
+      expect(env.PATH).toBeDefined()
+    } finally { delete process.env.SIRIUSX_PREVIEW_SECRET }
   })
 
 })

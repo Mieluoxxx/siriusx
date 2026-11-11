@@ -43,6 +43,16 @@ export class LocalExecutorError extends Error {
   }
 }
 
+function previewEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const allowed = ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL', 'LC_CTYPE', 'SHELL', 'USER', 'LOGNAME']
+  const result: NodeJS.ProcessEnv = {}
+  for (const key of allowed) {
+    const value = env[key]
+    if (value !== undefined) result[key] = value
+  }
+  return result
+}
+
 function killPreviewTree(child: import('node:child_process').ChildProcess, signal: NodeJS.Signals): void {
   if (process.platform !== 'win32' && child.pid !== undefined) {
     try { process.kill(-child.pid, signal); return } catch { /* fall back to direct kill */ }
@@ -640,7 +650,7 @@ export class LocalExecutor {
     if (workdir === undefined) throw new LocalExecutorError('WORKDIR_NOT_FOUND', workdirKey)
     if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new LocalExecutorError('INVALID_PAYLOAD', `invalid preview port: ${port}`)
     await this.sweepPreviews()
-    const child = spawn(command, [...args], { cwd: workdir.path, env: process.env, stdio: 'ignore', detached: process.platform !== 'win32' })
+    const child = spawn(command, [...args], { cwd: workdir.path, env: previewEnv(process.env), stdio: 'ignore', detached: process.platform !== 'win32' })
     if (child.pid === undefined) throw new Error(`preview process did not start: ${command}`)
     const previewId = randomUUID()
     const now = this.#now()
