@@ -1,0 +1,13 @@
+native/system/packages/darwin-arm64      | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["darwin"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+native/system/packages/darwin-x64        | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["darwin"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+native/system/packages/linux-arm64       | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+packages/experimental/cua-macos          | [WARN] Unsupported platform: wanted: {"cpu":["any"],"os":["darwin"],"libc":["any"]} (current: {"os":"linux","cpu":"x64","libc":"glibc"})
+$ tsx scripts/package-target.ts mac-arm64 --unsigned
+Error: desktop package: mac-arm64 requires a macOS build host
+    at resolveDesktopPackageTarget (file:///root/siriusx/deepseek-harness/apps/desktop/scripts/package-target.ts:2:573)
+    at parseDesktopPackageInvocation (file:///root/siriusx/deepseek-harness/apps/desktop/scripts/package-target.ts:2:2444)
+    at main (file:///root/siriusx/deepseek-harness/apps/desktop/scripts/package-target.ts:2:4591)
+    at file:///root/siriusx/deepseek-harness/apps/desktop/scripts/package-target.ts:6:8103
+/root/siriusx/deepseek-harness/apps/desktop:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @deepseek-ai/dsh-desktop@0.2.2-rc.1 package:mac:arm64:unsigned: `tsx scripts/package-target.ts mac-arm64 --unsigned`
+Exit status 1

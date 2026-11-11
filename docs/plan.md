@@ -265,7 +265,7 @@ S1 和 S2 互不依赖，两个人可以同时做。S8 和 S9 互不依赖，同
 - [x] 换品牌：产品名、图标，去掉 `dsh-client-ui-brand-official` 与 `dsh-deepseek-account` 的入口。**部分完成**：品牌插件/图标/electron-builder 环境变量已完成；欢迎页与关于页上游文案未清。证据：`evidence/S8/01-brand/`。
 - [ ] 配置我方的更新源与签名。macOS 做公证，Windows 做代码签名。**部分完成**：static feed、manifest/artifact 本地通过；Desktop builder 已支持 `SIRIUSX_UPDATE_URL` / `SIRIUSX_UPDATE_CHANNEL` 指向自有 feed；真实签名 artifact、CDN 域名、客户端自动更新未验。证据：`evidence/S8/16-update-feed/`。
 - [ ] 把企业插件打进安装包，登录只是启用。**部分完成**：插件 bundle、manifest、electron-builder extraResources 与 `SIRIUSX_BUNDLED_PLUGINS_DIR` 已接；真实 mac/win 安装包未验。证据：`evidence/S8/15-plugin-bundle/`。
-- [ ] 出 macOS 与 Windows 两个平台的安装包。**未完成**：Linux 环境不能产 mac/win 包。
+- [ ] 出 macOS 与 Windows 两个平台的安装包。**未完成**：Linux 环境不能产 mac/win 包；mac-arm64 交叉构建被上游脚本拒绝 `requires a macOS build host`。证据：`evidence/S1/07-dmg-build/build-attempt.txt`。
 - [x] 做离线安装包：全部镜像与依赖，不需要联网。证据：`build-full-bundle.sh` 生成 control-plane/DSH Web/sandbox 镜像 + compose + `install-full.sh`；离线一键安装 health 与 web 登录通过。`evidence/S8/14-full-bundle/`。
 - [x] 拉出冻结分支，写下版本冻结期、安全补丁的处理时限、升级窗口，这三项进交付合同。**模板完成**：`deploy/release/README.md`；实际分支/合同未签。
 - [x] 做一次补丁回移演练：把主分支上的一个修复移到冻结分支并发出更新。**通过**：`release/executor-0.1` cherry-pick `8553c8c`，契约 25 测试通过，标签 `executor-v0.1.1`，patch 见 `evidence/S8/07-backport/`。
