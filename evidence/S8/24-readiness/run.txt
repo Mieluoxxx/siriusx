@@ -1,0 +1,46 @@
+{
+  "healthy": {
+    "control": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "service": "siriusx-control-plane",
+        "checks": {
+          "database": "ok"
+        }
+      }
+    },
+    "tool": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "service": "siriusx-tool-gateway",
+        "checks": {
+          "database": "ok"
+        }
+      }
+    },
+    "web": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "service": "siriusx-web-gateway",
+        "checks": {
+          "controlPlane": true,
+          "dshWeb": true
+        }
+      }
+    }
+  },
+  "degraded": {
+    "status": 503,
+    "body": {
+      "ok": false,
+      "service": "siriusx-web-gateway",
+      "checks": {
+        "controlPlane": true,
+        "dshWeb": false
+      }
+    }
+  }
+}

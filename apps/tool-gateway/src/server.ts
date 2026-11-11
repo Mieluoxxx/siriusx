@@ -72,6 +72,11 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
     try {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       if (request.method === 'GET' && url.pathname === '/health') { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }
+      if (request.method === 'GET' && url.pathname === '/ready') {
+        try { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', checks: gateway.ready() }) }
+        catch (error) { write(response, 503, { ok: false, service: 'siriusx-tool-gateway', error: error instanceof Error ? error.message : String(error) }) }
+        return
+      }
       const context = contextOf(request)
       if (request.method === 'POST' && url.pathname === '/v1/actions') {
         const body = await readJson(request)

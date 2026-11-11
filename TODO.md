@@ -33,6 +33,7 @@
 - [x] HTTP/WS Origin 校验、登录限流、Secure cookie、logout/OIDC RP-initiated logout
 - [x] 全栈离线一键包、DSH Web 离线镜像、internal 网络测试
 - [x] 发布清单、依赖清单、CycloneDX SBOM、SBOM/插件/更新源发布门禁
+- [x] 服务 `/ready` 就绪探针（DB + 上游依赖）
 - [x] macOS DMG 交叉构建阻塞证据
 
 ## 不需要外部资源的下一步

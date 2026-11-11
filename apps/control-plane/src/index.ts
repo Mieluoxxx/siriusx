@@ -698,6 +698,11 @@ export class ControlPlane {
     return rows.length
   }
 
+  ready(): { database: 'ok' } {
+    this.#db.prepare('SELECT 1').get()
+    return { database: 'ok' }
+  }
+
   cloudTicketTarget(tenantId: string, ticketId: string): { ticketId: string } | undefined {
     const row = this.#db.prepare('SELECT ticket_id FROM cloud_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, tenantId) as { ticket_id: string } | undefined
     return row === undefined ? undefined : { ticketId: row.ticket_id }

@@ -74,6 +74,11 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         write(response, 200, { ok: true, service: 'siriusx-control-plane', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' })
         return
       }
+      if (request.method === 'GET' && url.pathname === '/ready') {
+        try { write(response, 200, { ok: true, service: 'siriusx-control-plane', checks: control.ready() }) }
+        catch (error) { write(response, 503, { ok: false, service: 'siriusx-control-plane', error: error instanceof Error ? error.message : String(error) }) }
+        return
+      }
       if (request.method === 'POST' && url.pathname === '/v1/approvals/callback') {
         if (ssoServiceToken === undefined || request.headers['x-siriusx-service-token'] !== ssoServiceToken) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'service token required')
         const body = await readJson(request)

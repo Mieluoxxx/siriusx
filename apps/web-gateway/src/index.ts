@@ -140,6 +140,15 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         return
       }
       if (request.method === 'GET' && url.pathname === '/health') { json(response, 200, { ok: true, service: 'siriusx-web-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }
+      if (request.method === 'GET' && url.pathname === '/ready') {
+        const deadline = AbortSignal.timeout(2000)
+        const [controlReady, dshReady] = await Promise.all([
+          fetch(`${controlPlaneUrl}/health`, { signal: deadline }).then(result => result.ok).catch(() => false),
+          fetch(dshWebUrl, { signal: deadline, headers: { accept: 'text/html' } }).then(result => result.status < 500).catch(() => false),
+        ])
+        json(response, controlReady && dshReady ? 200 : 503, { ok: controlReady && dshReady, service: 'siriusx-web-gateway', checks: { controlPlane: controlReady, dshWeb: dshReady } })
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/auth/oidc/start' && oidcEnabled && oidc !== undefined && oidcMetadata !== undefined) {
         for (const [key, value] of pending) if (Date.now() - value.createdAt > 10 * 60 * 1000) pending.delete(key)
         if (pending.size >= 1000) { response.writeHead(429, { 'cache-control': 'no-store' }).end('too many pending OIDC states'); return }

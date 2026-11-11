@@ -148,6 +148,11 @@ export class ToolGateway {
     this.#lastAuditHash = last?.hash ?? undefined
   }
 
+  ready(): { database: 'ok' } {
+    this.#db.prepare('SELECT 1').get()
+    return { database: 'ok' }
+  }
+
   close(): void { this.#db.close() }
 
   private assertTenant(request: ActionRequest, context: ToolContext): void {
