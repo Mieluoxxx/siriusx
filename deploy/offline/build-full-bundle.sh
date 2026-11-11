@@ -31,17 +31,22 @@ SIRIUSX_IMAGE=${SIRIUSX_IMAGE:-siriusx/control-plane:full}
 SIRIUSX_DSH_WEB_IMAGE=${SIRIUSX_DSH_WEB_IMAGE:-siriusx/dsh-web:full}
 ENV
 fi
+health() {
+  if command -v curl >/dev/null 2>&1; then curl -sf "$1" >/dev/null; else
+    node -e 'fetch(process.argv[1]).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))' "$1"
+  fi
+}
 for image in images/*.tar; do docker load -i "$image" >/dev/null; done
 docker compose --profile full up -d
 for _ in $(seq 1 180); do
-  curl -sf http://127.0.0.1:4320/health >/dev/null && \
-  curl -sf http://127.0.0.1:4330/health >/dev/null && \
-  curl -sf http://127.0.0.1:8080/health >/dev/null && break
+  health http://127.0.0.1:4320/health && \
+  health http://127.0.0.1:4330/health && \
+  health http://127.0.0.1:8080/health && break
   sleep 1
 done
-curl -sf http://127.0.0.1:4320/health
-curl -sf http://127.0.0.1:4330/health
-curl -sf http://127.0.0.1:8080/health
+health http://127.0.0.1:4320/health
+health http://127.0.0.1:4330/health
+health http://127.0.0.1:8080/health
 echo "SiriusX full stack is ready on http://127.0.0.1:8080"
 INSTALL
 chmod +x "$OUT/install-full.sh"
