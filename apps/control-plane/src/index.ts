@@ -103,6 +103,14 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS tenant_quotas (
+  tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
+  max_users INTEGER NOT NULL,
+  max_devices INTEGER NOT NULL,
+  max_cloud_tickets_per_day INTEGER NOT NULL,
+  max_device_tickets_per_day INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS revoked_sessions (
   session_id TEXT PRIMARY KEY,
   expires_at INTEGER NOT NULL
@@ -187,6 +195,7 @@ export class ControlPlane {
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
+    this.#db.prepare('INSERT OR IGNORE INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) SELECT id, 50, 20, 100, 500, ? FROM tenants').run(this.#now())
     const deviceColumns = this.#db.prepare('PRAGMA table_info(devices)').all() as Array<{ name: string }>
     if (!deviceColumns.some(column => column.name === 'token_expires_at')) this.#db.exec('ALTER TABLE devices ADD COLUMN token_expires_at INTEGER')
     this.#botScenario = options.botScenario ?? 'ready'
@@ -217,6 +226,7 @@ export class ControlPlane {
       this.#db.prepare('INSERT INTO tenants (id, name, idp_issuer, created_at) VALUES (?, ?, ?, ?)')
         .run(id, input.name, input.idpIssuer, now)
       this.#db.prepare('INSERT INTO settings (tenant_id) VALUES (?)').run(id)
+      this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
       this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
         .run(randomUUID(), id, input.adminEmail, 'admin', now)
       this.#db.exec('COMMIT')
@@ -233,10 +243,47 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
   }
 
-  tenantUsage(tenantId: string): { users: number; devices: number; deviceTickets: number; cloudTickets: number } {
+  getQuota(tenantId: string): { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number } {
+    this.tenantRow(tenantId)
+    const row = this.#db.prepare('SELECT * FROM tenant_quotas WHERE tenant_id = ?').get(tenantId) as {
+      max_users: number; max_devices: number; max_cloud_tickets_per_day: number; max_device_tickets_per_day: number
+    } | undefined
+    return row === undefined
+      ? { maxUsers: 50, maxDevices: 20, maxCloudTicketsPerDay: 100, maxDeviceTicketsPerDay: 500 }
+      : { maxUsers: row.max_users, maxDevices: row.max_devices, maxCloudTicketsPerDay: row.max_cloud_tickets_per_day, maxDeviceTicketsPerDay: row.max_device_tickets_per_day }
+  }
+
+  setQuota(tenantId: string, patch: Partial<{ maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }>): ReturnType<ControlPlane['getQuota']> {
+    this.tenantRow(tenantId)
+    const current = this.getQuota(tenantId)
+    const next = { ...current, ...patch }
+    for (const value of Object.values(next)) if (!Number.isSafeInteger(value) || value < 0) throw new ControlPlaneError(400, 'INVALID_QUOTA', 'quota values must be non-negative integers')
+    this.#db.prepare('INSERT OR REPLACE INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(tenantId, next.maxUsers, next.maxDevices, next.maxCloudTicketsPerDay, next.maxDeviceTicketsPerDay, this.#now())
+    return next
+  }
+
+  private enforceQuota(tenantId: string, kind: 'users' | 'devices' | 'cloudTickets' | 'deviceTickets'): void {
+    const quota = this.getQuota(tenantId)
+    const limit = kind === 'users' ? quota.maxUsers : kind === 'devices' ? quota.maxDevices : kind === 'cloudTickets' ? quota.maxCloudTicketsPerDay : quota.maxDeviceTicketsPerDay
+    let used: number
+    if (kind === 'users' || kind === 'devices') {
+      const table = kind === 'users' ? 'users' : 'devices'
+      used = (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE tenant_id = ?`).get(tenantId) as { count: number }).count
+    } else {
+      const table = kind === 'cloudTickets' ? 'cloud_tickets' : 'device_tickets'
+      const start = this.#now() - (this.#now() % (24 * 60 * 60 * 1000))
+      used = (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE tenant_id = ? AND created_at >= ?`).get(tenantId, start) as { count: number }).count
+    }
+    if (used >= limit) throw new ControlPlaneError(429, 'QUOTA_EXCEEDED', `${kind} quota exceeded (${used}/${limit})`)
+  }
+
+  tenantUsage(tenantId: string): { users: number; devices: number; deviceTickets: number; cloudTickets: number; cloudTicketsToday: number; deviceTicketsToday: number; quota: ReturnType<ControlPlane['getQuota']> } {
     this.tenantRow(tenantId)
     const count = (table: string): number => (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE tenant_id = ?`).get(tenantId) as { count: number }).count
-    return { users: count('users'), devices: count('devices'), deviceTickets: count('device_tickets'), cloudTickets: count('cloud_tickets') }
+    const start = this.#now() - (this.#now() % (24 * 60 * 60 * 1000))
+    const today = (table: string): number => (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE tenant_id = ? AND created_at >= ?`).get(tenantId, start) as { count: number }).count
+    return { users: count('users'), devices: count('devices'), deviceTickets: count('device_tickets'), cloudTickets: count('cloud_tickets'), cloudTicketsToday: today('cloud_tickets'), deviceTicketsToday: today('device_tickets'), quota: this.getQuota(tenantId) }
   }
 
   listUsers(tenantId: string): Array<{ userId: string; email: string; role: Role; createdAt: number }> {
@@ -265,6 +312,7 @@ export class ControlPlane {
 
   addUser(input: { tenantId: string; email: string; role?: Role }): { userId: string } {
     this.tenantRow(input.tenantId)
+    this.enforceQuota(input.tenantId, 'users')
     const userId = randomUUID()
     this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(userId, input.tenantId, input.email, input.role ?? 'member', this.#now())
@@ -348,6 +396,7 @@ export class ControlPlane {
     if (!this.getSettings(session.tenantId).localExecutionEnabled) {
       throw new ControlPlaneError(403, 'LOCAL_EXECUTION_DISABLED', 'local execution is disabled')
     }
+    this.enforceQuota(session.tenantId, 'devices')
     const deviceId = randomUUID()
     const code = randomBytes(4).toString('hex').toUpperCase()
     const expiresAt = this.#now() + 10 * 60 * 1000
@@ -448,6 +497,7 @@ export class ControlPlane {
       throw new ControlPlaneError(403, 'LOCAL_EXECUTION_DISABLED', 'local execution is disabled')
     }
     this.deviceRow(session.tenantId, deviceId)
+    this.enforceQuota(session.tenantId, 'deviceTickets')
     const ticketId = randomUUID()
     const assignmentId = randomUUID()
     const workdirKey = ticketId
@@ -629,6 +679,8 @@ export class ControlPlane {
 
   createCloudTicket(session: Session, input: { repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
     if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
+    this.parseCloudRepoUrl(input.repoUrl)
+    this.enforceQuota(session.tenantId, 'cloudTickets')
     const ticketId = randomUUID()
     const assignmentId = randomUUID()
     const repoUrl = this.parseCloudRepoUrl(input.repoUrl)

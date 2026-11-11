@@ -124,6 +124,10 @@ async function loadUsers(tenantId) {
   const data = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users');
   const host = document.getElementById('users'); host.textContent = '';
   const h = document.createElement('h3'); h.textContent = tenantId; host.append(h);
+  const quota = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota');
+  const q = document.createElement('div'); q.innerHTML = '<h4>Quota</h4><input id="maxUsers" placeholder="Max users"><input id="maxDevices" placeholder="Max devices"><input id="maxCloud" placeholder="Max cloud/day"><input id="maxDevice" placeholder="Max device tickets/day"><button id="saveQuota">Save quota</button>'; host.append(q);
+  q.querySelector('#maxUsers').value = quota.quota.maxUsers; q.querySelector('#maxDevices').value = quota.quota.maxDevices; q.querySelector('#maxCloud').value = quota.quota.maxCloudTicketsPerDay; q.querySelector('#maxDevice').value = quota.quota.maxDeviceTicketsPerDay;
+  q.querySelector('#saveQuota').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota', {method:'PUT', body: JSON.stringify({maxUsers:Number(q.querySelector('#maxUsers').value), maxDevices:Number(q.querySelector('#maxDevices').value), maxCloudTicketsPerDay:Number(q.querySelector('#maxCloud').value), maxDeviceTicketsPerDay:Number(q.querySelector('#maxDevice').value)})}); await loadUsers(tenantId); } catch (e) { err(e); } };
   const add = document.createElement('div'); add.innerHTML = '<input id="newEmail" placeholder="User email"><select id="newRole"><option>member</option><option>admin</option></select><button id="addUser">Add user</button>'; host.append(add);
   add.querySelector('#addUser').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users', {method:'POST', body: JSON.stringify({email: add.querySelector('#newEmail').value, role: add.querySelector('#newRole').value})}); await loadUsers(tenantId); } catch (e) { err(e); } };
   const table = document.createElement('table'); table.append(row(['Email','Role','User ID']));
@@ -204,6 +208,20 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           write(response, 201, { tenant })
           return
         }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'quota' && parts[5] === undefined) {
+          if (request.method === 'GET') { write(response, 200, { quota: control.getQuota(parts[3]), usage: control.tenantUsage(parts[3]) }); return }
+          if (request.method === 'PUT') {
+            const body = await readJson(request)
+            const patch = {
+              ...(typeof body.maxUsers === 'number' ? { maxUsers: body.maxUsers } : {}),
+              ...(typeof body.maxDevices === 'number' ? { maxDevices: body.maxDevices } : {}),
+              ...(typeof body.maxCloudTicketsPerDay === 'number' ? { maxCloudTicketsPerDay: body.maxCloudTicketsPerDay } : {}),
+              ...(typeof body.maxDeviceTicketsPerDay === 'number' ? { maxDeviceTicketsPerDay: body.maxDeviceTicketsPerDay } : {}),
+            }
+            write(response, 200, { quota: control.setQuota(parts[3], patch), usage: control.tenantUsage(parts[3]) })
+            return
+          }
+        }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'users') {
           if (request.method === 'GET' && parts[5] === undefined) { write(response, 200, { users: control.listUsers(parts[3]) }); return }
           if (request.method === 'POST' && parts[5] === undefined) {
@@ -226,6 +244,10 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       const session = sessionOf(control, request)
       if (request.method === 'GET' && url.pathname === '/v1/me') {
         write(response, 200, session)
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/quota') {
+        write(response, 200, { quota: control.getQuota(session.tenantId), usage: control.tenantUsage(session.tenantId) })
         return
       }
       if (parts[0] === 'v1' && parts[1] === 'users') {

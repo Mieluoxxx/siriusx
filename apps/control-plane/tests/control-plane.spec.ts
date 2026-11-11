@@ -434,4 +434,18 @@ describe('control plane', () => {
     expect(member.role).toBe('member')
   })
 
+  it('enforces tenant user, device and ticket quotas', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-quota', name: 'Quota', idpIssuer: 'https://idp.example', adminEmail: 'admin@quota.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@quota.example')!
+    const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
+    plane.setQuota(tenant.id, { maxUsers: 1, maxDevices: 1, maxCloudTicketsPerDay: 0, maxDeviceTicketsPerDay: 0 })
+    expect(() => plane.addUser({ tenantId: tenant.id, email: 'second@quota.example' })).toThrow('users quota exceeded')
+    const pairing = plane.startPairing(session, 'Device')
+    expect(() => plane.startPairing(session, 'Second')).toThrow('devices quota exceeded')
+    const paired = plane.confirmPairing(session, pairing.code)
+    expect(() => plane.createDeviceTicket(session, paired.deviceId, { path: '/tmp', prompt: 'quota' })).toThrow('deviceTickets quota exceeded')
+    expect(() => plane.createCloudTicket(session, { repoUrl: 'https://github.com/acme/repo.git', baseRef: 'main', prompt: 'quota' })).toThrow('cloudTickets quota exceeded')
+  })
+
 })
