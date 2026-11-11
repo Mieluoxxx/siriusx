@@ -40,9 +40,9 @@
 1. [x] Cloud ticket follow-up 稳定性
    - 单 CloudExecutor 复用 + 清空旧 report + ticket-global 事件序号
    - 第二次 assignment 完成回到 person/review
-2. [ ] Device 管理 UI
-   - 展示 token 轮换、撤销、最后在线时间
-   - 目前只有 API/服务端能力
+2. [x] Device 管理 UI
+   - Devices tab：最后在线时间、Rotate token、Revoke
+   - 浏览器实测通过
 3. [ ] Full-stack 干净机器演练
    - 在全新主机/Docker 环境跑 `install-full.sh`
    - 验证全服务、health、OIDC 可选配置

@@ -7,7 +7,7 @@ import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
-export type TeamTab = 'tickets' | 'bots' | 'approvals'
+export type TeamTab = 'tickets' | 'bots' | 'devices' | 'approvals'
 const DEFAULT_API = 'http://127.0.0.1:4319'
 const DEFAULT_CONTROL_API = 'http://127.0.0.1:4320'
 
@@ -86,6 +86,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
   const [followUp, setFollowUp] = useState('')
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
+  const [rotatedToken, setRotatedToken] = useState<{ deviceId: string; token: string } | undefined>()
 
   const selectedTicket = useMemo(() => selected ?? tickets.find(ticket => ticket.ticketId === selectedId), [selected, tickets, selectedId])
   const selectedEvents = selected?.events ?? []
@@ -107,7 +108,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
       })))
       setTickets(ticketResult.tickets)
       setApprovals(approvalResult.approvals)
-      setDevices(deviceResult.devices.filter(device => !device.revoked))
+      setDevices(deviceResult.devices)
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -180,6 +181,23 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
     } finally { setBusy(false) }
   }
 
+  const rotateDevice = async (id: string): Promise<void> => {
+    setBusy(true)
+    try {
+      const rotated = await json<{ token: string }>(`/api/devices/${id}/rotate-token`, { method: 'POST', body: '{}' })
+      setRotatedToken({ deviceId: id, token: rotated.token })
+      await refresh()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const revokeDevice = async (id: string): Promise<void> => {
+    setBusy(true)
+    try {
+      await json(`/api/devices/${id}/revoke`, { method: 'POST', body: '{}' })
+      await refresh()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
   const cancel = async (): Promise<void> => {
     if (selectedId === undefined) return
     setBusy(true)
@@ -206,7 +224,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
         <span style={styles.title}>SiriusX Team</span>
         <span style={{ ...styles.stage, fontSize: 12 }}>{bots.length} bot · {tickets.length} ticket</span>
         <div style={styles.tabs} className="sx-team-tabs">
-          {(['tickets', 'bots', 'approvals'] as const).map(item => (
+          {(['tickets', 'bots', 'devices', 'approvals'] as const).map(item => (
             <button key={item} style={{ ...styles.button, fontWeight: tab === item ? 700 : 400 }} onClick={() => setTab(item)}>{item}</button>
           ))}
           <button style={styles.button} onClick={() => { void refresh() }}>Refresh</button>
@@ -231,7 +249,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
                 {devices.length === 0 ? null : (
                   <select style={styles.input} value={deviceId} onChange={event => setDeviceId(event.target.value)}>
                     <option value="">Cloud/local Bot runtime</option>
-                    {devices.map(device => <option key={device.id} value={device.id}>Device: {device.name}</option>)}
+                    {devices.filter(device => !device.revoked).map(device => <option key={device.id} value={device.id}>Device: {device.name}</option>)}
                   </select>
                 )}
                 <button style={styles.button} disabled={busy || repo.trim() === '' || prompt.trim() === ''} onClick={() => { void createTicket() }}>Dispatch ticket</button>
@@ -285,6 +303,31 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
         <div style={{ padding: 18, overflow: 'auto' }}>
           <h2 style={{ fontSize: 16 }}>Bots</h2>
           {bots.map(bot => <div key={bot.id} style={{ ...styles.ticket, cursor: 'default' }}><strong>{bot.name}</strong> <span style={styles.stage}>{bot.kind} · {bot.status}</span></div>)}
+        </div>
+      ) : null}
+      {tab === 'devices' ? (
+        <div style={{ padding: 18, overflow: 'auto' }}>
+          <h2 style={{ fontSize: 16 }}>Devices</h2>
+          {devices.length === 0 ? <p style={{ opacity: 0.65 }}>No paired devices for this tenant.</p> : null}
+          {devices.map(device => (
+            <div key={device.id} style={{ ...styles.ticket, cursor: 'default', opacity: device.revoked ? 0.55 : 1 }}>
+              <div style={styles.row}>
+                <strong>{device.name}</strong>
+                <span style={{ ...styles.stage, marginLeft: 'auto' }}>{device.revoked ? 'revoked' : 'active'}</span>
+              </div>
+              <div style={styles.stage}>{device.id}</div>
+              <div style={styles.stage}>last seen: {device.lastSeenAt === null || device.lastSeenAt === undefined ? 'never' : new Date(device.lastSeenAt).toLocaleString()}</div>
+              <div style={{ ...styles.row, marginTop: 8 }}>
+                <button style={styles.button} disabled={busy || device.revoked} onClick={() => { void rotateDevice(device.id) }}>Rotate token</button>
+                <button style={styles.button} disabled={busy || device.revoked} onClick={() => { void revokeDevice(device.id) }}>Revoke</button>
+              </div>
+              {rotatedToken?.deviceId === device.id ? (
+                <div style={{ ...styles.report, marginTop: 8 }}>
+                  New token (shown once): {rotatedToken.token}
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       ) : null}
       {tab === 'approvals' ? (

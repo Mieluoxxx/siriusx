@@ -1,0 +1,7 @@
+{
+  "hasDevices": true,
+  "hasDevice": true,
+  "rotated": true,
+  "revoked": true,
+  "errors": []
+}
