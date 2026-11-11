@@ -353,6 +353,15 @@ export class ControlPlane {
     }))
   }
 
+  rotateDeviceToken(session: Session, deviceId: string): { token: string } {
+    const row = this.#db.prepare('SELECT user_id FROM devices WHERE id = ? AND tenant_id = ? AND revoked = 0').get(deviceId, session.tenantId) as { user_id: string } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'DEVICE_NOT_FOUND', deviceId)
+    if (session.role !== 'admin' && row.user_id !== session.userId) throw new ControlPlaneError(403, 'DEVICE_NOT_OWNED', deviceId)
+    const token = randomBytes(32).toString('base64url')
+    this.#db.prepare('UPDATE devices SET token_hash = ?, last_seen_at = ? WHERE id = ? AND tenant_id = ?').run(tokenHash(token), this.#now(), deviceId, session.tenantId)
+    return { token }
+  }
+
   revokeDevice(session: Session, deviceId: string): void {
     if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
     const result = this.#db.prepare('UPDATE devices SET revoked = 1 WHERE id = ? AND tenant_id = ?').run(deviceId, session.tenantId)

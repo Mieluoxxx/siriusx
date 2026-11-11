@@ -55,3 +55,8 @@
 
 - 5 次失败后 5 分钟窗口内拒绝配对；
 - 证据：`07-pairing-rate-limit/`。
+
+## Device token rotation
+
+- 可轮换 device token，旧 token 立即失效。
+- 证据：`08-device-token-rotation/`。

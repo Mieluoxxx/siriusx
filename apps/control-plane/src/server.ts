@@ -124,6 +124,12 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         write(response, 200, { devices: control.listDevices(session) })
         return
       }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'devices' && parts[2] !== undefined && parts[3] === 'rotate-token') {
+        const rotated = control.rotateDeviceToken(session, parts[2])
+        deviceGateway?.closeDevice(parts[2])
+        write(response, 200, rotated)
+        return
+      }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'devices' && parts[2] !== undefined && parts[3] === 'revoke') {
         control.revokeDevice(session, parts[2])
         deviceGateway?.closeDevice(parts[2])

@@ -324,4 +324,20 @@ describe('control plane', () => {
     expect(plane.confirmPairing(session, pairing.code).deviceId).toBeTruthy()
   })
 
+  it('rotates a device token and invalidates the old token', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'siriusx-device-rotate-'))
+    roots.push(dir)
+    const plane = new ControlPlane({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data') })
+    planes.push(plane)
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-rotate', name: 'Rotate', idpIssuer: 'https://idp.example', adminEmail: 'admin@rotate.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@rotate.example')!
+    const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
+    const pairing = plane.startPairing(session, 'Device')
+    const paired = plane.confirmPairing(session, pairing.code)
+    expect(plane.verifyDeviceToken(paired.token).deviceId).toBe(paired.deviceId)
+    const rotated = plane.rotateDeviceToken(session, paired.deviceId)
+    expect(() => plane.verifyDeviceToken(paired.token)).toThrow()
+    expect(plane.verifyDeviceToken(rotated.token).deviceId).toBe(paired.deviceId)
+  })
+
 })
