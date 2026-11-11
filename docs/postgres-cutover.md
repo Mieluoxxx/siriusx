@@ -54,9 +54,10 @@ boundary, not just a connection string.
    - platform audit
 5. Make the affected `ControlPlane` methods async and update server routes/tests.
 6. [x] Tool-gateway approvals/policies/audit runtime cutover.
-7. Repeat for autobot
-8. Run dual-read/dual-write verification, then a maintenance-window cutover.
-9. Keep SQLite as the offline/single-box mode.
+7. [x] Autobot PostgreSQL schema + offline migration
+8. [ ] Autobot runtime storage cutover
+9. Run dual-read/dual-write verification, then a maintenance-window cutover.
+10. Keep SQLite as the offline/single-box mode.
 7. Run dual-read/dual-write verification, then a maintenance-window cutover.
 8. Keep SQLite as the offline/single-box mode.
 

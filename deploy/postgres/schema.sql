@@ -230,3 +230,55 @@ CREATE TABLE IF NOT EXISTS tg_audit (
 
 CREATE INDEX IF NOT EXISTS tg_audit_tenant_created ON tg_audit (tenant_id, created_at);
 CREATE INDEX IF NOT EXISTS tg_audit_ticket_created ON tg_audit (ticket_id, created_at);
+
+-- Autobot tables (Stage 3b schema groundwork).
+CREATE TABLE IF NOT EXISTS autobot_tickets (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  workspace_json TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  model_id TEXT NOT NULL,
+  closed INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS autobot_assignments (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  ticket_id TEXT NOT NULL REFERENCES autobot_tickets(id),
+  kind TEXT NOT NULL,
+  workdir_key TEXT NOT NULL,
+  state TEXT NOT NULL,
+  report_json TEXT,
+  last_seq INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS autobot_assignments_ticket ON autobot_assignments (ticket_id, created_at);
+
+CREATE TABLE IF NOT EXISTS autobot_assignment_events (
+  assignment_id TEXT NOT NULL REFERENCES autobot_assignments(id),
+  seq INTEGER NOT NULL,
+  event_json TEXT NOT NULL,
+  PRIMARY KEY (assignment_id, seq)
+);
+
+CREATE TABLE IF NOT EXISTS autobot_pending_inputs (
+  id TEXT PRIMARY KEY,
+  ticket_id TEXT NOT NULL REFERENCES autobot_tickets(id),
+  text TEXT NOT NULL,
+  author TEXT NOT NULL,
+  consumed_by TEXT,
+  created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS autobot_pending_ticket ON autobot_pending_inputs (ticket_id, consumed_by, created_at);
+
+CREATE TABLE IF NOT EXISTS autobot_outbox (
+  id TEXT PRIMARY KEY,
+  ticket_id TEXT NOT NULL REFERENCES autobot_tickets(id),
+  kind TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at BIGINT NOT NULL,
+  delivered_at BIGINT
+);

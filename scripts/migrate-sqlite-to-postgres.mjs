@@ -23,6 +23,11 @@ const mappings = [
   ['approvals', 'tg_approvals'],
   ['tenant_tool_policies', 'tg_tenant_tool_policies'],
   ['audit', 'tg_audit'],
+  ['tickets', 'autobot_tickets'],
+  ['assignments', 'autobot_assignments'],
+  ['assignment_events', 'autobot_assignment_events'],
+  ['pending_inputs', 'autobot_pending_inputs'],
+  ['outbox', 'autobot_outbox'],
 ]
 const tables = mappings.map(([, target]) => target)
 const sqlite = new DatabaseSync(sqlitePath, { readOnly: true })

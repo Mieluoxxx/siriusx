@@ -1,0 +1,75 @@
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LC_CTYPE = (unset),
+	LC_NUMERIC = (unset),
+	LC_COLLATE = (unset),
+	LC_TIME = (unset),
+	LC_MESSAGES = (unset),
+	LC_MONETARY = (unset),
+	LC_ADDRESS = (unset),
+	LC_IDENTIFICATION = (unset),
+	LC_MEASUREMENT = (unset),
+	LC_PAPER = (unset),
+	LC_TELEPHONE = (unset),
+	LC_NAME = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+psql:deploy/postgres/schema.sql:11: NOTICE:  relation "tenants" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:20: NOTICE:  relation "users" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:27: NOTICE:  relation "settings" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:38: NOTICE:  relation "devices" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:48: NOTICE:  relation "pairing_codes" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:56: NOTICE:  relation "bots" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:74: NOTICE:  relation "device_tickets" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:81: NOTICE:  relation "device_ticket_events" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:95: NOTICE:  relation "cloud_tickets" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:102: NOTICE:  relation "cloud_ticket_events" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:107: NOTICE:  relation "revoked_sessions" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:116: NOTICE:  relation "tenant_quotas" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:125: NOTICE:  relation "model_catalog" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:132: NOTICE:  relation "tenant_models" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:145: NOTICE:  relation "source_bindings" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:159: NOTICE:  relation "source_events" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:167: NOTICE:  relation "tenant_billing" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:178: NOTICE:  relation "support_requests" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:187: NOTICE:  relation "platform_audit" already exists, skipping
+CREATE TABLE
+INSERT 0 0
+psql:deploy/postgres/schema.sql:206: NOTICE:  relation "tg_approvals" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:214: NOTICE:  relation "tg_tenant_tool_policies" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:229: NOTICE:  relation "tg_audit" already exists, skipping
+CREATE TABLE
+psql:deploy/postgres/schema.sql:231: NOTICE:  relation "tg_audit_tenant_created" already exists, skipping
+CREATE INDEX
+psql:deploy/postgres/schema.sql:232: NOTICE:  relation "tg_audit_ticket_created" already exists, skipping
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
