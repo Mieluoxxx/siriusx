@@ -1,0 +1,1 @@
+{"ok":true,"service":"siriusx-control-plane"}{"ok":true,"service":"siriusx-tool-gateway"}{"ok":true,"service":"siriusx-web-gateway"}SiriusX full stack is ready on http://127.0.0.1:8080

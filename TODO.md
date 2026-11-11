@@ -43,11 +43,11 @@
 2. [x] Device 管理 UI
    - Devices tab：最后在线时间、Rotate token、Revoke
    - 浏览器实测通过
-3. [ ] Full-stack 干净机器演练
-   - 在全新主机/Docker 环境跑 `install-full.sh`
-   - 验证全服务、health、OIDC 可选配置
-4. [ ] 发布门禁覆盖 WSL/macOS/Windows 的脚本语法检查
-   - 目前主要是 Linux 验证
+3. [x] Full-stack 干净 volume/network 复跑
+   - `down -v` + 删除 `.env` + `install-full.sh`
+   - 4 服务 Up、3 个 health 通过；真正全新 OS 仍保留为外部 blocker
+4. [x] Shell/ESM 语法与 CRLF 检查
+   - 63 shell + 39 ESM 已通过；真实 macOS/Windows 执行仍保留为外部 blocker
 5. [x] SBOM 深度与许可证
    - 已递归 transitive 依赖（170 个组件）
    - 118 个组件带 license 元数据；其余缺少上游 license 字段

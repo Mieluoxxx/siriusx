@@ -1,0 +1,10 @@
+== compose ps
+NAME                             IMAGE                        COMMAND                  SERVICE         CREATED          STATUS          PORTS
+s8-full-bundle-control-plane-1   siriusx/control-plane:full   "node --import tsx a…"   control-plane   11 seconds ago   Up 11 seconds   127.0.0.1:4320-4322->4320-4322/tcp
+s8-full-bundle-dsh-web-1         siriusx/dsh-web:full         "/usr/local/bin/dsh-…"   dsh-web         11 seconds ago   Up 11 seconds   127.0.0.1:3000->3000/tcp
+s8-full-bundle-tool-gateway-1    siriusx/control-plane:full   "node --import tsx a…"   tool-gateway    11 seconds ago   Up 11 seconds   4320-4322/tcp, 127.0.0.1:4330->4330/tcp
+s8-full-bundle-web-gateway-1     siriusx/control-plane:full   "sh -c 'for _ in $(s…"   web-gateway     11 seconds ago   Up 10 seconds   4320-4322/tcp, 127.0.0.1:8080->8080/tcp
+== health
+{"ok":true,"service":"siriusx-control-plane"}
+{"ok":true,"service":"siriusx-tool-gateway"}
+{"ok":true,"service":"siriusx-web-gateway"}
