@@ -48,8 +48,9 @@
    - 验证全服务、health、OIDC 可选配置
 4. [ ] 发布门禁覆盖 WSL/macOS/Windows 的脚本语法检查
    - 目前主要是 Linux 验证
-5. [x] SBOM 深度
-   - 已递归 transitive 依赖（170 个组件）；许可证字段可在接入 license 数据后补
+5. [x] SBOM 深度与许可证
+   - 已递归 transitive 依赖（170 个组件）
+   - 118 个组件带 license 元数据；其余缺少上游 license 字段
 
 ## 必须外部资源 / 人工等待
 

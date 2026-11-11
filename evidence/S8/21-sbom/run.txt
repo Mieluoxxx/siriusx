@@ -1,4 +1,5 @@
 {
   "sbom": "/root/siriusx/artifacts/release/sbom.cdx.json",
-  "components": 170
+  "components": 170,
+  "licensed": 118
 }
