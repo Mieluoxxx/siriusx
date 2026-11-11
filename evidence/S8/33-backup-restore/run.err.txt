@@ -1,0 +1,2 @@
+{"source":"/tmp/tmp.g2jmSo3qtn/control.sqlite","target":"/tmp/tmp.E6V6jGwKll/payload/control.sqlite"}
+{"source":"/tmp/tmp.g2jmSo3qtn/tool-gateway.sqlite","target":"/tmp/tmp.E6V6jGwKll/payload/tool-gateway.sqlite"}
