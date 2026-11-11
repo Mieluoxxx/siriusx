@@ -28,3 +28,4 @@ deepseek-harness/
 plugins/*/lib/
 packages/*/lib/
 apps/*/lib/
+artifacts/model-router/*.tar

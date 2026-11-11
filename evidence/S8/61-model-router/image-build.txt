@@ -1,0 +1,1 @@
+built siriusx/model-router:offline and wrote /root/siriusx/artifacts/model-router/model-router-image.tar

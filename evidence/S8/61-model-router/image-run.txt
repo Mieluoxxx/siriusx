@@ -1,0 +1,4 @@
+docker run -d --name siriusx-model-router-test --network host -v /tmp/siriusx-router:/app/config:ro siriusx/model-router:offline --config /app/config/config-test.yaml
+GET /healthz => 200
+2026/11/11 13:19:41 lite-cpa listening on 0.0.0.0:8318
+container removed

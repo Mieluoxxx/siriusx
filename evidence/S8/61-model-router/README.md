@@ -27,3 +27,10 @@ Keycloak id_token
 管理页截图见 `admin-upstreams.png`。
 
 证据：`go-test.txt`、`go-build.txt`、`config.sample.json`、`desktop-exchange.json`、`chat-stream-final.txt`。
+
+Docker image 也已构建并运行验证：
+
+- `siriusx/model-router:offline`
+- 容器 `--network host`，临时配置端口 8318
+- `/healthz` 200
+- 容器启动日志：`lite-cpa listening on 0.0.0.0:8318`
