@@ -339,28 +339,40 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at, status: row.status }))
   }
 
-  getBilling(tenantId: string): { currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null } {
+  async getBilling(tenantId: string): Promise<{ currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }> {
     this.tenantRow(tenantId)
-    const row = this.#db.prepare('SELECT * FROM tenant_billing WHERE tenant_id = ?').get(tenantId) as { currency: string; cloud_ticket_cents: number; device_ticket_cents: number; monthly_budget_cents: number | null } | undefined
+    let row: { currency: string; cloud_ticket_cents: number; device_ticket_cents: number; monthly_budget_cents: number | null } | undefined
+    if (this.#storage !== undefined) {
+      row = (await this.#storage.query<{ currency: string; cloud_ticket_cents: string | number; device_ticket_cents: string | number; monthly_budget_cents: string | number | null }>('SELECT * FROM tenant_billing WHERE tenant_id = ?', [tenantId])).rows[0] as typeof row
+      if (row !== undefined) {
+        row = { ...row, cloud_ticket_cents: Number(row.cloud_ticket_cents), device_ticket_cents: Number(row.device_ticket_cents), monthly_budget_cents: row.monthly_budget_cents === null ? null : Number(row.monthly_budget_cents) }
+      }
+    } else {
+      row = this.#db.prepare('SELECT * FROM tenant_billing WHERE tenant_id = ?').get(tenantId) as typeof row
+    }
     return row === undefined
       ? { currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null }
       : { currency: row.currency, cloudTicketCents: row.cloud_ticket_cents, deviceTicketCents: row.device_ticket_cents, monthlyBudgetCents: row.monthly_budget_cents }
   }
 
-  setBilling(tenantId: string, patch: Partial<{ currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }>): ReturnType<ControlPlane['getBilling']> {
+  async setBilling(tenantId: string, patch: Partial<{ currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }>): Promise<{ currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }> {
     this.tenantRow(tenantId)
-    const current = this.getBilling(tenantId)
+    const current = await this.getBilling(tenantId)
     const next = { ...current, ...patch }
     if (next.currency.length < 3 || next.currency.length > 8) throw new ControlPlaneError(400, 'INVALID_BILLING', 'currency must be 3-8 characters')
     for (const value of [next.cloudTicketCents, next.deviceTicketCents]) if (!Number.isSafeInteger(value) || value < 0) throw new ControlPlaneError(400, 'INVALID_BILLING', 'ticket prices must be non-negative integers')
     if (next.monthlyBudgetCents !== null && (!Number.isSafeInteger(next.monthlyBudgetCents) || next.monthlyBudgetCents < 0)) throw new ControlPlaneError(400, 'INVALID_BILLING', 'monthly budget must be null or a non-negative integer')
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) VALUES (?, ?, ?, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET currency = EXCLUDED.currency, cloud_ticket_cents = EXCLUDED.cloud_ticket_cents, device_ticket_cents = EXCLUDED.device_ticket_cents, monthly_budget_cents = EXCLUDED.monthly_budget_cents', [tenantId, next.currency, next.cloudTicketCents, next.deviceTicketCents, next.monthlyBudgetCents])
+      return next
+    }
     this.#db.prepare('INSERT OR REPLACE INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) VALUES (?, ?, ?, ?, ?)')
       .run(tenantId, next.currency, next.cloudTicketCents, next.deviceTicketCents, next.monthlyBudgetCents)
     return next
   }
 
-  billingEstimate(tenantId: string, days = 30): { currency: string; cloudTickets: number; deviceTickets: number; estimatedCents: number; monthlyBudgetCents: number | null } {
-    const billing = this.getBilling(tenantId)
+  async billingEstimate(tenantId: string, days = 30): Promise<{ currency: string; cloudTickets: number; deviceTickets: number; estimatedCents: number; monthlyBudgetCents: number | null }> {
+    const billing = await this.getBilling(tenantId)
     const usage = this.usageDaily(tenantId, days)
     const cloudTickets = usage.reduce((sum, day) => sum + day.cloudTickets, 0)
     const deviceTickets = usage.reduce((sum, day) => sum + day.deviceTickets, 0)

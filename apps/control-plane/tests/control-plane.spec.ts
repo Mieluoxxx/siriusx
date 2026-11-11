@@ -510,10 +510,10 @@ describe('control plane', () => {
   it('stores tenant billing rates and estimates usage cost', async () => {
     const { plane } = await setup()
     const tenant = plane.provisionTenant({ tenantId: 'tenant-billing', name: 'Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@billing.example' })
-    expect(plane.getBilling(tenant.id)).toEqual({ currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null })
-    const billing = plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
+    expect(await plane.getBilling(tenant.id)).toEqual({ currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null })
+    const billing = await plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
     expect(billing).toEqual({ currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
-    expect(plane.billingEstimate(tenant.id, 7)).toMatchObject({ currency: 'EUR', estimatedCents: 0, monthlyBudgetCents: 5000 })
+    expect(await plane.billingEstimate(tenant.id, 7)).toMatchObject({ currency: 'EUR', estimatedCents: 0, monthlyBudgetCents: 5000 })
   })
 
   it('ingests GitLab webhook events idempotently into the bound tenant', async () => {
@@ -621,6 +621,25 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await plane.listSupportRequests(tenant.id))[0]).toMatchObject({ id: created.id, status: 'pending' })
       expect((await plane.decideSupportRequest(tenant.id, created.id, true, 'admin@pg.example')).status).toBe('approved')
       await storage.query('DELETE FROM support_requests WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
+  it('moves tenant billing to PostgreSQL when storage is configured', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-billing-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-pg-billing', name: 'PG Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-billing.example' })
+    await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [tenant.id, tenant.name, tenant.idpIssuer, tenant.status, tenant.createdAt])
+    try {
+      expect((await plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100 })).currency).toBe('EUR')
+      expect(await plane.getBilling(tenant.id)).toMatchObject({ currency: 'EUR', cloudTicketCents: 100 })
+      await storage.query('DELETE FROM tenant_billing WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
       await storage.close()

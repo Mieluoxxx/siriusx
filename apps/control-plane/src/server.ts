@@ -384,17 +384,17 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           return
         }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'billing' && parts[5] === undefined) {
-          if (request.method === 'GET') { write(response, 200, { billing: control.getBilling(parts[3]), estimate: control.billingEstimate(parts[3]) }); return }
+          if (request.method === 'GET') { write(response, 200, { billing: await control.getBilling(parts[3]), estimate: await control.billingEstimate(parts[3]) }); return }
           if (request.method === 'PUT') {
             const body = await readJson(request)
-            const billing = control.setBilling(parts[3], {
+            const billing = await control.setBilling(parts[3], {
               ...(typeof body.currency === 'string' ? { currency: body.currency } : {}),
               ...(typeof body.cloudTicketCents === 'number' ? { cloudTicketCents: body.cloudTicketCents } : {}),
               ...(typeof body.deviceTicketCents === 'number' ? { deviceTicketCents: body.deviceTicketCents } : {}),
               ...(body.monthlyBudgetCents === null || typeof body.monthlyBudgetCents === 'number' ? { monthlyBudgetCents: body.monthlyBudgetCents } : {}),
             })
             await control.recordPlatformAudit({ actor: 'platform', action: 'billing.update', target: parts[3], detail: JSON.stringify(billing) })
-            write(response, 200, { billing, estimate: control.billingEstimate(parts[3]) })
+            write(response, 200, { billing, estimate: await control.billingEstimate(parts[3]) })
             return
           }
         }
@@ -570,7 +570,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/billing') {
-        write(response, 200, { billing: control.getBilling(session.tenantId), estimate: control.billingEstimate(session.tenantId) })
+        write(response, 200, { billing: await control.getBilling(session.tenantId), estimate: await control.billingEstimate(session.tenantId) })
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit/export') {
