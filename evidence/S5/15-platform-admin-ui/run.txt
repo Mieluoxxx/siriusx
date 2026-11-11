@@ -2,6 +2,7 @@
   "tenant": true,
   "usage": true,
   "quota": true,
+  "usageDaily": true,
   "model": true,
   "audit": true,
   "user": true,

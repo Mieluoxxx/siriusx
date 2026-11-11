@@ -472,4 +472,13 @@ describe('control plane', () => {
     ])
   })
 
+  it('reports daily tenant usage with zero-filled days', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-usage-daily', name: 'Usage', idpIssuer: 'https://idp.example', adminEmail: 'admin@usage.example' })
+    const usage = plane.usageDaily(tenant.id, 7)
+    expect(usage).toHaveLength(7)
+    expect(usage.every(day => day.cloudTickets === 0 && day.deviceTickets === 0)).toBe(true)
+    expect(usage[0]?.date).not.toBe(usage[6]?.date)
+  })
+
 })

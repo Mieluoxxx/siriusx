@@ -144,6 +144,9 @@ async function loadUsers(tenantId) {
   const q = document.createElement('div'); q.innerHTML = '<h4>Quota</h4><input id="maxUsers" placeholder="Max users"><input id="maxDevices" placeholder="Max devices"><input id="maxCloud" placeholder="Max cloud/day"><input id="maxDevice" placeholder="Max device tickets/day"><button id="saveQuota">Save quota</button>'; host.append(q);
   q.querySelector('#maxUsers').value = quota.quota.maxUsers; q.querySelector('#maxDevices').value = quota.quota.maxDevices; q.querySelector('#maxCloud').value = quota.quota.maxCloudTicketsPerDay; q.querySelector('#maxDevice').value = quota.quota.maxDeviceTicketsPerDay;
   q.querySelector('#saveQuota').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota', {method:'PUT', body: JSON.stringify({maxUsers:Number(q.querySelector('#maxUsers').value), maxDevices:Number(q.querySelector('#maxDevices').value), maxCloudTicketsPerDay:Number(q.querySelector('#maxCloud').value), maxDeviceTicketsPerDay:Number(q.querySelector('#maxDevice').value)})}); await loadUsers(tenantId); } catch (e) { err(e); } };
+  const daily = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/usage-daily?days=14');
+  const trend = document.createElement('div'); trend.innerHTML = '<h4>Usage (14d)</h4>'; host.append(trend);
+  const ttable = document.createElement('table'); ttable.append(row(['Date','Cloud tickets','Device tickets'])); for (const day of daily.usage) ttable.append(row([day.date, day.cloudTickets, day.deviceTickets])); trend.append(ttable);
   const tm = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/models');
   const catalog = await api('/v1/admin/models');
   const bound = new Map(tm.models.map(model => [model.id, model]));
@@ -262,6 +265,11 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           write(response, upstream.status, await upstream.json())
           return
         }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'usage-daily' && parts[5] === undefined) {
+          const days = url.searchParams.get('days') === null ? 30 : Number(url.searchParams.get('days'))
+          write(response, 200, { days, usage: control.usageDaily(parts[3], days) })
+          return
+        }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'quota' && parts[5] === undefined) {
           if (request.method === 'GET') { write(response, 200, { quota: control.getQuota(parts[3]), usage: control.tenantUsage(parts[3]) }); return }
           if (request.method === 'PUT') {
@@ -307,6 +315,11 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       }
       if (request.method === 'GET' && url.pathname === '/v1/quota') {
         write(response, 200, { quota: control.getQuota(session.tenantId), usage: control.tenantUsage(session.tenantId) })
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/usage-daily') {
+        const days = url.searchParams.get('days') === null ? 30 : Number(url.searchParams.get('days'))
+        write(response, 200, { days, usage: control.usageDaily(session.tenantId, days) })
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit-summary') {

@@ -341,6 +341,23 @@ export class ControlPlane {
     if (used >= limit) throw new ControlPlaneError(429, 'QUOTA_EXCEEDED', `${kind} quota exceeded (${used}/${limit})`)
   }
 
+  usageDaily(tenantId: string, days = 30): Array<{ date: string; cloudTickets: number; deviceTickets: number }> {
+    this.tenantRow(tenantId)
+    const requested = Math.min(365, Math.max(1, Math.floor(days)))
+    const now = this.#now()
+    const today = now - (now % (24 * 60 * 60 * 1000))
+    const start = today - (requested - 1) * 24 * 60 * 60 * 1000
+    const group = (table: string): Map<string, number> => new Map((this.#db.prepare(`SELECT strftime('%Y-%m-%d', created_at / 1000, 'unixepoch') AS day, COUNT(*) AS count FROM ${table} WHERE tenant_id = ? AND created_at >= ? GROUP BY day`).all(tenantId, start) as Array<{ day: string; count: number }>).map(row => [row.day, row.count]))
+    const cloud = group('cloud_tickets')
+    const device = group('device_tickets')
+    const result = []
+    for (let offset = requested - 1; offset >= 0; offset--) {
+      const date = new Date(today - offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      result.push({ date, cloudTickets: cloud.get(date) ?? 0, deviceTickets: device.get(date) ?? 0 })
+    }
+    return result
+  }
+
   tenantUsage(tenantId: string): { users: number; devices: number; deviceTickets: number; cloudTickets: number; cloudTicketsToday: number; deviceTicketsToday: number; quota: ReturnType<ControlPlane['getQuota']> } {
     this.tenantRow(tenantId)
     const count = (table: string): number => (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE tenant_id = ?`).get(tenantId) as { count: number }).count
