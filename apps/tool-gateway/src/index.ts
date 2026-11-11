@@ -229,6 +229,7 @@ export class ToolGateway {
   listApprovals(tenantId: string): Array<{
     approvalId: string; ticketId: string; title: string; detail: string; risk: string; status: string; expiresAt: string
   }> {
+    this.#db.prepare("UPDATE approvals SET status = 'expired', decided_at = ? WHERE tenant_id = ? AND status = 'pending' AND expires_at < ?").run(this.#now(), tenantId, this.#now())
     const rows = this.#db.prepare('SELECT * FROM approvals WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as unknown as ApprovalRow[]
     return rows.map(row => {
       const request = JSON.parse(row.request_json) as ActionRequest

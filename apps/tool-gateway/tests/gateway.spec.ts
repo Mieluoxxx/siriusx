@@ -140,4 +140,14 @@ describe('tool gateway policy', () => {
     expect(configured.headers.get('access-control-allow-origin')).toBe('https://app.example')
   })
 
+  it('marks expired approvals when listing them', async () => {
+    let now = 1_000_000
+    const gateway = new ToolGateway({ dbPath: await db(), connectors: { github: { execute: async () => ({ result: { ok: true } }) } }, approvalTtlMs: 10, now: () => now })
+    const pending = await gateway.propose({ ...base, actionClass: 'send_email' }, context)
+    expect(pending.status).toBe('pending')
+    now += 11
+    expect(gateway.listApprovals('tenant-a')[0]?.status).toBe('expired')
+    gateway.close()
+  })
+
 })
