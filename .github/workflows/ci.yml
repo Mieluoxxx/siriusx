@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install Python YAML validator dependency
+        run: python3 -m pip install --user pyyaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Tests
+        run: pnpm test
+      - name: Release gate
+        run: ./scripts/release-check.sh
+      - name: Upload release metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: siriusx-release-metadata
+          path: artifacts/release/
+          if-no-files-found: error

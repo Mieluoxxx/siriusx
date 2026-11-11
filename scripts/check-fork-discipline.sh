@@ -4,6 +4,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DSH_DIR="${DSH_DIR:-$ROOT/deepseek-harness}"
 BASE="${BASE:-siriusx-s1-base}"
+if [ ! -d "$DSH_DIR/.git" ]; then
+  echo "fork discipline skipped: $DSH_DIR is not a git checkout"
+  exit 0
+fi
 cd "$DSH_DIR"
 FILES=$(git diff --name-only "$BASE"..HEAD)
 COUNT=$(printf '%s\n' "$FILES" | sed '/^$/d' | wc -l | tr -d ' ')

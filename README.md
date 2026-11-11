@@ -82,7 +82,7 @@ pnpm test
 ./scripts/smoke-pi-conversation.sh
 ```
 
-## 发布前本地门禁
+## CI 见 `.github/workflows/ci.yml`；发布前本地门禁
 
 ```bash
 ./scripts/release-check.sh
