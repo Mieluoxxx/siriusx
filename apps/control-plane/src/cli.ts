@@ -89,6 +89,7 @@ try {
       ...(process.env.SIRIUSX_BOT_SCENARIO === 'waiting' ? { botScenario: 'waiting' as const } : {}),
       ...(process.env.SIRIUSX_DEVICE_OFFLINE_LOST_MS === undefined ? {} : { deviceOfflineLostMs: Number(process.env.SIRIUSX_DEVICE_OFFLINE_LOST_MS) }),
       ...(process.env.SIRIUSX_PLATFORM_ADMIN_TOKEN === undefined || process.env.SIRIUSX_PLATFORM_ADMIN_TOKEN === '' ? {} : { platformAdminToken: process.env.SIRIUSX_PLATFORM_ADMIN_TOKEN }),
+      ...(process.env.SIRIUSX_SOURCE_WEBHOOK_TOKEN === undefined || process.env.SIRIUSX_SOURCE_WEBHOOK_TOKEN === '' ? {} : { sourceWebhookToken: process.env.SIRIUSX_SOURCE_WEBHOOK_TOKEN }),
     })
     const gateway = flags.get('gateway-port') === undefined ? undefined : await startModelGateway({
       control: server.control,

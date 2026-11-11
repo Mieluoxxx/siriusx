@@ -515,4 +515,26 @@ describe('control plane', () => {
     expect(plane.billingEstimate(tenant.id, 7)).toMatchObject({ currency: 'EUR', estimatedCents: 0, monthlyBudgetCents: 5000 })
   })
 
+  it('ingests GitLab webhook events idempotently into the bound tenant', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-source-webhook-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'source-webhook', platformAdminToken: 'platform-secret', sourceWebhookToken: 'gitlab-secret' })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ tenantId: 'tenant-source', name: 'Source', idpIssuer: 'https://idp.example', adminEmail: 'admin@source.example' })
+    const admin = server.control.findUserByEmail(tenant.id, 'admin@source.example')!
+    const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
+    const binding = await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'gitlab', externalId: 'acme/repo', tenantId: tenant.id }) })
+    expect(binding.status).toBe(201)
+    const payload = { object_kind: 'issue', project: { path_with_namespace: 'acme/repo' }, object_attributes: { iid: 1, title: 'webhook issue' } }
+    const unauthorized = await fetch(`${server.url}/v1/sources/gitlab/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-gitlab-token': 'bad' }, body: JSON.stringify(payload) })
+    expect(unauthorized.status).toBe(401)
+    const headers = { 'content-type': 'application/json', 'x-gitlab-token': 'gitlab-secret', 'x-gitlab-event': 'Issue Hook', 'x-gitlab-event-uuid': 'delivery-1' }
+    const first = await fetch(`${server.url}/v1/sources/gitlab/webhook`, { method: 'POST', headers, body: JSON.stringify(payload) }).then(response => response.json()) as { accepted: boolean; duplicate: boolean }
+    const second = await fetch(`${server.url}/v1/sources/gitlab/webhook`, { method: 'POST', headers, body: JSON.stringify(payload) }).then(response => response.json()) as { accepted: boolean; duplicate: boolean }
+    expect(first).toMatchObject({ accepted: true, duplicate: false })
+    expect(second).toMatchObject({ accepted: false, duplicate: true })
+    const events = await fetch(`${server.url}/v1/source-events`, { headers: auth(token) }).then(response => response.json()) as { events: unknown[] }
+    expect(events.events).toHaveLength(1)
+  })
+
 })

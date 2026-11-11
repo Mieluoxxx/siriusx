@@ -1,4 +1,5 @@
 /** HTTP entry for the single-box control plane. Production terminates SSO at a gateway. */
+import { createHash } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { ControlPlane, ControlPlaneError, type Session } from './index.ts'
@@ -16,6 +17,7 @@ export interface ControlPlaneServerOptions {
   readonly botScenario?: 'ready' | 'waiting'
   readonly deviceOfflineLostMs?: number
   readonly platformAdminToken?: string
+  readonly sourceWebhookToken?: string
 }
 
 export interface ControlPlaneServer {
@@ -70,6 +72,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   const analyticsPath = options.analyticsPath
   const ssoServiceToken = options.ssoServiceToken
   const platformAdminToken = options.platformAdminToken
+  const sourceWebhookToken = options.sourceWebhookToken
   const requirePlatformAdmin = (request: IncomingMessage): void => {
     if (platformAdminToken === undefined || request.headers['x-siriusx-platform-token'] !== platformAdminToken) {
       throw new ControlPlaneError(401, 'PLATFORM_ADMIN_REQUIRED', 'platform admin token required')
@@ -100,6 +103,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
 <div><input id="token" type="password" placeholder="X-SiriusX-Platform-Token"><button id="load">Load</button></div>
 <div id="create"><h2>Create tenant</h2><input id="name" placeholder="Name"><input id="issuer" placeholder="IdP issuer"><input id="email" placeholder="Admin email"><input id="tenantId" placeholder="Tenant id (optional)"><button id="createTenant">Create</button></div>
 <div id="models"><h2>Model catalog</h2><input id="modelId" placeholder="Model id (optional)"><input id="modelName" placeholder="Display name"><input id="modelProvider" placeholder="Provider"><input id="modelNameId" placeholder="Provider model id"><button id="createModel">Add model</button><div id="modelList">Load to begin.</div></div>
+<div id="sourceBindings"><h2>Source bindings</h2><input id="sourceProvider" placeholder="provider"><input id="sourceExternal" placeholder="external id"><input id="sourceTenant" placeholder="tenant id"><input id="sourceRepo" placeholder="repo URL (optional)"><input id="sourceBase" placeholder="base ref (optional)"><button id="createSource">Add source binding</button><div id="sourceList">Load to begin.</div></div>
 <h2>Support requests</h2><div id="supportRequests">Load to begin.</div>
 <h2>Platform audit</h2><div id="platformAudit">Load to begin.</div>
 <h2>Tenants</h2><div id="tenants">Load to begin.</div>
@@ -112,6 +116,13 @@ const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'ap
 const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
 async function api(path, init = {}) { const r = await fetch(path, {...init, headers: headers()}); const v = await r.json(); if (!r.ok) throw new Error(v.error || ('HTTP ' + r.status)); return v; }
 function row(text) { const tr = document.createElement('tr'); for (const value of text) { const td = document.createElement('td'); td.textContent = String(value); tr.append(td); } return tr; }
+async function loadSourceBindings() {
+  const data = await api('/v1/admin/source-bindings');
+  const host = document.getElementById('sourceList'); host.textContent = '';
+  const table = document.createElement('table'); table.append(row(['ID','Provider','External','Tenant','Repo','Base']));
+  for (const binding of data.bindings) table.append(row([binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '']));
+  host.append(table);
+}
 async function loadSupportRequests() {
   const data = await api('/v1/admin/support-requests');
   const host = document.getElementById('supportRequests'); host.textContent = '';
@@ -186,7 +197,8 @@ async function loadUsers(tenantId) {
   }
   host.append(table);
 }
-document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit(), loadSupportRequests()]); } catch (e) { err(e); } };
+document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit(), loadSupportRequests(), loadSourceBindings()]); } catch (e) { err(e); } };
+document.getElementById('createSource').onclick = async () => { try { await api('/v1/admin/source-bindings', {method:'POST', body: JSON.stringify({provider: document.getElementById('sourceProvider').value, externalId: document.getElementById('sourceExternal').value, tenantId: document.getElementById('sourceTenant').value, ...(document.getElementById('sourceRepo').value === '' ? {} : {repoUrl: document.getElementById('sourceRepo').value}), ...(document.getElementById('sourceBase').value === '' ? {} : {baseRef: document.getElementById('sourceBase').value})})}); await loadSourceBindings(); await loadPlatformAudit(); } catch (e) { err(e); } };
 document.getElementById('createModel').onclick = async () => { try { await api('/v1/admin/models', {method:'POST', body: JSON.stringify({id: document.getElementById('modelId').value || undefined, name: document.getElementById('modelName').value, provider: document.getElementById('modelProvider').value, model: document.getElementById('modelNameId').value})}); await loadModels(); } catch (e) { err(e); } };
 document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
 </script>`)
@@ -261,6 +273,23 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === undefined) {
           write(response, 200, { audit: control.listPlatformAudit() })
           return
+        }
+        if (parts[2] === 'source-bindings' && parts[3] === undefined) {
+          if (request.method === 'GET') { write(response, 200, { bindings: control.listSourceBindings() }); return }
+          if (request.method === 'POST') {
+            const body = await readJson(request)
+            if (body.provider !== 'gitlab' && body.provider !== 'github' && body.provider !== 'feishu' && body.provider !== 'teams') throw new Error('provider is required')
+            if (typeof body.externalId !== 'string' || typeof body.tenantId !== 'string') throw new Error('externalId and tenantId are required')
+            const binding = control.createSourceBinding({
+              provider: body.provider, externalId: body.externalId, tenantId: body.tenantId,
+              ...(typeof body.botId === 'string' ? { botId: body.botId } : {}),
+              ...(typeof body.repoUrl === 'string' ? { repoUrl: body.repoUrl } : {}),
+              ...(typeof body.baseRef === 'string' ? { baseRef: body.baseRef } : {}),
+            })
+            control.recordPlatformAudit({ actor: 'platform', action: 'source.binding', target: binding.id, detail: `${body.provider}:${body.externalId}` })
+            write(response, 201, binding)
+            return
+          }
         }
         if (request.method === 'GET' && parts[2] === 'tenants' && parts[3] === undefined) {
           write(response, 200, { tenants: control.listTenants().map(tenant => ({ ...tenant, usage: control.tenantUsage(tenant.id) })) })
@@ -380,6 +409,23 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         write(response, 404, { error: 'not found', code: 'NOT_FOUND' })
         return
       }
+      if (request.method === 'POST' && url.pathname === '/v1/sources/gitlab/webhook') {
+        if (sourceWebhookToken === undefined) throw new ControlPlaneError(503, 'SOURCE_WEBHOOK_DISABLED', 'source webhook token is not configured')
+        if (request.headers['x-gitlab-token'] !== sourceWebhookToken) throw new ControlPlaneError(401, 'SOURCE_UNAUTHORIZED', 'invalid GitLab webhook token')
+        const body = await readJson(request)
+        const project = typeof body.project === 'object' && body.project !== null ? body.project as Record<string, unknown> : undefined
+        const externalId = typeof project?.path_with_namespace === 'string' ? project.path_with_namespace : typeof project?.pathWithNamespace === 'string' ? project.pathWithNamespace : undefined
+        if (externalId === undefined) throw new ControlPlaneError(400, 'INVALID_SOURCE_EVENT', 'GitLab project path is required')
+        const binding = control.findSourceBinding('gitlab', externalId)
+        if (binding === undefined) { write(response, 202, { accepted: false, ignored: 'no source binding' }); return }
+        const deliveryId = typeof request.headers['x-gitlab-event-uuid'] === 'string' && request.headers['x-gitlab-event-uuid'] !== ''
+          ? request.headers['x-gitlab-event-uuid']
+          : createHash('sha256').update(JSON.stringify(body)).digest('hex')
+        const eventType = typeof request.headers['x-gitlab-event'] === 'string' ? request.headers['x-gitlab-event'] : 'unknown'
+        const recorded = control.recordSourceEvent({ provider: 'gitlab', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
+        write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id })
+        return
+      }
       const session = sessionOf(control, request)
       if (request.method === 'GET' && url.pathname === '/v1/me') {
         write(response, 200, session)
@@ -407,6 +453,11 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       if (request.method === 'GET' && url.pathname === '/v1/support-requests') {
         if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
         write(response, 200, { requests: control.listSupportRequests(session.tenantId) })
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/source-events') {
+        if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
+        write(response, 200, { events: control.listSourceEvents(session.tenantId) })
         return
       }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'support-requests' && parts[2] !== undefined && parts[3] === 'decide') {

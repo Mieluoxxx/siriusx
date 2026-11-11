@@ -74,6 +74,7 @@
 - [x] Emergency support access request/approval workflow
 - [x] Tenant suspend/resume + platform audit
 - [x] Tenant billing rates + estimated cost
+- [x] Source bindings + GitLab webhook idempotent ingestion
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

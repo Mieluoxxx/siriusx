@@ -26,6 +26,11 @@ try {
   await page.getByPlaceholder('Tenant id (optional)').fill('tenant-platform')
   await page.getByRole('button', { name: 'Create' }).click()
   await page.waitForTimeout(500)
+  await page.getByPlaceholder('provider', { exact: true }).fill('gitlab')
+  await page.getByPlaceholder('external id', { exact: true }).fill('acme/webhook')
+  await page.getByPlaceholder('tenant id', { exact: true }).fill('tenant-platform')
+  await page.getByRole('button', { name: 'Add source binding' }).click()
+  await page.waitForTimeout(400)
   await page.getByRole('button', { name: 'Suspend' }).last().click()
   await page.waitForTimeout(400)
   const suspended = (await page.locator('body').innerText()).includes('suspended')
@@ -51,9 +56,9 @@ try {
   await page.waitForTimeout(500)
   const body = await page.locator('body').innerText()
   await page.screenshot({ path: '/root/siriusx/evidence/S5/15-platform-admin-ui/admin.png', fullPage: true })
-  const result = { tenant: body.includes('tenant-platform'), suspended, usage: body.includes('Platform Tenant 2'), quota: body.includes('Quota') && body.includes('Save quota'), usageDaily: body.includes('Usage (14d)'), billing: body.includes('Billing') && body.includes('Estimate:'), model: body.includes('Model UI') && body.includes('Catalog models'), audit: body.includes('Platform audit') && body.includes('tenant.create'), user: body.includes('member@platform.example'), errors }
+  const result = { tenant: body.includes('tenant-platform'), suspended, usage: body.includes('Platform Tenant 2'), quota: body.includes('Quota') && body.includes('Save quota'), usageDaily: body.includes('Usage (14d)'), source: body.includes('acme/webhook'), billing: body.includes('Billing') && body.includes('Estimate:'), model: body.includes('Model UI') && body.includes('Catalog models'), audit: body.includes('Platform audit') && body.includes('tenant.create'), user: body.includes('member@platform.example'), errors }
   console.log(JSON.stringify(result, null, 2))
-  if (!result.tenant || !result.suspended || !result.usage || !result.quota || !result.usageDaily || !result.billing || !result.model || !result.audit || !result.user || errors.length > 0) process.exitCode = 1
+  if (!result.tenant || !result.suspended || !result.usage || !result.quota || !result.usageDaily || !result.source || !result.billing || !result.model || !result.audit || !result.user || errors.length > 0) process.exitCode = 1
 } finally {
   await browser.close(); await server.close(); await rm(root, { recursive: true, force: true })
 }

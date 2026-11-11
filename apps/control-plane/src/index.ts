@@ -105,6 +105,28 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS source_bindings (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  external_id TEXT NOT NULL,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  bot_id TEXT,
+  repo_url TEXT,
+  base_ref TEXT,
+  created_at INTEGER NOT NULL,
+  UNIQUE(provider, external_id)
+);
+CREATE TABLE IF NOT EXISTS source_events (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  delivery_id TEXT NOT NULL,
+  binding_id TEXT,
+  tenant_id TEXT,
+  event_type TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  received_at INTEGER NOT NULL,
+  UNIQUE(provider, delivery_id)
+);
 CREATE TABLE IF NOT EXISTS tenant_billing (
   tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
   currency TEXT NOT NULL DEFAULT 'USD',
@@ -331,6 +353,43 @@ export class ControlPlane {
     const cloudTickets = usage.reduce((sum, day) => sum + day.cloudTickets, 0)
     const deviceTickets = usage.reduce((sum, day) => sum + day.deviceTickets, 0)
     return { currency: billing.currency, cloudTickets, deviceTickets, estimatedCents: cloudTickets * billing.cloudTicketCents + deviceTickets * billing.deviceTicketCents, monthlyBudgetCents: billing.monthlyBudgetCents }
+  }
+
+  createSourceBinding(input: { provider: 'gitlab' | 'github' | 'feishu' | 'teams'; externalId: string; tenantId: string; botId?: string; repoUrl?: string; baseRef?: string }): { id: string } {
+    this.tenantRow(input.tenantId)
+    if (input.externalId.trim() === '') throw new ControlPlaneError(400, 'INVALID_BINDING', 'externalId is required')
+    const id = randomUUID()
+    this.#db.prepare('INSERT INTO source_bindings (id, provider, external_id, tenant_id, bot_id, repo_url, base_ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, input.provider, input.externalId, input.tenantId, input.botId ?? null, input.repoUrl ?? null, input.baseRef ?? null, this.#now())
+    return { id }
+  }
+
+  listSourceBindings(tenantId?: string): Array<{ id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null }> {
+    const rows = tenantId === undefined
+      ? this.#db.prepare('SELECT * FROM source_bindings ORDER BY created_at, rowid').all()
+      : this.#db.prepare('SELECT * FROM source_bindings WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId)
+    return (rows as Array<{ id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null }>).map(row => ({
+      id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref,
+    }))
+  }
+
+  findSourceBinding(provider: string, externalId: string): { id: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null } | undefined {
+    const row = this.#db.prepare('SELECT * FROM source_bindings WHERE provider = ? AND external_id = ?').get(provider, externalId) as
+      | { id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null } | undefined
+    return row === undefined ? undefined : { id: row.id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref }
+  }
+
+  recordSourceEvent(input: { provider: string; deliveryId: string; bindingId?: string; tenantId?: string; eventType: string; payload: unknown }): { id: string; accepted: boolean } {
+    const id = randomUUID()
+    const result = this.#db.prepare('INSERT OR IGNORE INTO source_events (id, provider, delivery_id, binding_id, tenant_id, event_type, payload_json, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, input.provider, input.deliveryId, input.bindingId ?? null, input.tenantId ?? null, input.eventType, JSON.stringify(input.payload), this.#now())
+    return { id: result.changes === 1 ? id : (this.#db.prepare('SELECT id FROM source_events WHERE provider = ? AND delivery_id = ?').get(input.provider, input.deliveryId) as { id: string }).id, accepted: result.changes === 1 }
+  }
+
+  listSourceEvents(tenantId: string, limit = 100): Array<{ id: string; provider: string; deliveryId: string; eventType: string; receivedAt: number }> {
+    return (this.#db.prepare('SELECT id, provider, delivery_id, event_type, received_at FROM source_events WHERE tenant_id = ? ORDER BY received_at DESC, rowid DESC LIMIT ?').all(tenantId, limit) as Array<{
+      id: string; provider: string; delivery_id: string; event_type: string; received_at: number
+    }>).map(row => ({ id: row.id, provider: row.provider, deliveryId: row.delivery_id, eventType: row.event_type, receivedAt: row.received_at }))
   }
 
   createSupportRequest(tenantId: string, requestedBy: string, reason: string): { id: string; status: string; expiresAt: number | null } {
