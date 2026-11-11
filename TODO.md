@@ -36,6 +36,7 @@
 - [x] 服务 `/ready` 就绪探针（DB + 上游依赖）
 - [x] Device token 30 天 TTL + 过期后轮换恢复
 - [x] 1 MiB 请求体上限（control-plane/tool-gateway/web-gateway）
+- [x] Device WebSocket 1 MiB frame 上限（close 1009）
 - [x] Cloud follow-up 浏览器端到端（Team panel Send → 新 assignment → person/review）
 - [x] 许可证策略门禁（阻断 GPL/AGPL/SSPL/BUSL）
 - [x] macOS DMG 交叉构建阻塞证据

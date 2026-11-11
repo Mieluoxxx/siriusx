@@ -34,7 +34,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
   let messageHandler: ((auth: { tenantId: string; userId: string; deviceId: string }, message: Record<string, unknown>) => void) | undefined
   let connectHandler: ((auth: { tenantId: string; userId: string; deviceId: string }) => void) | undefined
   let disconnectHandler: ((auth: { tenantId: string; userId: string; deviceId: string }) => void) | undefined
-  const server = new WebSocketServer({ port: options.port ?? 4322, host: options.host ?? '127.0.0.1' })
+  const server = new WebSocketServer({ port: options.port ?? 4322, host: options.host ?? '127.0.0.1', maxPayload: 1024 * 1024 })
   await new Promise<void>((resolve, reject) => {
     server.once('listening', resolve)
     server.once('error', reject)
@@ -77,6 +77,7 @@ export async function startDeviceGateway(options: DeviceGatewayOptions): Promise
         socket.close(4001, 'device token revoked')
       }
     })
+    socket.on('error', () => { /* ws closes oversized frames with 1009 */ })
     socket.on('close', () => {
       if (connections.get(auth.deviceId)?.socket === socket) {
         connections.delete(auth.deviceId)

@@ -359,4 +359,21 @@ describe('control plane', () => {
     expect(plane.verifyDeviceToken(rotated.token).deviceId).toBe(paired.deviceId)
   })
 
+  it('closes a device websocket that sends an oversized frame', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-ws-limit', name: 'WS', idpIssuer: 'https://idp.example', adminEmail: 'admin@ws-limit.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@ws-limit.example')!
+    const pairing = plane.startPairing({ tenantId: tenant.id, userId: admin.id, role: 'admin' }, 'Device')
+    const paired = plane.confirmPairing({ tenantId: tenant.id, userId: admin.id, role: 'admin' }, pairing.code)
+    const gateway = await startDeviceGateway({ control: plane, port: 0 })
+    deviceGateways.push(gateway)
+    const closeCode = await new Promise<number>(resolve => {
+      const socket = new WebSocket(`${gateway.url}?token=${encodeURIComponent(paired.token)}`)
+      socket.on('open', () => socket.send('x'.repeat(2 * 1024 * 1024)))
+      socket.on('close', code => resolve(code))
+      socket.on('error', () => undefined)
+    })
+    expect(closeCode).toBe(1009)
+  })
+
 })
