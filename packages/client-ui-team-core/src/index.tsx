@@ -354,6 +354,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
               </div>
               <div style={styles.stage}>{device.id}</div>
               <div style={styles.stage}>last seen: {device.lastSeenAt === null || device.lastSeenAt === undefined ? 'never' : new Date(device.lastSeenAt).toLocaleString()}</div>
+              <div style={styles.stage}>token expires: {device.tokenExpiresAt === null || device.tokenExpiresAt === undefined ? 'unknown' : new Date(device.tokenExpiresAt).toLocaleString()}</div>
               <div style={{ ...styles.row, marginTop: 8 }}>
                 <button style={styles.button} disabled={busy || device.revoked} onClick={() => { void rotateDevice(device.id) }}>Rotate token</button>
                 <button style={styles.button} disabled={busy || device.revoked} onClick={() => { void revokeDevice(device.id) }}>Revoke</button>

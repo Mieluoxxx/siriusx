@@ -47,6 +47,7 @@ export const DeviceSummarySchema = z.object({
   name: z.string(),
   revoked: z.boolean(),
   lastSeenAt: z.number().int().nullable().optional(),
+  tokenExpiresAt: z.number().int().nullable().optional(),
 })
 
 export const ApprovalCardSchema = z.object({

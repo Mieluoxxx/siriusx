@@ -340,4 +340,23 @@ describe('control plane', () => {
     expect(plane.verifyDeviceToken(rotated.token).deviceId).toBe(paired.deviceId)
   })
 
+  it('expires device tokens after 30 days and rotates them', async () => {
+    let now = 3_000_000
+    const dir = await mkdtemp(join(tmpdir(), 'siriusx-device-expiry-'))
+    roots.push(dir)
+    const plane = new ControlPlane({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data'), now: () => now })
+    planes.push(plane)
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-expiry', name: 'Expiry', idpIssuer: 'https://idp.example', adminEmail: 'admin@expiry.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@expiry.example')!
+    const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
+    const pairing = plane.startPairing(session, 'Device')
+    const paired = plane.confirmPairing(session, pairing.code)
+    expect(plane.verifyDeviceToken(paired.token).deviceId).toBe(paired.deviceId)
+    now += 31 * 24 * 60 * 60 * 1000
+    expect(() => plane.verifyDeviceToken(paired.token)).toThrow('expired')
+    const rotated = plane.rotateDeviceToken(session, paired.deviceId)
+    expect(rotated.expiresAt).toBeGreaterThan(now)
+    expect(plane.verifyDeviceToken(rotated.token).deviceId).toBe(paired.deviceId)
+  })
+
 })

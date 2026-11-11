@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS devices (
   user_id TEXT NOT NULL REFERENCES users(id),
   name TEXT NOT NULL,
   token_hash TEXT,
+  token_expires_at INTEGER,
   revoked INTEGER NOT NULL DEFAULT 0,
   last_seen_at INTEGER
 );
@@ -182,6 +183,8 @@ export class ControlPlane {
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
+    const deviceColumns = this.#db.prepare('PRAGMA table_info(devices)').all() as Array<{ name: string }>
+    if (!deviceColumns.some(column => column.name === 'token_expires_at')) this.#db.exec('ALTER TABLE devices ADD COLUMN token_expires_at INTEGER')
     this.#botScenario = options.botScenario ?? 'ready'
     this.#sessionTtlMs = options.sessionTtlMs ?? 12 * 60 * 60 * 1000
     this.reconcileCloudTickets()
@@ -339,27 +342,28 @@ export class ControlPlane {
     this.#pairingFailures.delete(key)
     const token = randomBytes(32).toString('base64url')
     this.#db.prepare('UPDATE pairing_codes SET consumed_at = ? WHERE code = ?').run(now, code)
-    this.#db.prepare('UPDATE devices SET token_hash = ?, last_seen_at = ? WHERE id = ?').run(tokenHash(token), now, row.device_id)
+    this.#db.prepare('UPDATE devices SET token_hash = ?, token_expires_at = ?, last_seen_at = ? WHERE id = ?').run(tokenHash(token), now + 30 * 24 * 60 * 60 * 1000, now, row.device_id)
     return { deviceId: row.device_id, token }
   }
 
   listDevices(session: Session): Device[] {
     const rows = this.#db.prepare('SELECT * FROM devices WHERE tenant_id = ? ORDER BY rowid').all(session.tenantId) as Array<{
-      id: string; tenant_id: string; user_id: string; name: string; revoked: number; last_seen_at: number | null
+      id: string; tenant_id: string; user_id: string; name: string; revoked: number; last_seen_at: number | null; token_expires_at: number | null
     }>
     return rows.map(row => ({
       id: row.id, tenantId: row.tenant_id, userId: row.user_id, name: row.name,
-      revoked: row.revoked === 1, lastSeenAt: row.last_seen_at,
+      revoked: row.revoked === 1, lastSeenAt: row.last_seen_at, tokenExpiresAt: row.token_expires_at,
     }))
   }
 
-  rotateDeviceToken(session: Session, deviceId: string): { token: string } {
+  rotateDeviceToken(session: Session, deviceId: string): { token: string; expiresAt: number } {
     const row = this.#db.prepare('SELECT user_id FROM devices WHERE id = ? AND tenant_id = ? AND revoked = 0').get(deviceId, session.tenantId) as { user_id: string } | undefined
     if (row === undefined) throw new ControlPlaneError(404, 'DEVICE_NOT_FOUND', deviceId)
     if (session.role !== 'admin' && row.user_id !== session.userId) throw new ControlPlaneError(403, 'DEVICE_NOT_OWNED', deviceId)
     const token = randomBytes(32).toString('base64url')
-    this.#db.prepare('UPDATE devices SET token_hash = ?, last_seen_at = ? WHERE id = ? AND tenant_id = ?').run(tokenHash(token), this.#now(), deviceId, session.tenantId)
-    return { token }
+    const expiresAt = this.#now() + 30 * 24 * 60 * 60 * 1000
+    this.#db.prepare('UPDATE devices SET token_hash = ?, token_expires_at = ?, last_seen_at = ? WHERE id = ? AND tenant_id = ?').run(tokenHash(token), expiresAt, this.#now(), deviceId, session.tenantId)
+    return { token, expiresAt }
   }
 
   revokeDevice(session: Session, deviceId: string): void {
@@ -369,9 +373,10 @@ export class ControlPlane {
   }
 
   verifyDeviceToken(token: string): { tenantId: string; userId: string; deviceId: string } {
-    const row = this.#db.prepare('SELECT id, tenant_id, user_id FROM devices WHERE token_hash = ? AND revoked = 0').get(tokenHash(token)) as
-      | { id: string; tenant_id: string; user_id: string } | undefined
+    const row = this.#db.prepare('SELECT id, tenant_id, user_id, token_expires_at FROM devices WHERE token_hash = ? AND revoked = 0').get(tokenHash(token)) as
+      | { id: string; tenant_id: string; user_id: string; token_expires_at: number | null } | undefined
     if (row === undefined) throw new ControlPlaneError(401, 'DEVICE_UNAUTHORIZED', 'device token is invalid or revoked')
+    if (row.token_expires_at !== null && row.token_expires_at < this.#now()) throw new ControlPlaneError(401, 'DEVICE_UNAUTHORIZED', 'device token expired')
     this.#db.prepare('UPDATE devices SET last_seen_at = ? WHERE id = ?').run(this.#now(), row.id)
     return { tenantId: row.tenant_id, userId: row.user_id, deviceId: row.id }
   }
