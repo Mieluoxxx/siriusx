@@ -1,0 +1,59 @@
+# PostgreSQL cutover plan
+
+## Current state
+
+- Control-plane, autobot, tool-gateway and CloudExecutor assignment stores still use `node:sqlite`.
+- PostgreSQL schema and offline migration are implemented:
+  - `deploy/postgres/schema.sql`
+  - `scripts/migrate-sqlite-to-postgres.mjs`
+  - `scripts/postgres-preflight.mjs`
+- The control-plane runtime is **not yet cut over**.
+
+## Why runtime cutover is a separate project
+
+`DatabaseSync` is synchronous and SQLite-specific SQL is embedded across the
+services:
+
+- `PRAGMA table_info`
+- `AUTOINCREMENT`
+- `INSERT OR IGNORE` / `REPLACE`
+- `strftime`
+- `VACUUM INTO`
+- synchronous transactions and single-writer assumptions
+
+The `pg` client is asynchronous. A cutover therefore requires an async storage
+boundary, not just a connection string.
+
+## Phase 2 work
+
+1. Add `packages/storage` with a narrow async interface:
+   - `query`
+   - `transaction`
+   - `migrate`
+2. Add `SqliteStorage` wrapper preserving current behavior.
+3. Add `PostgresStorage` using `pg`.
+4. Migrate control-plane management reads/writes first:
+   - tenants
+   - users
+   - quotas
+   - billing
+   - model catalog/bindings
+   - source bindings/events
+   - support requests
+   - platform audit
+5. Make the affected `ControlPlane` methods async and update server routes/tests.
+6. Repeat for autobot and tool-gateway.
+7. Run dual-read/dual-write verification, then a maintenance-window cutover.
+8. Keep SQLite as the offline/single-box mode.
+
+## Migration rehearsal commands
+
+```bash
+psql "$DATABASE_URL" -f deploy/postgres/schema.sql
+DATABASE_URL="$DATABASE_URL" node scripts/migrate-sqlite-to-postgres.mjs \
+  --sqlite /data/control.sqlite --reset
+DATABASE_URL="$DATABASE_URL" node scripts/postgres-preflight.mjs
+```
+
+`postgres-preflight.mjs` checks row counts and orphan relationships. It is a
+preflight, not proof of runtime cutover.

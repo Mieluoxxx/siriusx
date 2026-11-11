@@ -1,0 +1,24 @@
+{
+  "counts": {
+    "tenants": 1,
+    "users": 1,
+    "settings": 1,
+    "devices": 0,
+    "pairing_codes": 0,
+    "bots": 0,
+    "device_tickets": 0,
+    "device_ticket_events": 0,
+    "cloud_tickets": 0,
+    "cloud_ticket_events": 0,
+    "revoked_sessions": 0,
+    "tenant_quotas": 1,
+    "model_catalog": 2,
+    "tenant_models": 2,
+    "source_bindings": 1,
+    "source_events": 1,
+    "tenant_billing": 1,
+    "support_requests": 1,
+    "platform_audit": 1
+  },
+  "failures": []
+}
