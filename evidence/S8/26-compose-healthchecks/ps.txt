@@ -1,0 +1,5 @@
+NAME                              IMAGE                      COMMAND                  SERVICE         CREATED         STATUS                   PORTS
+siriusx-hc-test-control-plane-1   siriusx/control-plane:hc   "node --import tsx a…"   control-plane   2 minutes ago   Up 2 minutes (healthy)   127.0.0.1:4320-4322->4320-4322/tcp
+siriusx-hc-test-dsh-web-1         siriusx/dsh-web:full       "/usr/local/bin/dsh-…"   dsh-web         2 minutes ago   Up 2 minutes             127.0.0.1:3000->3000/tcp
+siriusx-hc-test-tool-gateway-1    siriusx/control-plane:hc   "node --import tsx a…"   tool-gateway    2 minutes ago   Up 2 minutes (healthy)   4320-4322/tcp, 127.0.0.1:4330->4330/tcp
+siriusx-hc-test-web-gateway-1     siriusx/control-plane:hc   "sh -c 'for _ in $(s…"   web-gateway     2 minutes ago   Up 2 minutes (healthy)   4320-4322/tcp, 127.0.0.1:8080->8080/tcp
