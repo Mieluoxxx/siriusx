@@ -1,0 +1,6 @@
+{
+  "tenant": true,
+  "usage": true,
+  "user": true,
+  "errors": []
+}

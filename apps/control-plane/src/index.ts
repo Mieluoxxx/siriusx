@@ -233,6 +233,12 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
   }
 
+  tenantUsage(tenantId: string): { users: number; devices: number; deviceTickets: number; cloudTickets: number } {
+    this.tenantRow(tenantId)
+    const count = (table: string): number => (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE tenant_id = ?`).get(tenantId) as { count: number }).count
+    return { users: count('users'), devices: count('devices'), deviceTickets: count('device_tickets'), cloudTickets: count('cloud_tickets') }
+  }
+
   listUsers(tenantId: string): Array<{ userId: string; email: string; role: Role; createdAt: number }> {
     this.tenantRow(tenantId)
     return (this.#db.prepare('SELECT id, email, role, created_at FROM users WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as Array<{

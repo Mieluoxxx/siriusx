@@ -85,6 +85,56 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
     try {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       const parts = url.pathname.split('/').filter(Boolean)
+      if (request.method === 'GET' && url.pathname === '/admin') {
+        response.writeHead(200, {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff',
+          'x-frame-options': 'DENY',
+          'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+        })
+        response.end(`<!doctype html><meta charset="utf-8"><title>SiriusX Platform Admin</title>
+<style>body{font:14px system-ui,sans-serif;margin:24px;max-width:1100px}input,button,select{padding:6px;margin:2px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left}code{background:#f4f4f4;padding:2px}</style>
+<h1>SiriusX Platform Admin</h1>
+<p>Platform admin token is kept in <code>sessionStorage</code> only.</p>
+<div><input id="token" type="password" placeholder="X-SiriusX-Platform-Token"><button id="load">Load</button></div>
+<div id="create"><h2>Create tenant</h2><input id="name" placeholder="Name"><input id="issuer" placeholder="IdP issuer"><input id="email" placeholder="Admin email"><input id="tenantId" placeholder="Tenant id (optional)"><button id="createTenant">Create</button></div>
+<h2>Tenants</h2><div id="tenants">Load to begin.</div>
+<h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
+<div id="error" style="color:#b00020"></div>
+<script>
+const token = () => sessionStorage.getItem('platformToken') || '';
+const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'application/json'});
+const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
+async function api(path, init = {}) { const r = await fetch(path, {...init, headers: headers()}); const v = await r.json(); if (!r.ok) throw new Error(v.error || ('HTTP ' + r.status)); return v; }
+function row(text) { const tr = document.createElement('tr'); for (const value of text) { const td = document.createElement('td'); td.textContent = String(value); tr.append(td); } return tr; }
+async function loadTenants() {
+  err('');
+  const data = await api('/v1/admin/tenants');
+  const host = document.getElementById('tenants'); host.textContent = '';
+  const table = document.createElement('table'); table.append(row(['Name','Tenant','Issuer','Users','Devices','Device tickets','Cloud tickets','']));
+  for (const tenant of data.tenants) {
+    const tr = row([tenant.name, tenant.id, tenant.idpIssuer, tenant.usage.users, tenant.usage.devices, tenant.usage.deviceTickets, tenant.usage.cloudTickets]);
+    const button = document.createElement('button'); button.textContent = 'Users'; button.onclick = () => loadUsers(tenant.id); const td = document.createElement('td'); td.append(button); tr.append(td); table.append(tr);
+  }
+  host.append(table);
+}
+async function loadUsers(tenantId) {
+  err(''); document.getElementById('usersTitle').style.display = 'block';
+  const data = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users');
+  const host = document.getElementById('users'); host.textContent = '';
+  const h = document.createElement('h3'); h.textContent = tenantId; host.append(h);
+  const add = document.createElement('div'); add.innerHTML = '<input id="newEmail" placeholder="User email"><select id="newRole"><option>member</option><option>admin</option></select><button id="addUser">Add user</button>'; host.append(add);
+  add.querySelector('#addUser').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users', {method:'POST', body: JSON.stringify({email: add.querySelector('#newEmail').value, role: add.querySelector('#newRole').value})}); await loadUsers(tenantId); } catch (e) { err(e); } };
+  const table = document.createElement('table'); table.append(row(['Email','Role','User ID']));
+  for (const user of data.users) table.append(row([user.email, user.role, user.userId]));
+  host.append(table);
+}
+document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await loadTenants(); } catch (e) { err(e); } };
+document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); } catch (e) { err(e); } };
+</script>`)
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/health') {
         write(response, 200, { ok: true, service: 'siriusx-control-plane', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' })
         return
@@ -141,7 +191,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       if (parts[0] === 'v1' && parts[1] === 'admin') {
         requirePlatformAdmin(request)
         if (request.method === 'GET' && parts[2] === 'tenants' && parts[3] === undefined) {
-          write(response, 200, { tenants: control.listTenants() })
+          write(response, 200, { tenants: control.listTenants().map(tenant => ({ ...tenant, usage: control.tenantUsage(tenant.id) })) })
           return
         }
         if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] === undefined) {
