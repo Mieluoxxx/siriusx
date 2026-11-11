@@ -146,6 +146,10 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
         write(response, 200, await gateway.decide(parts[2], body.approved, context))
         return
       }
+      if (request.method === 'GET' && url.pathname === '/v1/audit/summary') {
+        write(response, 200, gateway.auditSummary(context.tenantId))
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/audit/verify') {
         if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
         write(response, 200, gateway.verifyAuditChain())

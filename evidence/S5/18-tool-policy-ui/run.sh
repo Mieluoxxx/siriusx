@@ -8,7 +8,7 @@ H=/tmp/s5-policy-ui-home
 rm -rf "$CP" "$H"; mkdir -p "$CP"
 pkill -9 -f 's5policyui' 2>/dev/null || true
 pkill -9 -f 'apps/control-plane/src/cli.ts serve.*4326' 2>/dev/null || true
-pkill -9 -f 'apps/tool-gateway/src/cli.ts.*4340' 2>/dev/null || true
+pkill -9 -f 'apps/tool-gateway/src/cli.ts' 2>/dev/null || true
 cd "$ROOT"
 A=$(PATH=/opt/node24/bin:$PATH SIRIUSX_SESSION_SECRET=$SECRET node --import tsx apps/control-plane/src/cli.ts tenant create --db "$CP/control.sqlite" --data-dir "$CP/data" --name PolicyUI --issuer https://idp.example --admin-email admin@policy.example --tenant-id tenant-policy-ui)
 AID=$(echo "$A" | python3 -c 'import json,sys;print(json.load(sys.stdin)["adminUserId"])')

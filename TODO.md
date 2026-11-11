@@ -67,6 +67,7 @@
 - [x] Tenant quotas + usage enforcement（users/devices/tickets）
 - [x] Model catalog + tenant model binding（backend + /admin UI + runtime enforcement）
 - [x] Tenant tool policy（backend + control-plane proxy + Admin UI）
+- [x] Tenant audit summary（tool gateway aggregate + Admin UI）
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

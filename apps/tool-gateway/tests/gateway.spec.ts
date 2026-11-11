@@ -163,4 +163,15 @@ describe('tool gateway policy', () => {
     gateway.close()
   })
 
+  it('summarizes audit decisions for a tenant', async () => {
+    const gateway = new ToolGateway({ dbPath: await db(), connectors: { github: { execute: async () => ({ result: { ok: true } }) } } })
+    await gateway.propose({ ...base, actionClass: 'read' }, context)
+    await gateway.propose({ ...base, actionClass: 'send_email' }, context)
+    const summary = gateway.auditSummary('tenant-a')
+    expect(summary.total).toBe(2)
+    expect(summary.decisions['allow:read action']).toBe(1)
+    expect(summary.decisions['pending:write/send/delete outside Mandate']).toBe(1)
+    gateway.close()
+  })
+
 })

@@ -303,6 +303,13 @@ export class ToolGateway {
     return { status: 'approved', result }
   }
 
+  auditSummary(tenantId: string): { total: number; decisions: Record<string, number> } {
+    const rows = this.#db.prepare('SELECT decision, COUNT(*) AS count FROM audit WHERE tenant_id = ? GROUP BY decision').all(tenantId) as Array<{ decision: string; count: number }>
+    const decisions: Record<string, number> = {}
+    for (const row of rows) decisions[row.decision] = row.count
+    return { total: rows.reduce((sum, row) => sum + row.count, 0), decisions }
+  }
+
   auditForTicket(ticketId: string, tenantId?: string): unknown[] {
     const rows = tenantId === undefined
       ? this.#db.prepare('SELECT * FROM audit WHERE ticket_id = ? ORDER BY created_at, rowid').all(ticketId)

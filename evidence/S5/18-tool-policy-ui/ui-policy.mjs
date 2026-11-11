@@ -22,6 +22,6 @@ await page.waitForTimeout(600)
 const after = await page.locator('body').innerText()
 await page.screenshot({ path: '/root/siriusx/evidence/S5/18-tool-policy-ui/policy.png', fullPage: true })
 await context.close(); await browser.close()
-const result = { set: after.includes('send_email') && after.includes('approval'), errors }
+const result = { set: after.includes('send_email') && after.includes('approval'), audit: after.includes('Audit summary'), errors }
 console.log(JSON.stringify(result, null, 2))
-if (!result.set || errors.length > 0) process.exit(1)
+if (!result.set || !result.audit || errors.length > 0) process.exit(1)

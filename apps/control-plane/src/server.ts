@@ -240,6 +240,12 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
             return
           }
         }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'audit-summary' && parts[5] === undefined) {
+          if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
+          const upstream = await fetch(`${toolGatewayUrl}/v1/audit/summary`, { headers: { 'x-tenant-id': parts[3], 'x-user-id': 'platform', 'x-role': 'admin' } })
+          write(response, upstream.status, await upstream.json())
+          return
+        }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'quota' && parts[5] === undefined) {
           if (request.method === 'GET') { write(response, 200, { quota: control.getQuota(parts[3]), usage: control.tenantUsage(parts[3]) }); return }
           if (request.method === 'PUT') {
@@ -280,6 +286,12 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       }
       if (request.method === 'GET' && url.pathname === '/v1/quota') {
         write(response, 200, { quota: control.getQuota(session.tenantId), usage: control.tenantUsage(session.tenantId) })
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/audit-summary') {
+        if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
+        const upstream = await fetch(`${toolGatewayUrl}/v1/audit/summary`, { headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role } })
+        write(response, upstream.status, await upstream.json())
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/models') {

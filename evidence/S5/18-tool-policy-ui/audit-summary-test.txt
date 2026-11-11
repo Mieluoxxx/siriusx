@@ -1,0 +1,14 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/apps/tool-gateway
+
+ ✓ tests/github.spec.ts (1 test) 43ms
+ ✓ tests/github-gateway.spec.ts (1 test) 45ms
+ ✓ tests/gitlab.spec.ts (1 test) 56ms
+ ✓ tests/credentials.spec.ts (4 tests) 78ms
+ ✓ tests/gateway.spec.ts (11 tests) 93ms
+
+ Test Files  5 passed (5)
+      Tests  18 passed (18)
+   Start at  03:15:47
+   Duration  372ms (transform 226ms, setup 0ms, import 590ms, tests 315ms, environment 1ms)

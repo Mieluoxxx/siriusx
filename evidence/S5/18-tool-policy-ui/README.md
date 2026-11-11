@@ -14,5 +14,5 @@ Tool gateway 新增租户 tool policy：
 
 control-plane 通过 `/v1/tool-policies` 代理；Team Admin tab 可新增/删除 policy。
 
-浏览器实测：设置 `send_email` = approval，列表出现该 policy，console errors 为空。
+浏览器实测：设置 `send_email` = approval，列表出现该 policy，Audit summary 显示，console errors 为空。
 证据：`run.txt`、`policy.png`、`test.txt`、`proxy-typecheck.txt`。
