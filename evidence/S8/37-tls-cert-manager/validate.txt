@@ -1,0 +1,18 @@
+{
+  "files": 11,
+  "documents": 23,
+  "kinds": [
+    "ClusterIssuer",
+    "ConfigMap",
+    "CronJob",
+    "Deployment",
+    "Ingress",
+    "Kustomization",
+    "Namespace",
+    "NetworkPolicy",
+    "PersistentVolumeClaim",
+    "Secret",
+    "Service"
+  ],
+  "resources": 8
+}

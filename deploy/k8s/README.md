@@ -92,6 +92,13 @@ snapshots plus a `SHA256SUMS` manifest to the `siriusx-backups` PVC. It mounts
 the control-plane and tool-gateway data PVCs read-only and keeps the last 14
 archives. Restore is manual; stop writers and use `deploy/backup/restore.sh`.
 
+## TLS / cert-manager
+
+The base Ingress carries `cert-manager.io/cluster-issuer: letsencrypt-prod`.
+Install cert-manager and apply `deploy/k8s/optional/cert-manager.yaml` first.
+Use the staging issuer for the first dry run. DNS and ACME email are external
+inputs.
+
 ## Notes
 
 - `control-plane` and `tool-gateway` are single-writer SQLite services; keep

@@ -8,8 +8,9 @@ import yaml
 root = Path(__file__).resolve().parent.parent
 directory = root / "deploy" / "k8s"
 names = sorted(path.name for path in directory.glob("*.yaml"))
+optional = sorted(path.name for path in (directory / "optional").glob("*.yaml"))
 manifests = []
-for name in names:
+for name in names + [f"optional/{item}" for item in optional]:
     documents = list(yaml.safe_load_all((directory / name).read_text()))
     for value in documents:
         if value is None:
@@ -33,7 +34,7 @@ for item in manifests:
         raise SystemExit(f"{item['file']}: mutable :latest image is not allowed")
 
 print(json.dumps({
-    "files": len(names),
+    "files": len(names) + len(optional),
     "documents": len(manifests),
     "kinds": sorted({item["kind"] for item in manifests}),
     "resources": len(resources),
