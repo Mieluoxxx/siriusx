@@ -533,8 +533,17 @@ describe('control plane', () => {
     const second = await fetch(`${server.url}/v1/sources/gitlab/webhook`, { method: 'POST', headers, body: JSON.stringify(payload) }).then(response => response.json()) as { accepted: boolean; duplicate: boolean }
     expect(first).toMatchObject({ accepted: true, duplicate: false })
     expect(second).toMatchObject({ accepted: false, duplicate: true })
-    const events = await fetch(`${server.url}/v1/source-events`, { headers: auth(token) }).then(response => response.json()) as { events: unknown[] }
+    const events = await fetch(`${server.url}/v1/source-events`, { headers: auth(token) }).then(response => response.json()) as { events: Array<{ status: string; ticketId: string | null }> }
     expect(events.events).toHaveLength(1)
+    expect(events.events[0]?.status).toBe('received')
+    server.control.setQuota(tenant.id, { maxCloudTicketsPerDay: 0 })
+    await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'gitlab', externalId: 'acme/auto', tenantId: tenant.id, repoUrl: 'https://github.com/acme/auto.git', autoDispatch: true }) })
+    const autoPayload = { object_kind: 'issue', project: { path_with_namespace: 'acme/auto' }, object_attributes: { iid: 2, title: 'auto issue', description: 'do it' } }
+    const auto = await fetch(`${server.url}/v1/sources/gitlab/webhook`, { method: 'POST', headers: { ...headers, 'x-gitlab-event-uuid': 'delivery-auto' }, body: JSON.stringify(autoPayload) }).then(response => response.json()) as { accepted: boolean; dispatchError?: string }
+    expect(auto.accepted).toBe(true)
+    expect(auto.dispatchError).toContain('cloudTickets quota exceeded')
+    const after = await fetch(`${server.url}/v1/source-events`, { headers: auth(token) }).then(response => response.json()) as { events: Array<{ status: string }> }
+    expect(after.events[0]?.status).toBe('failed')
   })
 
 })

@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS source_bindings (
   bot_id TEXT,
   repo_url TEXT,
   base_ref TEXT,
+  auto_dispatch INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   UNIQUE(provider, external_id)
 );
@@ -125,6 +126,8 @@ CREATE TABLE IF NOT EXISTS source_events (
   event_type TEXT NOT NULL,
   payload_json TEXT NOT NULL,
   received_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'received',
+  ticket_id TEXT,
   UNIQUE(provider, delivery_id)
 );
 CREATE TABLE IF NOT EXISTS tenant_billing (
@@ -257,6 +260,11 @@ export class ControlPlane {
     this.#db.exec(SCHEMA)
     const tenantColumns = this.#db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>
     if (!tenantColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE tenants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
+    const bindingColumns = this.#db.prepare('PRAGMA table_info(source_bindings)').all() as Array<{ name: string }>
+    if (!bindingColumns.some(column => column.name === 'auto_dispatch')) this.#db.exec('ALTER TABLE source_bindings ADD COLUMN auto_dispatch INTEGER NOT NULL DEFAULT 0')
+    const eventColumns = this.#db.prepare('PRAGMA table_info(source_events)').all() as Array<{ name: string }>
+    if (!eventColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE source_events ADD COLUMN status TEXT NOT NULL DEFAULT 'received'")
+    if (!eventColumns.some(column => column.name === 'ticket_id')) this.#db.exec('ALTER TABLE source_events ADD COLUMN ticket_id TEXT')
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
@@ -355,28 +363,28 @@ export class ControlPlane {
     return { currency: billing.currency, cloudTickets, deviceTickets, estimatedCents: cloudTickets * billing.cloudTicketCents + deviceTickets * billing.deviceTicketCents, monthlyBudgetCents: billing.monthlyBudgetCents }
   }
 
-  createSourceBinding(input: { provider: 'gitlab' | 'github' | 'feishu' | 'teams'; externalId: string; tenantId: string; botId?: string; repoUrl?: string; baseRef?: string }): { id: string } {
+  createSourceBinding(input: { provider: 'gitlab' | 'github' | 'feishu' | 'teams'; externalId: string; tenantId: string; botId?: string; repoUrl?: string; baseRef?: string; autoDispatch?: boolean }): { id: string } {
     this.tenantRow(input.tenantId)
     if (input.externalId.trim() === '') throw new ControlPlaneError(400, 'INVALID_BINDING', 'externalId is required')
     const id = randomUUID()
-    this.#db.prepare('INSERT INTO source_bindings (id, provider, external_id, tenant_id, bot_id, repo_url, base_ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(id, input.provider, input.externalId, input.tenantId, input.botId ?? null, input.repoUrl ?? null, input.baseRef ?? null, this.#now())
+    this.#db.prepare('INSERT INTO source_bindings (id, provider, external_id, tenant_id, bot_id, repo_url, base_ref, auto_dispatch, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, input.provider, input.externalId, input.tenantId, input.botId ?? null, input.repoUrl ?? null, input.baseRef ?? null, input.autoDispatch === true ? 1 : 0, this.#now())
     return { id }
   }
 
-  listSourceBindings(tenantId?: string): Array<{ id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null }> {
+  listSourceBindings(tenantId?: string): Array<{ id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean }> {
     const rows = tenantId === undefined
       ? this.#db.prepare('SELECT * FROM source_bindings ORDER BY created_at, rowid').all()
       : this.#db.prepare('SELECT * FROM source_bindings WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId)
-    return (rows as Array<{ id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null }>).map(row => ({
-      id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref,
+    return (rows as Array<{ id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number }>).map(row => ({
+      id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: row.auto_dispatch === 1,
     }))
   }
 
-  findSourceBinding(provider: string, externalId: string): { id: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null } | undefined {
+  findSourceBinding(provider: string, externalId: string): { id: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean } | undefined {
     const row = this.#db.prepare('SELECT * FROM source_bindings WHERE provider = ? AND external_id = ?').get(provider, externalId) as
-      | { id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null } | undefined
-    return row === undefined ? undefined : { id: row.id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref }
+      | { id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number } | undefined
+    return row === undefined ? undefined : { id: row.id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: row.auto_dispatch === 1 }
   }
 
   recordSourceEvent(input: { provider: string; deliveryId: string; bindingId?: string; tenantId?: string; eventType: string; payload: unknown }): { id: string; accepted: boolean } {
@@ -386,10 +394,14 @@ export class ControlPlane {
     return { id: result.changes === 1 ? id : (this.#db.prepare('SELECT id FROM source_events WHERE provider = ? AND delivery_id = ?').get(input.provider, input.deliveryId) as { id: string }).id, accepted: result.changes === 1 }
   }
 
-  listSourceEvents(tenantId: string, limit = 100): Array<{ id: string; provider: string; deliveryId: string; eventType: string; receivedAt: number }> {
-    return (this.#db.prepare('SELECT id, provider, delivery_id, event_type, received_at FROM source_events WHERE tenant_id = ? ORDER BY received_at DESC, rowid DESC LIMIT ?').all(tenantId, limit) as Array<{
-      id: string; provider: string; delivery_id: string; event_type: string; received_at: number
-    }>).map(row => ({ id: row.id, provider: row.provider, deliveryId: row.delivery_id, eventType: row.event_type, receivedAt: row.received_at }))
+  markSourceEvent(eventId: string, status: string, ticketId?: string): void {
+    this.#db.prepare('UPDATE source_events SET status = ?, ticket_id = ? WHERE id = ?').run(status, ticketId ?? null, eventId)
+  }
+
+  listSourceEvents(tenantId: string, limit = 100): Array<{ id: string; provider: string; deliveryId: string; eventType: string; receivedAt: number; status: string; ticketId: string | null }> {
+    return (this.#db.prepare('SELECT id, provider, delivery_id, event_type, received_at, status, ticket_id FROM source_events WHERE tenant_id = ? ORDER BY received_at DESC, rowid DESC LIMIT ?').all(tenantId, limit) as Array<{
+      id: string; provider: string; delivery_id: string; event_type: string; received_at: number; status: string; ticket_id: string | null
+    }>).map(row => ({ id: row.id, provider: row.provider, deliveryId: row.delivery_id, eventType: row.event_type, receivedAt: row.received_at, status: row.status, ticketId: row.ticket_id }))
   }
 
   createSupportRequest(tenantId: string, requestedBy: string, reason: string): { id: string; status: string; expiresAt: number | null } {
@@ -916,15 +928,24 @@ export class ControlPlane {
 
   createCloudTicket(session: Session, input: { repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
     if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
+    return this.createCloudTicketForTenant(session.tenantId, input, { operatorId: `app:${session.userId}`, channel: 'app' as const, platform: 'web' as const })
+  }
+
+  createCloudTicketFromSource(input: { tenantId: string; operatorId: string; channel: 'gitlab' | 'github' | 'feishu' | 'teams'; repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
+    this.tenantRow(input.tenantId)
+    return this.createCloudTicketForTenant(input.tenantId, input, { operatorId: input.operatorId, channel: input.channel, platform: 'web' as const })
+  }
+
+  private createCloudTicketForTenant(tenantId: string, input: { repoUrl: string; baseRef: string; prompt: string }, context: { operatorId: string; channel: 'app' | 'gitlab' | 'github' | 'feishu' | 'teams'; platform: 'web' }): { ticketId: string } {
     this.parseCloudRepoUrl(input.repoUrl)
-    this.enforceQuota(session.tenantId, 'cloudTickets')
+    this.enforceQuota(tenantId, 'cloudTickets')
     const ticketId = randomUUID()
     const assignmentId = randomUUID()
     const repoUrl = this.parseCloudRepoUrl(input.repoUrl)
     const baseRef = input.baseRef.trim() === '' ? 'main' : input.baseRef.trim()
     const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false })
     this.#db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(ticketId, session.tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
+      .run(ticketId, tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
     const repo = {
       provider: repoUrl.hostname.includes('gitlab') ? 'gitlab' as const : 'github' as const,
       host: repoUrl.hostname,
@@ -932,7 +953,7 @@ export class ControlPlane {
       cloneUrl: input.repoUrl,
     }
     const assignmentInput = {
-      tenantId: session.tenantId,
+      tenantId,
       assignmentId,
       ticketId,
       kind: 'start' as const,
@@ -944,7 +965,7 @@ export class ControlPlane {
       input: { prompt: input.prompt, followUps: [] },
       secretRefs: [],
       traceId: ticketId,
-      clientContext: { operatorId: `app:${session.userId}`, channel: 'app' as const, platform: 'web' as const },
+      clientContext: { operatorId: context.operatorId, channel: context.channel, platform: context.platform },
     }
     this.executeCloudAssignment(ticketId, assignmentId, assignmentInput as unknown as Record<string, unknown>)
     return { ticketId }

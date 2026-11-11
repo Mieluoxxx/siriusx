@@ -285,6 +285,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
               ...(typeof body.botId === 'string' ? { botId: body.botId } : {}),
               ...(typeof body.repoUrl === 'string' ? { repoUrl: body.repoUrl } : {}),
               ...(typeof body.baseRef === 'string' ? { baseRef: body.baseRef } : {}),
+              ...(typeof body.autoDispatch === 'boolean' ? { autoDispatch: body.autoDispatch } : {}),
             })
             control.recordPlatformAudit({ actor: 'platform', action: 'source.binding', target: binding.id, detail: `${body.provider}:${body.externalId}` })
             write(response, 201, binding)
@@ -423,7 +424,22 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           : createHash('sha256').update(JSON.stringify(body)).digest('hex')
         const eventType = typeof request.headers['x-gitlab-event'] === 'string' ? request.headers['x-gitlab-event'] : 'unknown'
         const recorded = control.recordSourceEvent({ provider: 'gitlab', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
-        write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id })
+        let ticketId: string | undefined
+        let dispatchError: string | undefined
+        if (recorded.accepted && binding.autoDispatch && binding.repoUrl !== null) {
+          const attributes = typeof body.object_attributes === 'object' && body.object_attributes !== null ? body.object_attributes as Record<string, unknown> : {}
+          const title = typeof attributes.title === 'string' ? attributes.title : `${eventType} event`
+          const description = typeof attributes.description === 'string' ? attributes.description : ''
+          try {
+            const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: 'app:source-gitlab', channel: 'gitlab', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `GitLab ${eventType}: ${title}\n\n${description}` })
+            ticketId = ticket.ticketId
+            control.markSourceEvent(recorded.id, 'dispatched', ticketId)
+          } catch (error) {
+            dispatchError = error instanceof Error ? error.message : String(error)
+            control.markSourceEvent(recorded.id, 'failed')
+          }
+        }
+        write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
         return
       }
       const session = sessionOf(control, request)
