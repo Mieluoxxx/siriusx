@@ -1,0 +1,5 @@
+{
+  "normal": 200,
+  "traversal": 403,
+  "encoded": 404
+}
