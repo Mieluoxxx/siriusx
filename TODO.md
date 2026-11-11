@@ -98,6 +98,7 @@
 - [x] Postgres Stage 2.2k：LISTEN/NOTIFY 即时失效（真实 PG 双实例测试）
 - [x] Postgres Stage 3a：tool-gateway approvals/policies/audit 运行时 cutover（真实 PG）
 - [x] Postgres Stage 3b：autobot schema + 离线迁移（真实 PG 验证）
+- [x] Postgres Stage 3b.1：autobot migration preflight（真实 PG）
 - [ ] Postgres Stage 3c：autobot 运行时 cutover
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端

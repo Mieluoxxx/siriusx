@@ -1,0 +1,10 @@
+{
+  "counts": {
+    "autobot_tickets": 1,
+    "autobot_assignments": 1,
+    "autobot_assignment_events": 1,
+    "autobot_pending_inputs": 1,
+    "autobot_outbox": 1
+  },
+  "failures": []
+}
