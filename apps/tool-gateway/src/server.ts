@@ -85,6 +85,26 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
     try {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       if (request.method === 'GET' && url.pathname === '/health') { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }
+      if (request.method === 'GET' && url.pathname === '/metrics') {
+        const metrics = gateway.metrics()
+        const body = [
+          '# HELP siriusx_tool_gateway_up Tool gateway process is serving.',
+          '# TYPE siriusx_tool_gateway_up gauge',
+          'siriusx_tool_gateway_up 1',
+          '# TYPE siriusx_tool_gateway_approvals_pending gauge',
+          `siriusx_tool_gateway_approvals_pending ${metrics.approvalsPending}`,
+          '# TYPE siriusx_tool_gateway_approvals_total gauge',
+          `siriusx_tool_gateway_approvals_total ${metrics.approvalsTotal}`,
+          '# TYPE siriusx_tool_gateway_audits gauge',
+          `siriusx_tool_gateway_audits ${metrics.audits}`,
+          '# TYPE siriusx_tool_gateway_audit_chain_valid gauge',
+          `siriusx_tool_gateway_audit_chain_valid ${metrics.auditChainValid ? 1 : 0}`,
+          '',
+        ].join('\n')
+        response.writeHead(200, { ...cors, 'content-type': 'text/plain; version=0.0.4; charset=utf-8', 'content-length': Buffer.byteLength(body) })
+        response.end(body)
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/ready') {
         try { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', checks: gateway.ready() }) }
         catch (error) { write(response, 503, { ok: false, service: 'siriusx-tool-gateway', error: error instanceof Error ? error.message : String(error) }) }

@@ -734,6 +734,11 @@ export class ControlPlane {
     return { database: 'ok' }
   }
 
+  metrics(): { tenants: number; users: number; devices: number; deviceTickets: number; cloudTickets: number } {
+    const count = (table: string): number => (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number }).count
+    return { tenants: count('tenants'), users: count('users'), devices: count('devices'), deviceTickets: count('device_tickets'), cloudTickets: count('cloud_tickets') }
+  }
+
   cloudTicketTarget(tenantId: string, ticketId: string): { ticketId: string } | undefined {
     const row = this.#db.prepare('SELECT ticket_id FROM cloud_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, tenantId) as { ticket_id: string } | undefined
     return row === undefined ? undefined : { ticketId: row.ticket_id }

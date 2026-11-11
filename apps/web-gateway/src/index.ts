@@ -184,6 +184,23 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         return
       }
       if (request.method === 'GET' && url.pathname === '/health') { json(response, 200, { ok: true, service: 'siriusx-web-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }
+      if (request.method === 'GET' && url.pathname === '/metrics') {
+        const body = [
+          '# HELP siriusx_web_gateway_up Web gateway process is serving.',
+          '# TYPE siriusx_web_gateway_up gauge',
+          'siriusx_web_gateway_up 1',
+          '# TYPE siriusx_web_gateway_oidc_enabled gauge',
+          `siriusx_web_gateway_oidc_enabled ${oidcEnabled ? 1 : 0}`,
+          '# TYPE siriusx_web_gateway_pending_oidc_states gauge',
+          `siriusx_web_gateway_pending_oidc_states ${pending.size}`,
+          '# TYPE siriusx_web_gateway_login_failure_sources gauge',
+          `siriusx_web_gateway_login_failure_sources ${loginFailures.size}`,
+          '',
+        ].join('\n')
+        response.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8', 'cache-control': 'no-store' })
+        response.end(body)
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/ready') {
         const deadline = AbortSignal.timeout(2000)
         const [controlReady, dshReady] = await Promise.all([

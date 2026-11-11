@@ -30,6 +30,10 @@ spec:
       labels:
         app.kubernetes.io/name: control-plane
         app.kubernetes.io/part-of: siriusx
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4320"
+        prometheus.io/path: /metrics
     spec:
       securityContext:
         seccompProfile:

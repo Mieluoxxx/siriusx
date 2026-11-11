@@ -82,6 +82,28 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         write(response, 200, { ok: true, service: 'siriusx-control-plane', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' })
         return
       }
+      if (request.method === 'GET' && url.pathname === '/metrics') {
+        const metrics = control.metrics()
+        const body = [
+          '# HELP siriusx_control_plane_up Control-plane process is serving.',
+          '# TYPE siriusx_control_plane_up gauge',
+          'siriusx_control_plane_up 1',
+          '# TYPE siriusx_control_plane_tenants gauge',
+          `siriusx_control_plane_tenants ${metrics.tenants}`,
+          '# TYPE siriusx_control_plane_users gauge',
+          `siriusx_control_plane_users ${metrics.users}`,
+          '# TYPE siriusx_control_plane_devices gauge',
+          `siriusx_control_plane_devices ${metrics.devices}`,
+          '# TYPE siriusx_control_plane_device_tickets gauge',
+          `siriusx_control_plane_device_tickets ${metrics.deviceTickets}`,
+          '# TYPE siriusx_control_plane_cloud_tickets gauge',
+          `siriusx_control_plane_cloud_tickets ${metrics.cloudTickets}`,
+          '',
+        ].join('\n')
+        response.writeHead(200, { ...CORS, 'content-type': 'text/plain; version=0.0.4; charset=utf-8', 'cache-control': 'no-store' })
+        response.end(body)
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/ready') {
         try { write(response, 200, { ok: true, service: 'siriusx-control-plane', checks: control.ready() }) }
         catch (error) { write(response, 503, { ok: false, service: 'siriusx-control-plane', error: error instanceof Error ? error.message : String(error) }) }

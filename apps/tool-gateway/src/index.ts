@@ -153,6 +153,16 @@ export class ToolGateway {
     return { database: 'ok' }
   }
 
+  metrics(): { approvalsPending: number; approvalsTotal: number; audits: number; auditChainValid: boolean } {
+    const count = (sql: string, ...parameters: Array<string>): number => (this.#db.prepare(sql).get(...parameters) as { count: number }).count
+    return {
+      approvalsPending: count("SELECT COUNT(*) AS count FROM approvals WHERE status = 'pending'"),
+      approvalsTotal: count('SELECT COUNT(*) AS count FROM approvals'),
+      audits: count('SELECT COUNT(*) AS count FROM audit'),
+      auditChainValid: this.verifyAuditChain().valid,
+    }
+  }
+
   close(): void { this.#db.close() }
 
   private assertTenant(request: ActionRequest, context: ToolContext): void {
