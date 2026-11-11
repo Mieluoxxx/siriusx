@@ -244,6 +244,11 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         if (request.method === 'POST' && parts[3] === 'input') {
           const body = await readJson(request)
           if (typeof body.text !== 'string' || body.text.trim() === '') throw new Error('text is required')
+          if (control.cloudTicketTarget(session.tenantId, ticketId) !== undefined) {
+            const followUp = await control.sendCloudFollowUp(session, ticketId, body.text)
+            write(response, 202, { ticketId, assignmentId: followUp.assignmentId, accepted: true })
+            return
+          }
           const deviceTicket = control.deviceTicketTarget(session.tenantId, ticketId)
           if (deviceTicket !== undefined) {
             if (deviceGateway === undefined) throw new ControlPlaneError(503, 'DEVICE_GATEWAY_UNAVAILABLE', 'device gateway is not attached')

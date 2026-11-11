@@ -37,9 +37,9 @@
 
 ## 不需要外部资源的下一步
 
-1. [ ] Cloud ticket follow-up 稳定性
-   - 当前已知不稳定：第二次 assignment 在控制面复用时挂起
-   - 需要先做 CloudExecutor 生命周期/复用设计，不能带病提交
+1. [x] Cloud ticket follow-up 稳定性
+   - 单 CloudExecutor 复用 + 清空旧 report + ticket-global 事件序号
+   - 第二次 assignment 完成回到 person/review
 2. [ ] Device 管理 UI
    - 展示 token 轮换、撤销、最后在线时间
    - 目前只有 API/服务端能力

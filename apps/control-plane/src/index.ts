@@ -171,7 +171,8 @@ export class ControlPlane {
   readonly #botScenario: 'ready' | 'waiting'
   readonly #sessionTtlMs: number
   readonly #runtimes = new Map<string, BotService>()
-  readonly #cloudExecutors = new Map<string, CloudExecutor>()
+  readonly #cloudRuns = new Map<string, Promise<void>>()
+  #cloud: CloudExecutor | undefined
   readonly #pairingFailures = new Map<string, { count: number; resetAt: number }>()
 
   constructor(options: ControlPlaneOptions) {
@@ -188,9 +189,8 @@ export class ControlPlane {
 
   close(): void {
     for (const runtime of this.#runtimes.values()) runtime.close()
-    for (const executor of this.#cloudExecutors.values()) executor.close()
+    void this.#cloud?.close()
     this.#runtimes.clear()
-    this.#cloudExecutors.clear()
     this.#db.close()
   }
 
@@ -535,19 +535,13 @@ export class ControlPlane {
     return row === undefined ? undefined : { deviceId: row.device_id }
   }
 
-  createCloudTicket(session: Session, input: { repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
-    if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
-    const ticketId = randomUUID()
-    const assignmentId = randomUUID()
-    const baseRef = input.baseRef.trim() === '' ? 'main' : input.baseRef.trim()
-    const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false })
-    this.#db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(ticketId, session.tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
+  private cloudExecutor(): CloudExecutor {
+    if (this.#cloud !== undefined) return this.#cloud
     const image = process.env.SIRIUSX_SANDBOX_IMAGE ?? 'teams-bridge:0.2.0'
     const fixture = fileURLToPath(new URL('./fixtures/fake-acp-raw.mjs', import.meta.url))
     mkdirSync(join(this.#dataDir, 'cloud'), { recursive: true })
-    const executor = new CloudExecutor({
-      dbPath: join(this.#dataDir, 'cloud', `${ticketId}.sqlite`),
+    this.#cloud = new CloudExecutor({
+      dbPath: join(this.#dataDir, 'cloud', 'assignments.sqlite'),
       provider: new DockerSandboxProvider({ image }),
       image,
       network: 'none',
@@ -561,7 +555,36 @@ export class ControlPlane {
         startDelayMs: process.env.SIRIUSX_CLOUD_START_DELAY_MS === undefined ? 0 : Number(process.env.SIRIUSX_CLOUD_START_DELAY_MS),
       } as never),
     })
-    this.#cloudExecutors.set(ticketId, executor)
+    return this.#cloud
+  }
+
+  private executeCloudAssignment(ticketId: string, assignmentId: string, input: Record<string, unknown>): void {
+    const executor = this.cloudExecutor()
+    const run = (async () => {
+      try {
+        await executor.createAssignment(input as never)
+        const done = await executor.wait(assignmentId)
+        this.recordCloudAssignment(ticketId, assignmentId, done.state, done.report, executor.streamEventsForBot(assignmentId, 0).events)
+      } catch (error) {
+        this.recordCloudAssignment(ticketId, assignmentId, 'reported', {
+          kind: 'failed', summary: 'cloud executor failed', reason: error instanceof Error ? error.message : String(error),
+        }, [])
+      } finally {
+        try { await executor.destroyWorkdir(String(input.tenantId), assignmentId) } catch { /* best effort */ }
+      }
+    })()
+    this.#cloudRuns.set(ticketId, run)
+    void run.finally(() => { if (this.#cloudRuns.get(ticketId) === run) this.#cloudRuns.delete(ticketId) })
+  }
+
+  createCloudTicket(session: Session, input: { repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
+    if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
+    const ticketId = randomUUID()
+    const assignmentId = randomUUID()
+    const baseRef = input.baseRef.trim() === '' ? 'main' : input.baseRef.trim()
+    const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false })
+    this.#db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(ticketId, session.tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
     const repoUrl = new URL(input.repoUrl)
     const repo = {
       provider: repoUrl.hostname.includes('gitlab') ? 'gitlab' as const : 'github' as const,
@@ -584,25 +607,38 @@ export class ControlPlane {
       traceId: ticketId,
       clientContext: { operatorId: `app:${session.userId}`, channel: 'app' as const, platform: 'web' as const },
     }
-    void (async () => {
-      try {
-        await executor.createAssignment(assignmentInput)
-        const done = await executor.wait(assignmentId)
-        const events = executor.streamEventsForBot(assignmentId, 0).events
-        this.recordCloudAssignment(ticketId, done.state, done.report, events)
-      } catch (error) {
-        this.recordCloudAssignment(ticketId, 'reported', {
-          kind: 'failed', summary: 'cloud executor failed', reason: error instanceof Error ? error.message : String(error),
-        }, [])
-      } finally {
-        await executor.dispose()
-        this.#cloudExecutors.delete(ticketId)
-      }
-    })()
+    this.executeCloudAssignment(ticketId, assignmentId, assignmentInput as unknown as Record<string, unknown>)
     return { ticketId }
   }
 
-  private recordCloudAssignment(ticketId: string, state: string, report: unknown, events: readonly unknown[]): void {
+  async sendCloudFollowUp(session: Session, ticketId: string, text: string): Promise<{ ticketId: string; assignmentId: string }> {
+    if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
+    const row = this.#db.prepare('SELECT * FROM cloud_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, session.tenantId) as { repo_url: string; base_ref: string } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
+    await this.#cloudRuns.get(ticketId)?.catch(() => undefined)
+    const assignmentId = randomUUID()
+    const nextSeq = (this.#db.prepare('SELECT COALESCE(MAX(seq) + 1, 0) AS next FROM cloud_ticket_events WHERE ticket_id = ?').get(ticketId) as { next: number }).next
+    this.#db.prepare("UPDATE cloud_tickets SET assignment_id = ?, state = 'preparing', report_json = NULL, stage = 'working/queued', updated_at = ? WHERE ticket_id = ?").run(assignmentId, this.#now(), ticketId)
+    this.#db.prepare('INSERT OR REPLACE INTO cloud_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
+      .run(ticketId, nextSeq, JSON.stringify({ type: 'state', seq: nextSeq, at: new Date(this.#now()).toISOString(), state: 'preparing' }))
+    const repoUrl = new URL(row.repo_url)
+    const repo = {
+      provider: repoUrl.hostname.includes('gitlab') ? 'gitlab' as const : 'github' as const,
+      host: repoUrl.hostname,
+      projectPath: repoUrl.pathname.replace(/^\//u, '').replace(/\.git$/u, ''),
+      cloneUrl: row.repo_url,
+    }
+    this.executeCloudAssignment(ticketId, assignmentId, {
+      tenantId: session.tenantId, assignmentId, ticketId, kind: 'resume', priority: 'human',
+      workspace: { kind: 'cloud_project', projectId: repo.projectPath, repo, baseRef: row.base_ref },
+      kernel: 'dsh', model: { source: 'tenant', id: 'tenant-default' }, workdirKey: `${ticketId}-${assignmentId}`,
+      input: { prompt: `Continue the ticket from the previous report.\n\nFollow-up:\n${text}`, followUps: [{ source: 'human', author: `app:${session.userId}`, text, triggerId: randomUUID() }] },
+      secretRefs: [], traceId: ticketId, clientContext: { operatorId: `app:${session.userId}`, channel: 'app', platform: 'web' },
+    })
+    return { ticketId, assignmentId }
+  }
+
+  private recordCloudAssignment(ticketId: string, assignmentId: string, state: string, report: unknown, events: readonly unknown[]): void {
     const row = this.#db.prepare('SELECT tenant_id FROM cloud_tickets WHERE ticket_id = ?').get(ticketId) as { tenant_id: string } | undefined
     if (row === undefined) return
     const reportKind = typeof report === 'object' && report !== null && 'kind' in report ? String(report.kind) : undefined
@@ -611,12 +647,15 @@ export class ControlPlane {
       pendingInput: false,
       latest: { state: state as 'preparing', ...(reportKind === undefined ? {} : { reportKind: reportKind as 'ready' }) },
     })
-    this.#db.prepare('INSERT OR REPLACE INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, report_json, created_at, updated_at) VALUES (?, ?, (SELECT assignment_id FROM cloud_tickets WHERE ticket_id = ?), (SELECT repo_url FROM cloud_tickets WHERE ticket_id = ?), (SELECT base_ref FROM cloud_tickets WHERE ticket_id = ?), (SELECT prompt FROM cloud_tickets WHERE ticket_id = ?), ?, ?, ?, (SELECT created_at FROM cloud_tickets WHERE ticket_id = ?), ?)')
-      .run(ticketId, row.tenant_id, ticketId, ticketId, ticketId, ticketId, stage, state, report === undefined ? null : JSON.stringify(report), ticketId, this.#now())
+    this.#db.prepare('UPDATE cloud_tickets SET assignment_id = ?, state = ?, report_json = ?, stage = ?, updated_at = ? WHERE ticket_id = ?')
+      .run(assignmentId, state, report === undefined ? null : JSON.stringify(report), stage, this.#now(), ticketId)
+    const baseSeq = (this.#db.prepare('SELECT COALESCE(MAX(seq) + 1, 0) AS next FROM cloud_ticket_events WHERE ticket_id = ?').get(ticketId) as { next: number }).next
     const insert = this.#db.prepare('INSERT OR REPLACE INTO cloud_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
+    let offset = 0
     for (const event of events) {
-      const seq = typeof event === 'object' && event !== null && 'seq' in event && typeof event.seq === 'number' ? event.seq : 0
-      insert.run(ticketId, seq, JSON.stringify(event))
+      const localSeq = typeof event === 'object' && event !== null && 'seq' in event && typeof event.seq === 'number' ? event.seq : offset
+      offset++
+      insert.run(ticketId, baseSeq + localSeq, JSON.stringify({ ...(event as Record<string, unknown>), seq: baseSeq + localSeq }))
     }
   }
 
@@ -667,7 +706,7 @@ export class ControlPlane {
   cancelCloudTicket(session: Session, ticketId: string): void {
     const row = this.#db.prepare('SELECT tenant_id, assignment_id FROM cloud_tickets WHERE ticket_id = ? AND tenant_id = ?').get(ticketId, session.tenantId) as { tenant_id: string; assignment_id: string } | undefined
     if (row === undefined) throw new ControlPlaneError(404, 'TICKET_NOT_FOUND', ticketId)
-    const executor = this.#cloudExecutors.get(ticketId)
+    const executor = this.#cloud
     if (executor !== undefined) {
       const input: CancelAssignment = {
         tenantId: session.tenantId, assignmentId: row.assignment_id, mode: 'kill', reason: 'user_stop',
@@ -675,7 +714,7 @@ export class ControlPlane {
       }
       void executor.cancelAssignment(input).catch(() => undefined)
     }
-    this.recordCloudAssignment(ticketId, 'cancelled', undefined, [])
+    this.recordCloudAssignment(ticketId, row.assignment_id, 'cancelled', undefined, [])
   }
 
   createPersonalBotTicket(session: Session, botId: string, deviceId: string, input: { path: string; prompt: string }): {
