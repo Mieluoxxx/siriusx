@@ -598,6 +598,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
+    await plane.initialize()
     try {
       await plane.recordPlatformAudit({ actor: 'platform', action: 'test.audit', target: 'tenant-test', detail: 'postgres' })
       const rows = await plane.listPlatformAudit(10)
@@ -614,6 +615,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
+    await plane.initialize()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-support', name: 'PG', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg.example' })
     await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [tenant.id, tenant.name, tenant.idpIssuer, tenant.status, tenant.createdAt])
     try {
@@ -637,6 +639,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
+    await plane.initialize()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-billing', name: 'PG Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-billing.example' })
     await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [tenant.id, tenant.name, tenant.idpIssuer, tenant.status, tenant.createdAt])
     try {
@@ -659,6 +662,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
+    await plane.initialize()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-users', name: 'PG Users', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-users.example' })
     try {
       const member = await plane.addUser({ tenantId: tenant.id, email: 'member@pg-users.example', role: 'member' })
@@ -681,6 +685,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
+    await plane.initialize()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-models', name: 'PG Models', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-models.example' })
     try {
       await plane.addModel({ id: 'model-pg', name: 'PG Model', provider: 'openai', model: 'gpt-pg' })
@@ -704,6 +709,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
+    await plane.initialize()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-sources', name: 'PG Sources', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-sources.example' })
     try {
       const binding = await plane.createSourceBinding({ provider: 'gitlab', externalId: 'acme/pg', tenantId: tenant.id, repoUrl: 'https://github.com/acme/pg.git', autoDispatch: false })
@@ -714,6 +720,39 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await plane.listSourceEvents(tenant.id))[0]).toMatchObject({ id: event.id, status: 'received' })
       await storage.query('DELETE FROM source_events WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM source_bindings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
+  it('reads tenants and users from the PostgreSQL cache after SQLite rows are removed', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-primary-'))
+    roots.push(root)
+    const dbPath = join(root, 'control.sqlite')
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath, dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    await plane.initialize()
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-primary', name: 'PG Primary', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-primary.example' })
+    const user = await plane.addUser({ tenantId: tenant.id, email: 'member@pg-primary.example', role: 'member' })
+    const sqlite = new DatabaseSync(dbPath)
+    sqlite.exec('PRAGMA foreign_keys = OFF; DELETE FROM users; DELETE FROM tenants;')
+    sqlite.close()
+    try {
+      expect(plane.listTenants()).toEqual(expect.arrayContaining([expect.objectContaining({ id: tenant.id })]))
+      expect(plane.findUserByEmail(tenant.id, 'member@pg-primary.example')).toMatchObject({ id: user.userId, role: 'member' })
+      expect(plane.listUsers(tenant.id)).toEqual(expect.arrayContaining([expect.objectContaining({ userId: user.userId })]))
+      const token = plane.issueSession({ tenantId: tenant.id, userId: user.userId, role: 'member' })
+      expect(plane.verifySession(token)).toMatchObject({ tenantId: tenant.id, userId: user.userId, role: 'member' })
+      await plane.updateUserRole(tenant.id, user.userId, 'admin')
+      expect(plane.verifySession(token).role).toBe('admin')
+      expect((await plane.setTenantStatus(tenant.id, 'suspended')).status).toBe('suspended')
+      expect(() => plane.issueSession({ tenantId: tenant.id, userId: user.userId, role: 'member' })).toThrow('tenant is suspended')
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])

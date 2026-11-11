@@ -83,6 +83,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
   const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }) })
+  await control.initialize()
   let deviceGateway: DeviceGateway | undefined
   const toolGatewayUrl = options.toolGatewayUrl
   const analyticsPath = options.analyticsPath

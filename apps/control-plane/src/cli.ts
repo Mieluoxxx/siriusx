@@ -46,6 +46,7 @@ const control = new ControlPlane({
   ...(storage === undefined ? {} : { storage }),
 })
 
+await control.initialize()
 try {
   if (command === 'tenant' && subcommand === 'create') {
     const name = flags.get('name')

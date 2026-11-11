@@ -247,6 +247,9 @@ function safeEqual(left: string, right: string): boolean {
 export class ControlPlane {
   readonly #db: DatabaseSync
   readonly #storage: Storage | undefined
+  readonly #tenantCache = new Map<string, Tenant>()
+  readonly #userCache = new Map<string, { id: string; tenantId: string; email: string; role: Role; createdAt: number }>()
+  #cacheReady = false
   readonly #dataDir: string
   readonly #secret: string
   readonly #now: () => number
@@ -291,6 +294,11 @@ export class ControlPlane {
   }
 
   private tenantRow(tenantId: string): { id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended' } {
+    if (this.#storage !== undefined && this.#cacheReady) {
+      const cached = this.#tenantCache.get(tenantId)
+      if (cached === undefined) throw new ControlPlaneError(404, 'TENANT_NOT_FOUND', tenantId)
+      return { id: cached.id, name: cached.name, idp_issuer: cached.idpIssuer, created_at: cached.createdAt, status: cached.status }
+    }
     const row = this.#db.prepare('SELECT * FROM tenants WHERE id = ?').get(tenantId) as
       | { id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended' }
       | undefined
@@ -301,6 +309,7 @@ export class ControlPlane {
   async provisionTenant(input: { name: string; idpIssuer: string; adminEmail: string; tenantId?: string }): Promise<Tenant> {
     const id = input.tenantId ?? randomUUID()
     const now = this.#now()
+    const adminUserId = randomUUID()
     this.#db.exec('BEGIN')
     try {
       this.#db.prepare('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?)')
@@ -309,7 +318,6 @@ export class ControlPlane {
       this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1)').run(id, 'tenant-default')
       this.#db.prepare('INSERT INTO tenant_billing (tenant_id, currency, cloud_ticket_cents, device_ticket_cents, monthly_budget_cents) VALUES (?, \'USD\', 0, 0, NULL)').run(id)
       this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
-      const adminUserId = randomUUID()
       this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
         .run(adminUserId, id, input.adminEmail, 'admin', now)
       if (this.#storage !== undefined) {
@@ -323,14 +331,21 @@ export class ControlPlane {
       this.#db.exec('ROLLBACK')
       throw error
     }
-    return { id, name: input.name, idpIssuer: input.idpIssuer, createdAt: now, status: 'active' }
+    const tenant = { id, name: input.name, idpIssuer: input.idpIssuer, createdAt: now, status: 'active' as const }
+    if (this.#storage !== undefined) {
+      this.#tenantCache.set(id, tenant)
+      this.#userCache.set(adminUserId, { id: adminUserId, tenantId: id, email: input.adminEmail, role: 'admin' as Role, createdAt: now })
+    }
+    return tenant
   }
 
   async setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Promise<Tenant> {
     const current = this.tenantRow(tenantId)
     if (this.#storage !== undefined) await this.#storage.query('UPDATE tenants SET status = ? WHERE id = ?', [status, tenantId])
     this.#db.prepare('UPDATE tenants SET status = ? WHERE id = ?').run(status, tenantId)
-    return { id: tenantId, name: current.name, idpIssuer: current.idp_issuer, createdAt: current.created_at, status }
+    const tenant = { id: tenantId, name: current.name, idpIssuer: current.idp_issuer, createdAt: current.created_at, status }
+    if (this.#storage !== undefined) this.#tenantCache.set(tenantId, tenant)
+    return tenant
   }
 
   async updateTenant(tenantId: string, patch: { name?: string; idpIssuer?: string }): Promise<Tenant> {
@@ -339,10 +354,13 @@ export class ControlPlane {
     const idpIssuer = patch.idpIssuer ?? current.idp_issuer
     if (this.#storage !== undefined) await this.#storage.query('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?', [name, idpIssuer, tenantId])
     this.#db.prepare('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?').run(name, idpIssuer, tenantId)
-    return { id: tenantId, name, idpIssuer, createdAt: current.created_at, status: current.status }
+    const tenant = { id: tenantId, name, idpIssuer, createdAt: current.created_at, status: current.status }
+    if (this.#storage !== undefined) this.#tenantCache.set(tenantId, tenant)
+    return tenant
   }
 
   listTenants(): Tenant[] {
+    if (this.#storage !== undefined && this.#cacheReady) return [...this.#tenantCache.values()].sort((left, right) => left.createdAt - right.createdAt)
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended'
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at, status: row.status }))
@@ -656,6 +674,7 @@ export class ControlPlane {
 
   listUsers(tenantId: string): Array<{ userId: string; email: string; role: Role; createdAt: number }> {
     this.tenantRow(tenantId)
+    if (this.#storage !== undefined && this.#cacheReady) return [...this.#userCache.values()].filter(user => user.tenantId === tenantId).sort((left, right) => left.createdAt - right.createdAt).map(user => ({ userId: user.id, email: user.email, role: user.role, createdAt: user.createdAt }))
     return (this.#db.prepare('SELECT id, email, role, created_at FROM users WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as Array<{
       id: string; email: string; role: Role; created_at: number
     }>).map(row => ({ userId: row.id, email: row.email, role: row.role, createdAt: row.created_at }))
@@ -663,18 +682,29 @@ export class ControlPlane {
 
   async updateUserRole(tenantId: string, userId: string, role: Role): Promise<void> {
     this.tenantRow(tenantId)
-    if (this.#storage !== undefined) await this.#storage.query('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?', [role, userId, tenantId])
+    if (this.#storage !== undefined && this.#cacheReady) {
+      const user = this.#userCache.get(userId)
+      if (user === undefined || user.tenantId !== tenantId) throw new ControlPlaneError(404, 'USER_NOT_FOUND', userId)
+      await this.#storage.query('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?', [role, userId, tenantId])
+      user.role = role
+      return
+    }
     const result = this.#db.prepare('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?').run(role, userId, tenantId)
     if (result.changes === 0) throw new ControlPlaneError(404, 'USER_NOT_FOUND', userId)
   }
 
   findTenantByIssuer(issuer: string): Tenant | undefined {
+    if (this.#storage !== undefined && this.#cacheReady) return [...this.#tenantCache.values()].find(tenant => tenant.idpIssuer === issuer)
     const row = this.#db.prepare('SELECT * FROM tenants WHERE idp_issuer = ?').get(issuer) as
       | { id: string; name: string; idp_issuer: string; created_at: number; status: 'active' | 'suspended' } | undefined
     return row === undefined ? undefined : { id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at, status: row.status }
   }
 
   findUserByEmail(tenantId: string, email: string): { id: string; role: Role } | undefined {
+    if (this.#storage !== undefined && this.#cacheReady) {
+      const user = [...this.#userCache.values()].find(item => item.tenantId === tenantId && item.email === email)
+      return user === undefined ? undefined : { id: user.id, role: user.role }
+    }
     const row = this.#db.prepare('SELECT id, role FROM users WHERE tenant_id = ? AND email = ?').get(tenantId, email) as { id: string; role: Role } | undefined
     return row
   }
@@ -688,6 +718,7 @@ export class ControlPlane {
     }
     this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(userId, input.tenantId, input.email, input.role ?? 'member', this.#now())
+    if (this.#storage !== undefined) this.#userCache.set(userId, { id: userId, tenantId: input.tenantId, email: input.email, role: input.role ?? 'member', createdAt: this.#now() })
     return { userId }
   }
 
@@ -704,8 +735,14 @@ export class ControlPlane {
 
   issueSession(input: { tenantId: string; userId: string; role: Role }): string {
     if (this.tenantRow(input.tenantId).status === 'suspended') throw new ControlPlaneError(403, 'TENANT_SUSPENDED', 'tenant is suspended')
-    const user = this.#db.prepare('SELECT id, role FROM users WHERE id = ? AND tenant_id = ?').get(input.userId, input.tenantId) as
-      | { id: string; role: string } | undefined
+    let user: { id: string; role: string } | undefined
+    if (this.#storage !== undefined && this.#cacheReady) {
+      const cached = this.#userCache.get(input.userId)
+      user = cached === undefined || cached.tenantId !== input.tenantId ? undefined : { id: cached.id, role: cached.role }
+    } else {
+      user = this.#db.prepare('SELECT id, role FROM users WHERE id = ? AND tenant_id = ?').get(input.userId, input.tenantId) as
+        | { id: string; role: string } | undefined
+    }
     if (user === undefined) throw new ControlPlaneError(401, 'USER_NOT_FOUND', 'user is not a member of this tenant')
     const payload = Buffer.from(JSON.stringify({ tenantId: input.tenantId, userId: input.userId, role: input.role, jti: randomUUID(), exp: this.#now() + this.#sessionTtlMs })).toString('base64url')
     const signature = createHmac('sha256', this.#secret).update(payload).digest('base64url')
@@ -736,9 +773,14 @@ export class ControlPlane {
     if (typeof value.jti === 'string' && this.#db.prepare('SELECT 1 FROM revoked_sessions WHERE session_id = ? AND expires_at > ?').get(value.jti, this.#now()) !== undefined) {
       throw new ControlPlaneError(401, 'SESSION_REVOKED', 'session revoked')
     }
-    const tenant = this.#db.prepare('SELECT status FROM tenants WHERE id = ?').get(value.tenantId) as { status: string } | undefined
-    if (tenant?.status === 'suspended') throw new ControlPlaneError(403, 'TENANT_SUSPENDED', 'tenant is suspended')
-    const user = this.#db.prepare('SELECT role FROM users WHERE id = ? AND tenant_id = ?').get(value.userId, value.tenantId) as { role: Role } | undefined
+    if (this.tenantRow(value.tenantId).status === 'suspended') throw new ControlPlaneError(403, 'TENANT_SUSPENDED', 'tenant is suspended')
+    let user: { role: Role } | undefined
+    if (this.#storage !== undefined && this.#cacheReady) {
+      const cached = this.#userCache.get(value.userId)
+      user = cached === undefined || cached.tenantId !== value.tenantId ? undefined : { role: cached.role }
+    } else {
+      user = this.#db.prepare('SELECT role FROM users WHERE id = ? AND tenant_id = ?').get(value.userId, value.tenantId) as { role: Role } | undefined
+    }
     if (user === undefined) throw new ControlPlaneError(401, 'UNAUTHORIZED', 'user no longer exists')
     return { tenantId: value.tenantId, userId: value.userId, role: user.role }
   }
@@ -1182,6 +1224,17 @@ export class ControlPlane {
         .run(row.ticket_id, row.next_seq, JSON.stringify({ type: 'report', seq: row.next_seq, at: new Date(this.#now()).toISOString(), report }))
     }
     return rows.length
+  }
+
+  /** Load tenant/user primary reads from PostgreSQL when the storage boundary is enabled. */
+  async initialize(): Promise<void> {
+    if (this.#storage === undefined) return
+    const tenants = await this.#storage.query<{ id: string; name: string; idp_issuer: string; status: 'active' | 'suspended'; created_at: string | number }>('SELECT id, name, idp_issuer, status, created_at FROM tenants ORDER BY created_at, id')
+    const users = await this.#storage.query<{ id: string; tenant_id: string; email: string; role: Role; created_at: string | number }>('SELECT id, tenant_id, email, role, created_at FROM users ORDER BY created_at, id')
+    this.#tenantCache.clear(); this.#userCache.clear()
+    for (const row of tenants.rows) this.#tenantCache.set(row.id, { id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: Number(row.created_at), status: row.status })
+    for (const row of users.rows) this.#userCache.set(row.id, { id: row.id, tenantId: row.tenant_id, email: row.email, role: row.role, createdAt: Number(row.created_at) })
+    this.#cacheReady = true
   }
 
   ready(): { database: 'ok' } {
