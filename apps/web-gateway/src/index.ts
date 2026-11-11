@@ -180,12 +180,21 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         target.searchParams.set('nonce', nonce)
         target.searchParams.set('code_challenge', challenge)
         target.searchParams.set('code_challenge_method', 'S256')
-        response.writeHead(302, { location: target.toString(), 'cache-control': 'no-store' }).end()
+        response.writeHead(302, {
+          location: target.toString(),
+          'set-cookie': `siriusx_oidc_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600${secureFlag(request)}`,
+          'cache-control': 'no-store',
+        }).end()
         return
       }
       if (request.method === 'GET' && url.pathname === '/auth/oidc/callback' && oidcEnabled && oidc !== undefined && oidcMetadata !== undefined) {
         const state = url.searchParams.get('state') ?? ''
         const code = url.searchParams.get('code')
+        const stateCookie = parseCookies(request.headers.cookie).siriusx_oidc_state
+        if (state === '' || stateCookie !== state) {
+          response.writeHead(400, { 'set-cookie': `siriusx_oidc_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureFlag(request)}` }).end('invalid OIDC state')
+          return
+        }
         const requestState = pending.get(state)
         pending.delete(state)
         if (code === null || requestState === undefined || Date.now() - requestState.createdAt > 10 * 60 * 1000) { response.writeHead(400).end('invalid OIDC state'); return }
@@ -212,7 +221,10 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         if (!session.ok) { response.writeHead(401).end('control-plane SSO exchange failed'); return }
         const sessionBody = await session.json() as { token: string }
         response.writeHead(302, {
-          'set-cookie': `${cookieName}=${encodeURIComponent(sessionBody.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800${secureFlag(request)}`,
+          'set-cookie': [
+            `${cookieName}=${encodeURIComponent(sessionBody.token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800${secureFlag(request)}`,
+            `siriusx_oidc_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureFlag(request)}`,
+          ],
           location: '/', 'cache-control': 'no-store',
         }).end()
         return

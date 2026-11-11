@@ -1,0 +1,7 @@
+{
+  "start": 302,
+  "hasStateCookie": true,
+  "stateLength": 32,
+  "noCookieCallback": 400,
+  "noCookieBody": "invalid OIDC state"
+}

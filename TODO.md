@@ -46,6 +46,7 @@
 - [x] local_dir symlink 越界防护
 - [x] Server-side session revocation + logout 联动
 - [x] Login CSP + frame/nosniff headers
+- [x] OIDC state 绑定浏览器 cookie（缺失/不匹配 400）
 - [x] Preview 环境变量隔离（不继承 host secrets）
 - [x] Cloud follow-up 浏览器端到端（Team panel Send → 新 assignment → person/review）
 - [x] 许可证策略门禁（阻断 GPL/AGPL/SSPL/BUSL）
