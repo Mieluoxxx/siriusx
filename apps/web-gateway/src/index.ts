@@ -218,7 +218,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         return
       }
       if (request.method === 'GET' && url.pathname === '/login') {
-        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY' })
+        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" })
         response.end(`<!doctype html><meta charset="utf-8"><title>SiriusX Login</title>
 <script>try { localStorage.setItem('siriusx.gatewayAuth','1') } catch {}</script>
 <form id="f"><input id="t" type="password" placeholder="control-plane session token" style="width:360px"><button>Sign in</button></form>
