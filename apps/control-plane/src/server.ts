@@ -278,12 +278,12 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       if (parts[0] === 'v1' && parts[1] === 'admin') {
         requirePlatformAdmin(request)
         if (parts[2] === 'support-requests' && parts[3] === undefined) {
-          if (request.method === 'GET') { write(response, 200, { requests: control.listSupportRequests() }); return }
+          if (request.method === 'GET') { write(response, 200, { requests: await control.listSupportRequests() }); return }
         }
         if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'support-requests') {
           const body = await readJson(request)
           if (typeof body.reason !== 'string' || body.reason.trim() === '') throw new Error('reason is required')
-          const supportRequest = control.createSupportRequest(parts[3], 'platform', body.reason.trim())
+          const supportRequest = await control.createSupportRequest(parts[3], 'platform', body.reason.trim())
           await control.recordPlatformAudit({ actor: 'platform', action: 'support.request', target: `${parts[3]}/${supportRequest.id}`, detail: body.reason.trim() })
           write(response, 201, supportRequest)
           return
@@ -594,7 +594,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       }
       if (request.method === 'GET' && url.pathname === '/v1/support-requests') {
         if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
-        write(response, 200, { requests: control.listSupportRequests(session.tenantId) })
+        write(response, 200, { requests: await control.listSupportRequests(session.tenantId) })
         return
       }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'source-events' && parts[2] !== undefined && parts[3] === 'dispatch') {
@@ -610,7 +610,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
         const body = await readJson(request)
         if (typeof body.approved !== 'boolean') throw new Error('approved is required')
-        write(response, 200, control.decideSupportRequest(session.tenantId, parts[2], body.approved, session.userId))
+        write(response, 200, await control.decideSupportRequest(session.tenantId, parts[2], body.approved, session.userId))
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/models') {

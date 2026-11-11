@@ -34,6 +34,7 @@ boundary, not just a connection string.
 3. Add `PostgresStorage` using `pg`.
 4. Migrate control-plane management reads/writes first:
    - [x] platform_audit (runtime via `DATABASE_URL`; SQLite fallback)
+   - [x] support_requests (runtime via `DATABASE_URL`; SQLite fallback)
    - tenants
    - users
    - quotas

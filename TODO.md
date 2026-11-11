@@ -86,7 +86,8 @@
 - [x] Postgres 迁移 preflight（计数 + orphan 检查）
 - [x] Postgres Stage 2.1：@siriusx/storage 异步边界（SQLite + PostgreSQL，真实 PG 测试）
 - [x] Postgres Stage 2.2a：platform_audit 运行时走 PostgresStorage（真实 PG 测试）
-- [ ] Postgres Stage 2.2b：tenants/users/quotas/billing/models/sources/support 迁移
+- [x] Postgres Stage 2.2b：support_requests 运行时迁移（真实 PG 测试）
+- [ ] Postgres Stage 2.2c：tenants/users/quotas/billing/models/sources 迁移
 - [ ] Postgres Stage 3：autobot/tool-gateway 运行时 cutover
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端

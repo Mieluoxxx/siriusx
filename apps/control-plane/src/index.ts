@@ -436,16 +436,29 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, provider: row.provider, deliveryId: row.delivery_id, eventType: row.event_type, receivedAt: row.received_at, status: row.status, ticketId: row.ticket_id }))
   }
 
-  createSupportRequest(tenantId: string, requestedBy: string, reason: string): { id: string; status: string; expiresAt: number | null } {
+  async createSupportRequest(tenantId: string, requestedBy: string, reason: string): Promise<{ id: string; status: string; expiresAt: number | null }> {
     this.tenantRow(tenantId)
     if (reason.trim() === '') throw new ControlPlaneError(400, 'INVALID_REASON', 'reason is required')
     const id = randomUUID()
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO support_requests (id, tenant_id, requested_by, reason, status, requested_at) VALUES (?, ?, ?, ?, ?, ?)', [id, tenantId, requestedBy, reason, 'pending', this.#now()])
+      return { id, status: 'pending', expiresAt: null }
+    }
     this.#db.prepare('INSERT INTO support_requests (id, tenant_id, requested_by, reason, status, requested_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run(id, tenantId, requestedBy, reason, 'pending', this.#now())
     return { id, status: 'pending', expiresAt: null }
   }
 
-  listSupportRequests(tenantId?: string): Array<{ id: string; tenantId: string; requestedBy: string; reason: string; status: string; requestedAt: number; decidedAt: number | null; expiresAt: number | null }> {
+  async listSupportRequests(tenantId?: string): Promise<Array<{ id: string; tenantId: string; requestedBy: string; reason: string; status: string; requestedAt: number; decidedAt: number | null; expiresAt: number | null }>> {
+    if (this.#storage !== undefined) {
+      const result = tenantId === undefined
+        ? await this.#storage.query<{ id: string; tenant_id: string; requested_by: string; reason: string; status: string; requested_at: string | number; decided_at: string | number | null; expires_at: string | number | null }>('SELECT * FROM support_requests ORDER BY requested_at DESC, id DESC')
+        : await this.#storage.query<{ id: string; tenant_id: string; requested_by: string; reason: string; status: string; requested_at: string | number; decided_at: string | number | null; expires_at: string | number | null }>('SELECT * FROM support_requests WHERE tenant_id = ? ORDER BY requested_at DESC, id DESC', [tenantId])
+      return result.rows.map(row => ({
+        id: row.id, tenantId: row.tenant_id, requestedBy: row.requested_by, reason: row.reason, status: row.status,
+        requestedAt: Number(row.requested_at), decidedAt: row.decided_at === null ? null : Number(row.decided_at), expiresAt: row.expires_at === null ? null : Number(row.expires_at),
+      }))
+    }
     const rows = tenantId === undefined
       ? this.#db.prepare('SELECT * FROM support_requests ORDER BY requested_at DESC, rowid DESC').all()
       : this.#db.prepare('SELECT * FROM support_requests WHERE tenant_id = ? ORDER BY requested_at DESC, rowid DESC').all(tenantId)
@@ -455,13 +468,22 @@ export class ControlPlane {
     }))
   }
 
-  decideSupportRequest(tenantId: string, requestId: string, approved: boolean, decidedBy: string): { id: string; status: string; expiresAt: number | null } {
+  async decideSupportRequest(tenantId: string, requestId: string, approved: boolean, decidedBy: string): Promise<{ id: string; status: string; expiresAt: number | null }> {
     this.tenantRow(tenantId)
-    const row = this.#db.prepare('SELECT status FROM support_requests WHERE id = ? AND tenant_id = ?').get(requestId, tenantId) as { status: string } | undefined
+    let row: { status: string } | undefined
+    if (this.#storage !== undefined) {
+      row = (await this.#storage.query<{ status: string }>('SELECT status FROM support_requests WHERE id = ? AND tenant_id = ?', [requestId, tenantId])).rows[0]
+    } else {
+      row = this.#db.prepare('SELECT status FROM support_requests WHERE id = ? AND tenant_id = ?').get(requestId, tenantId) as { status: string } | undefined
+    }
     if (row === undefined) throw new ControlPlaneError(404, 'SUPPORT_REQUEST_NOT_FOUND', requestId)
     if (row.status !== 'pending') throw new ControlPlaneError(409, 'SUPPORT_REQUEST_SETTLED', row.status)
     const status = approved ? 'approved' : 'denied'
     const expiresAt = approved ? this.#now() + 60 * 60 * 1000 : null
+    if (this.#storage !== undefined) {
+      await this.#storage.query('UPDATE support_requests SET status = ?, decided_at = ?, expires_at = ? WHERE id = ?', [status, this.#now(), expiresAt, requestId])
+      return { id: requestId, status, expiresAt }
+    }
     this.#db.prepare('UPDATE support_requests SET status = ?, decided_at = ?, expires_at = ? WHERE id = ?').run(status, this.#now(), expiresAt, requestId)
     return { id: requestId, status, expiresAt }
   }

@@ -485,13 +485,13 @@ describe('control plane', () => {
   it('requires tenant approval for support access requests', async () => {
     const { plane } = await setup()
     const tenant = plane.provisionTenant({ tenantId: 'tenant-support', name: 'Support', idpIssuer: 'https://idp.example', adminEmail: 'admin@support.example' })
-    const created = plane.createSupportRequest(tenant.id, 'platform', 'investigate incident')
+    const created = await plane.createSupportRequest(tenant.id, 'platform', 'investigate incident')
     expect(created.status).toBe('pending')
-    expect(plane.listSupportRequests(tenant.id)).toEqual([expect.objectContaining({ id: created.id, status: 'pending', reason: 'investigate incident' })])
-    const approved = plane.decideSupportRequest(tenant.id, created.id, true, 'admin@support.example')
+    expect(await plane.listSupportRequests(tenant.id)).toEqual([expect.objectContaining({ id: created.id, status: 'pending', reason: 'investigate incident' })])
+    const approved = await plane.decideSupportRequest(tenant.id, created.id, true, 'admin@support.example')
     expect(approved.status).toBe('approved')
     expect(approved.expiresAt).toBeGreaterThan(Date.now())
-    expect(() => plane.decideSupportRequest(tenant.id, created.id, false, 'admin@support.example')).toThrow('approved')
+    await expect(plane.decideSupportRequest(tenant.id, created.id, false, 'admin@support.example')).rejects.toThrow('approved')
   })
 
   it('suspends a tenant and invalidates its sessions', async () => {
@@ -607,4 +607,24 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       await storage.close()
     }
   })
+  it('moves support requests to PostgreSQL when storage is configured', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-support-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-pg-support', name: 'PG', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg.example' })
+    await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [tenant.id, tenant.name, tenant.idpIssuer, tenant.status, tenant.createdAt])
+    try {
+      const created = await plane.createSupportRequest(tenant.id, 'platform', 'pg support')
+      expect((await plane.listSupportRequests(tenant.id))[0]).toMatchObject({ id: created.id, status: 'pending' })
+      expect((await plane.decideSupportRequest(tenant.id, created.id, true, 'admin@pg.example')).status).toBe('approved')
+      await storage.query('DELETE FROM support_requests WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
 })
