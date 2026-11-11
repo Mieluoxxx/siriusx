@@ -1,0 +1,6 @@
+{
+  "users": true,
+  "settings": true,
+  "added": true,
+  "errors": []
+}

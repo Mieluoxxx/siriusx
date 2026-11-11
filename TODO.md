@@ -61,6 +61,8 @@
 - [x] cert-manager/TLS optional overlay（staging-first）
 - [x] GHCR 镜像构建/推送 workflow（静态校验）
 - [x] Fluent Bit log collection config + optional DaemonSet
+- [x] Management plane API（platform tenants/users + tenant users/roles）
+- [x] Management plane UI（tenant settings/users/role）
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

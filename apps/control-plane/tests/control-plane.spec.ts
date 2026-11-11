@@ -412,4 +412,26 @@ describe('control plane', () => {
     expect(() => plane.verifySession(token)).toThrow('session revoked')
   })
 
+  it('serves platform and tenant user administration APIs', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-admin-api-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'admin-api', platformAdminToken: 'platform-secret' })
+    servers.push(server)
+    const platform = { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }
+    expect((await fetch(`${server.url}/v1/admin/tenants`, { headers: { 'content-type': 'application/json' } })).status).toBe(401)
+    const created = await fetch(`${server.url}/v1/admin/tenants`, { method: 'POST', headers: platform, body: JSON.stringify({ tenantId: 'tenant-admin-api', name: 'Admin API', idpIssuer: 'https://idp.example', adminEmail: 'admin@admin.example' }) })
+    expect(created.status).toBe(201)
+    const admin = server.control.findUserByEmail('tenant-admin-api', 'admin@admin.example')!
+    const token = server.control.issueSession({ tenantId: 'tenant-admin-api', userId: admin.id, role: 'admin' })
+    const added = await fetch(`${server.url}/v1/admin/tenants/tenant-admin-api/users`, { method: 'POST', headers: platform, body: JSON.stringify({ email: 'member@admin.example', role: 'member' }) })
+    expect(added.status).toBe(201)
+    const list = await fetch(`${server.url}/v1/users`, { headers: auth(token) }).then(response => response.json()) as { users: Array<{ email: string; role: string }> }
+    expect(list.users).toEqual(expect.arrayContaining([{ email: 'admin@admin.example', role: 'admin' }, { email: 'member@admin.example', role: 'member' }].map(item => expect.objectContaining(item))))
+    const member = list.users.find(user => user.email === 'member@admin.example')!
+    const memberId = (await fetch(`${server.url}/v1/users`, { headers: auth(token) }).then(response => response.json()) as { users: Array<{ userId: string; email: string }> }).users.find(user => user.email === 'member@admin.example')!.userId
+    const updated = await fetch(`${server.url}/v1/users/${memberId}/role`, { method: 'PUT', headers: auth(token), body: JSON.stringify({ role: 'admin' }) })
+    expect(updated.status).toBe(200)
+    expect(member.role).toBe('member')
+  })
+
 })

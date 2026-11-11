@@ -233,6 +233,19 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
   }
 
+  listUsers(tenantId: string): Array<{ userId: string; email: string; role: Role; createdAt: number }> {
+    this.tenantRow(tenantId)
+    return (this.#db.prepare('SELECT id, email, role, created_at FROM users WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as Array<{
+      id: string; email: string; role: Role; created_at: number
+    }>).map(row => ({ userId: row.id, email: row.email, role: row.role, createdAt: row.created_at }))
+  }
+
+  updateUserRole(tenantId: string, userId: string, role: Role): void {
+    this.tenantRow(tenantId)
+    const result = this.#db.prepare('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?').run(role, userId, tenantId)
+    if (result.changes === 0) throw new ControlPlaneError(404, 'USER_NOT_FOUND', userId)
+  }
+
   findTenantByIssuer(issuer: string): Tenant | undefined {
     const row = this.#db.prepare('SELECT * FROM tenants WHERE idp_issuer = ?').get(issuer) as
       | { id: string; name: string; idp_issuer: string; created_at: number } | undefined

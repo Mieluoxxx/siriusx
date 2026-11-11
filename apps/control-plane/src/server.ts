@@ -15,6 +15,7 @@ export interface ControlPlaneServerOptions {
   readonly ssoServiceToken?: string
   readonly botScenario?: 'ready' | 'waiting'
   readonly deviceOfflineLostMs?: number
+  readonly platformAdminToken?: string
 }
 
 export interface ControlPlaneServer {
@@ -68,6 +69,12 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   const toolGatewayUrl = options.toolGatewayUrl
   const analyticsPath = options.analyticsPath
   const ssoServiceToken = options.ssoServiceToken
+  const platformAdminToken = options.platformAdminToken
+  const requirePlatformAdmin = (request: IncomingMessage): void => {
+    if (platformAdminToken === undefined || request.headers['x-siriusx-platform-token'] !== platformAdminToken) {
+      throw new ControlPlaneError(401, 'PLATFORM_ADMIN_REQUIRED', 'platform admin token required')
+    }
+  }
   const offlineTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const offlineLostMs = options.deviceOfflineLostMs ?? 15 * 60 * 1000
   const server = createServer(async (request, response) => {
@@ -131,10 +138,62 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         write(response, 200, control.ssoSession({ tenantId: body.tenantId, email: body.email, role: body.role }))
         return
       }
+      if (parts[0] === 'v1' && parts[1] === 'admin') {
+        requirePlatformAdmin(request)
+        if (request.method === 'GET' && parts[2] === 'tenants' && parts[3] === undefined) {
+          write(response, 200, { tenants: control.listTenants() })
+          return
+        }
+        if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] === undefined) {
+          const body = await readJson(request)
+          if (typeof body.name !== 'string' || typeof body.idpIssuer !== 'string' || typeof body.adminEmail !== 'string') throw new Error('name, idpIssuer and adminEmail are required')
+          const tenant = control.provisionTenant({
+            name: body.name, idpIssuer: body.idpIssuer, adminEmail: body.adminEmail,
+            ...(typeof body.tenantId === 'string' ? { tenantId: body.tenantId } : {}),
+          })
+          write(response, 201, { tenant })
+          return
+        }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'users') {
+          if (request.method === 'GET' && parts[5] === undefined) { write(response, 200, { users: control.listUsers(parts[3]) }); return }
+          if (request.method === 'POST' && parts[5] === undefined) {
+            const body = await readJson(request)
+            if (typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('email and role are required')
+            write(response, 201, control.addUser({ tenantId: parts[3], email: body.email, role: body.role }))
+            return
+          }
+          if (request.method === 'PUT' && parts[5] !== undefined && parts[6] === 'role') {
+            const body = await readJson(request)
+            if (body.role !== 'admin' && body.role !== 'member') throw new Error('role is required')
+            control.updateUserRole(parts[3], parts[5], body.role)
+            write(response, 200, { updated: true })
+            return
+          }
+        }
+        write(response, 404, { error: 'not found', code: 'NOT_FOUND' })
+        return
+      }
       const session = sessionOf(control, request)
       if (request.method === 'GET' && url.pathname === '/v1/me') {
         write(response, 200, session)
         return
+      }
+      if (parts[0] === 'v1' && parts[1] === 'users') {
+        if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
+        if (request.method === 'GET' && parts[2] === undefined) { write(response, 200, { users: control.listUsers(session.tenantId) }); return }
+        if (request.method === 'POST' && parts[2] === undefined) {
+          const body = await readJson(request)
+          if (typeof body.email !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('email and role are required')
+          write(response, 201, control.addUser({ tenantId: session.tenantId, email: body.email, role: body.role }))
+          return
+        }
+        if (request.method === 'PUT' && parts[2] !== undefined && parts[3] === 'role') {
+          const body = await readJson(request)
+          if (body.role !== 'admin' && body.role !== 'member') throw new Error('role is required')
+          control.updateUserRole(session.tenantId, parts[2], body.role)
+          write(response, 200, { updated: true })
+          return
+        }
       }
       if (url.pathname === '/v1/settings') {
         if (request.method === 'GET') { write(response, 200, control.getSettings(session.tenantId)); return }

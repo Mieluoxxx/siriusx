@@ -7,7 +7,7 @@ import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
-export type TeamTab = 'tickets' | 'bots' | 'devices' | 'approvals'
+export type TeamTab = 'tickets' | 'bots' | 'devices' | 'approvals' | 'admin'
 const DEFAULT_API = 'http://127.0.0.1:4319'
 const DEFAULT_CONTROL_API = 'http://127.0.0.1:4320'
 
@@ -34,6 +34,9 @@ function controlToken(): string | undefined {
 function controlPath(path: string): string {
   if (path === '/api/bots') return '/v1/bots'
   if (path === '/api/approvals') return '/v1/approvals'
+  if (path === '/api/me') return '/v1/me'
+  if (path === '/api/users') return '/v1/users'
+  if (path === '/api/settings') return '/v1/settings'
   return path.replace(/^\/api/, '/v1')
 }
 
@@ -87,6 +90,11 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
   const [rotatedToken, setRotatedToken] = useState<{ deviceId: string; token: string } | undefined>()
+  const [me, setMe] = useState<{ role: string } | undefined>()
+  const [users, setUsers] = useState<Array<{ userId: string; email: string; role: string }>>([])
+  const [settings, setSettings] = useState<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean } | undefined>()
+  const [newUserEmail, setNewUserEmail] = useState('')
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'member'>('member')
   const [pairName, setPairName] = useState('')
   const [pairCode, setPairCode] = useState('')
   const [pairingCode, setPairingCode] = useState<{ code: string; expiresAt: number } | undefined>()
@@ -112,6 +120,18 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
       setTickets(ticketResult.tickets)
       setApprovals(approvalResult.approvals)
       setDevices(deviceResult.devices)
+      if (controlToken() !== undefined || gatewayMode()) {
+        const current = await json<{ role: string }>('/api/me').catch(() => undefined)
+        setMe(current)
+        if (current?.role === 'admin') {
+          const [userResult, settingResult] = await Promise.all([
+            json<{ users: Array<{ userId: string; email: string; role: string }> }>('/api/users').catch(() => ({ users: [] })),
+            json<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>('/api/settings').catch(() => undefined),
+          ])
+          setUsers(userResult.users)
+          setSettings(settingResult)
+        } else { setUsers([]); setSettings(undefined) }
+      } else { setMe(undefined); setUsers([]); setSettings(undefined) }
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -220,6 +240,28 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
 
+  const saveSettings = async (patch: Partial<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>): Promise<void> => {
+    setBusy(true)
+    try { setSettings(await json('/api/settings', { method: 'PUT', body: JSON.stringify(patch) })) }
+    catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const addUser = async (): Promise<void> => {
+    if (newUserEmail.trim() === '') return
+    setBusy(true)
+    try {
+      await json('/api/users', { method: 'POST', body: JSON.stringify({ email: newUserEmail.trim(), role: newUserRole }) })
+      setNewUserEmail('')
+      await refresh()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const changeUserRole = async (userId: string, role: 'admin' | 'member'): Promise<void> => {
+    setBusy(true)
+    try { await json(`/api/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }); await refresh() }
+    catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
   const cancel = async (): Promise<void> => {
     if (selectedId === undefined) return
     setBusy(true)
@@ -246,7 +288,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
         <span style={styles.title}>SiriusX Team</span>
         <span style={{ ...styles.stage, fontSize: 12 }}>{bots.length} bot · {tickets.length} ticket</span>
         <div style={styles.tabs} className="sx-team-tabs">
-          {(['tickets', 'bots', 'devices', 'approvals'] as const).map(item => (
+          {(['tickets', 'bots', 'devices', 'approvals', 'admin'] as const).map(item => (
             <button key={item} style={{ ...styles.button, fontWeight: tab === item ? 700 : 400 }} onClick={() => setTab(item)}>{item}</button>
           ))}
           <button style={styles.button} onClick={() => { void refresh() }}>Refresh</button>
@@ -366,6 +408,41 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
               ) : null}
             </div>
           ))}
+        </div>
+      ) : null}
+      {tab === 'admin' ? (
+        <div style={{ padding: 18, overflow: 'auto' }}>
+          <h2 style={{ fontSize: 16 }}>Admin</h2>
+          {me?.role !== 'admin' ? <p style={{ opacity: 0.65 }}>Admin role required.</p> : (
+            <>
+              <h3 style={{ fontSize: 14 }}>Tenant settings</h3>
+              {settings === undefined ? <p style={{ opacity: 0.65 }}>Settings unavailable.</p> : (
+                <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+                  <label><input type="checkbox" checked={settings.nativeConversationEnabled} disabled={busy} onChange={event => { void saveSettings({ nativeConversationEnabled: event.target.checked }) }} /> Native conversation</label>
+                  <label><input type="checkbox" checked={settings.byokEnabled} disabled={busy} onChange={event => { void saveSettings({ byokEnabled: event.target.checked }) }} /> BYOK</label>
+                  <label><input type="checkbox" checked={settings.localExecutionEnabled} disabled={busy} onChange={event => { void saveSettings({ localExecutionEnabled: event.target.checked }) }} /> Local execution</label>
+                </div>
+              )}
+              <h3 style={{ fontSize: 14, marginTop: 22 }}>Users</h3>
+              <div style={{ ...styles.row, maxWidth: 620, marginBottom: 12 }}>
+                <input style={styles.input} placeholder="User email" value={newUserEmail} onChange={event => setNewUserEmail(event.target.value)} />
+                <select style={styles.input} value={newUserRole} onChange={event => setNewUserRole(event.target.value === 'admin' ? 'admin' : 'member')}>
+                  <option value="member">member</option><option value="admin">admin</option>
+                </select>
+                <button style={styles.button} disabled={busy || newUserEmail.trim() === ''} onClick={() => { void addUser() }}>Add user</button>
+              </div>
+              {users.map(user => (
+                <div key={user.userId} style={{ ...styles.ticket, cursor: 'default', maxWidth: 620 }}>
+                  <div style={styles.row}>
+                    <strong>{user.email}</strong>
+                    <select style={{ ...styles.input, width: 110, marginLeft: 'auto' }} value={user.role} disabled={busy} onChange={event => { void changeUserRole(user.userId, event.target.value === 'admin' ? 'admin' : 'member') }}>
+                      <option value="member">member</option><option value="admin">admin</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       ) : null}
       {tab === 'approvals' ? (
