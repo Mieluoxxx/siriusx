@@ -1,0 +1,53 @@
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LC_CTYPE = (unset),
+	LC_NUMERIC = (unset),
+	LC_COLLATE = (unset),
+	LC_TIME = (unset),
+	LC_MESSAGES = (unset),
+	LC_MONETARY = (unset),
+	LC_ADDRESS = (unset),
+	LC_IDENTIFICATION = (unset),
+	LC_MEASUREMENT = (unset),
+	LC_PAPER = (unset),
+	LC_TELEPHONE = (unset),
+	LC_NAME = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+       id       |  name   | status
+----------------+---------+--------
+ tenant-migrate | Migrate | active
+(1 row)
+
+         email         | role
+-----------------------+-------
+ admin@migrate.example | admin
+(1 row)
+
+ max_users | max_devices
+-----------+-------------
+        10 |           5
+(1 row)
+
+ currency | cloud_ticket_cents | monthly_budget_cents
+----------+--------------------+----------------------
+ EUR      |                100 |                 5000
+(1 row)
+
+ provider | external_id | auto_dispatch
+----------+-------------+---------------
+ gitlab   | acme/repo   |             1
+(1 row)
+
+ status  |      reason
+---------+-------------------
+ pending | migration support
+(1 row)
+
+  actor   |    action
+----------+---------------
+ platform | tenant.create
+(1 row)

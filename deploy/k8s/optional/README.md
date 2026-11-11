@@ -30,3 +30,8 @@ required; those are external infrastructure inputs.
 
 Apply `deploy/k8s/optional/fluent-bit.yaml` for a Fluent Bit DaemonSet that
 tails CRI logs; see `deploy/observability/logging/README.md`.
+
+## PostgreSQL
+
+`postgres.yaml` is an optional StatefulSet/PVC for the management-plane
+migration rehearsals. It is not wired into the control-plane runtime yet.

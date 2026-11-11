@@ -11,6 +11,12 @@
         "resolved": "https://registry.npmjs.org/@types/node/-/node-24.13.3.tgz",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
       },
+      "pg": {
+        "from": "pg",
+        "version": "8.16.3",
+        "resolved": "https://registry.npmjs.org/pg/-/pg-8.16.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "4.23.13",
@@ -45,6 +51,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -126,6 +137,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "@types/node": {
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
@@ -214,6 +230,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "@types/node": {
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
@@ -281,6 +302,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "@types/node": {
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
@@ -322,6 +348,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "@types/node": {
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
@@ -375,6 +406,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "@types/node": {
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
@@ -409,6 +445,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -448,6 +489,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -526,6 +572,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -576,6 +627,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -622,6 +678,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "@types/node": {
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
@@ -666,6 +727,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -705,6 +771,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -766,6 +837,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -792,6 +868,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -860,6 +941,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -904,6 +990,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -974,6 +1065,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1048,6 +1144,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1120,6 +1221,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1192,6 +1298,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1264,6 +1375,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1353,6 +1469,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1425,6 +1546,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1513,6 +1639,11 @@
       }
     },
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1536,6 +1667,11 @@
     "path": "/root/siriusx/plugins/telemetry-off",
     "private": true,
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
@@ -1564,6 +1700,11 @@
     "path": "/root/siriusx/plugins/telemetry-off-desktop",
     "private": true,
     "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",

@@ -1,0 +1,35 @@
+name: postgres
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: siriusx
+      POSTGRES_PASSWORD: x
+      POSTGRES_USER: siriusx
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      timeout: 5s
+      interval: 10s
+      retries: 10
+    image: postgres:16-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: siriusx-postgres
+        target: /var/lib/postgresql/data
+        volume: {}
+networks:
+  default:
+    name: postgres_default
+volumes:
+  siriusx-postgres:
+    name: postgres_siriusx-postgres

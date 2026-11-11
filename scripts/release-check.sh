@@ -13,6 +13,7 @@ echo '== install coverage'
 ./scripts/check-install-coverage.sh
 ./scripts/check-script-portability.sh
 python3 scripts/check-k8s-manifests.py
+python3 scripts/check-postgres.py
 python3 scripts/check-observability.py
 python3 scripts/check-ci.py
 python3 scripts/check-logging-config.py
