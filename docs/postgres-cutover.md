@@ -36,6 +36,7 @@ boundary, not just a connection string.
    - [x] platform_audit (runtime via `DATABASE_URL`; SQLite fallback)
    - [x] support_requests (runtime via `DATABASE_URL`; SQLite fallback)
    - [x] tenant_billing (runtime via `DATABASE_URL`; SQLite fallback)
+   - [x] tenant/settings mirror on create/update/status
    - tenants
    - users
    - quotas
@@ -72,8 +73,8 @@ preflight, not proof of runtime cutover.
 `tenants`, `users`, `settings`, `devices`, quotas, model catalog, source
 bindings/events and tickets still use SQLite at runtime.
 
-Because support/billing have PostgreSQL foreign keys to `tenants`, this hybrid
-mode is only valid for tenants already present in PostgreSQL (the migration
-rehearsal creates them). New tenants are not yet mirrored automatically. Do not
-use hybrid mode for production traffic until tenant/user lifecycle has moved to
-the storage boundary.
+Tenant/settings rows are now mirrored to PostgreSQL during tenant creation,
+update and status changes, so support/billing foreign keys work for new
+tenants. SQLite is still the primary read source for tenant lookups. Do not use
+hybrid mode for production traffic until tenant/user reads and users are moved
+to the storage boundary.

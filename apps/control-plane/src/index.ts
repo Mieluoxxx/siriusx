@@ -298,7 +298,7 @@ export class ControlPlane {
     return row
   }
 
-  provisionTenant(input: { name: string; idpIssuer: string; adminEmail: string; tenantId?: string }): Tenant {
+  async provisionTenant(input: { name: string; idpIssuer: string; adminEmail: string; tenantId?: string }): Promise<Tenant> {
     const id = input.tenantId ?? randomUUID()
     const now = this.#now()
     this.#db.exec('BEGIN')
@@ -311,6 +311,10 @@ export class ControlPlane {
       this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
       this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
         .run(randomUUID(), id, input.adminEmail, 'admin', now)
+      if (this.#storage !== undefined) {
+        await this.#storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [id, input.name, input.idpIssuer, 'active', now])
+        await this.#storage.query('INSERT INTO settings (tenant_id) VALUES (?) ON CONFLICT (tenant_id) DO NOTHING', [id])
+      }
       this.#db.exec('COMMIT')
     } catch (error) {
       this.#db.exec('ROLLBACK')
@@ -319,16 +323,18 @@ export class ControlPlane {
     return { id, name: input.name, idpIssuer: input.idpIssuer, createdAt: now, status: 'active' }
   }
 
-  setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Tenant {
+  async setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Promise<Tenant> {
     const current = this.tenantRow(tenantId)
+    if (this.#storage !== undefined) await this.#storage.query('UPDATE tenants SET status = ? WHERE id = ?', [status, tenantId])
     this.#db.prepare('UPDATE tenants SET status = ? WHERE id = ?').run(status, tenantId)
     return { id: tenantId, name: current.name, idpIssuer: current.idp_issuer, createdAt: current.created_at, status }
   }
 
-  updateTenant(tenantId: string, patch: { name?: string; idpIssuer?: string }): Tenant {
+  async updateTenant(tenantId: string, patch: { name?: string; idpIssuer?: string }): Promise<Tenant> {
     const current = this.tenantRow(tenantId)
     const name = patch.name ?? current.name
     const idpIssuer = patch.idpIssuer ?? current.idp_issuer
+    if (this.#storage !== undefined) await this.#storage.query('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?', [name, idpIssuer, tenantId])
     this.#db.prepare('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?').run(name, idpIssuer, tenantId)
     return { id: tenantId, name, idpIssuer, createdAt: current.created_at, status: current.status }
   }

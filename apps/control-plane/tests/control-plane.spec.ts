@@ -50,8 +50,8 @@ function auth(token: string): Record<string, string> {
 describe('control plane', () => {
   it('provisions isolated tenants and rejects cross-tenant access', async () => {
     const { plane } = await setup()
-    const a = plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
-    const b = plane.provisionTenant({ name: 'B', idpIssuer: 'https://b.example', adminEmail: 'admin@b.example' })
+    const a = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const b = await plane.provisionTenant({ name: 'B', idpIssuer: 'https://b.example', adminEmail: 'admin@b.example' })
     const adminA = plane.findUserByEmail(a.id, 'admin@a.example')!
     const adminB = plane.findUserByEmail(b.id, 'admin@b.example')!
     const sessionA = plane.verifySession(plane.issueSession({ tenantId: a.id, userId: adminA.id, role: 'admin' }))
@@ -64,7 +64,7 @@ describe('control plane', () => {
 
   it('pairs, revokes and authenticates a device', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
     const session = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
     const pairing = plane.startPairing(session, 'Alice MacBook')
@@ -76,7 +76,7 @@ describe('control plane', () => {
 
   it('enforces the admin native-conversation switch', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
     const member = plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
     const adminSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
@@ -88,7 +88,7 @@ describe('control plane', () => {
 
   it('validates SSO sessions and hides the upstream model key', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const seen: Array<string | undefined> = []
@@ -131,7 +131,7 @@ describe('control plane', () => {
 
   it('serves tenant-scoped tickets over the HTTP session boundary', async () => {
     const { root, server } = await serverSetup()
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const created = await fetch(`${server.url}/v1/tickets`, {
@@ -149,7 +149,7 @@ describe('control plane', () => {
   })
   it('keeps a paired device connected and rejects a revoked token', async () => {
     const { root, server } = await serverSetup()
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const pairStart = await fetch(`${server.url}/v1/devices/pair/start`, {
@@ -217,7 +217,7 @@ describe('control plane', () => {
       toolGatewayUrl: `http://127.0.0.1:${toolPort}`,
     })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const list = await fetch(`${server.url}/v1/approvals`, { headers: auth(token) }).then(response => response.json()) as { approvals: unknown[] }
@@ -237,7 +237,7 @@ describe('control plane', () => {
 
   it('lets only a personal bot owned by the member dispatch to that member\'s device', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await plane.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@a.example')!
     const member = plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
     const adminSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
@@ -257,7 +257,7 @@ describe('control plane', () => {
       dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret', analyticsPath,
     })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const session = server.control.verifySession(server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
     const ticket = server.control.createTicket(session, { path: root, prompt: 'trace analytics' })
@@ -276,7 +276,7 @@ describe('control plane', () => {
     roots.push(dir)
     const plane = new ControlPlane({ dbPath: join(dir, 'expiry.sqlite'), dataDir: join(dir, 'expiry-data'), now: () => now, sessionTtlMs: 1000 })
     planes.push(plane)
-    const tenant = plane.provisionTenant({ name: 'Expiry', idpIssuer: 'https://e.example', adminEmail: 'admin@e.example' })
+    const tenant = await plane.provisionTenant({ name: 'Expiry', idpIssuer: 'https://e.example', adminEmail: 'admin@e.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@e.example')!
     const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     expect(plane.verifySession(token).tenantId).toBe(tenant.id)
@@ -289,7 +289,7 @@ describe('control plane', () => {
     roots.push(dir)
     const server = await startControlPlaneServer({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data'), port: 0, sessionSecret: 'authority-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ tenantId: 'tenant-authority', name: 'Authority', idpIssuer: 'https://idp.example', adminEmail: 'admin@authority.example' })
+    const tenant = await server.control.provisionTenant({ tenantId: 'tenant-authority', name: 'Authority', idpIssuer: 'https://idp.example', adminEmail: 'admin@authority.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@authority.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const anonymous = await fetch(`${server.url}/v1/bots`)
@@ -305,7 +305,7 @@ describe('control plane', () => {
     roots.push(dir)
     const dbPath = join(dir, 'control.sqlite')
     const first = new ControlPlane({ dbPath, dataDir: join(dir, 'data') })
-    const tenant = first.provisionTenant({ tenantId: 'tenant-cloud-restart', name: 'Cloud', idpIssuer: 'https://idp.example', adminEmail: 'admin@cloud.example' })
+    const tenant = await first.provisionTenant({ tenantId: 'tenant-cloud-restart', name: 'Cloud', idpIssuer: 'https://idp.example', adminEmail: 'admin@cloud.example' })
     first.close()
     const db = new DatabaseSync(dbPath)
     db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -327,7 +327,7 @@ describe('control plane', () => {
     roots.push(dir)
     const plane = new ControlPlane({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data'), now: () => now })
     planes.push(plane)
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-pair', name: 'Pair', idpIssuer: 'https://idp.example', adminEmail: 'admin@pair.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pair', name: 'Pair', idpIssuer: 'https://idp.example', adminEmail: 'admin@pair.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@pair.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     const pairing = plane.startPairing(session, 'Device')
@@ -342,7 +342,7 @@ describe('control plane', () => {
     roots.push(dir)
     const plane = new ControlPlane({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data') })
     planes.push(plane)
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-rotate', name: 'Rotate', idpIssuer: 'https://idp.example', adminEmail: 'admin@rotate.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-rotate', name: 'Rotate', idpIssuer: 'https://idp.example', adminEmail: 'admin@rotate.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@rotate.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     const pairing = plane.startPairing(session, 'Device')
@@ -359,7 +359,7 @@ describe('control plane', () => {
     roots.push(dir)
     const plane = new ControlPlane({ dbPath: join(dir, 'control.sqlite'), dataDir: join(dir, 'data'), now: () => now })
     planes.push(plane)
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-expiry', name: 'Expiry', idpIssuer: 'https://idp.example', adminEmail: 'admin@expiry.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-expiry', name: 'Expiry', idpIssuer: 'https://idp.example', adminEmail: 'admin@expiry.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@expiry.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     const pairing = plane.startPairing(session, 'Device')
@@ -374,7 +374,7 @@ describe('control plane', () => {
 
   it('closes a device websocket that sends an oversized frame', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-ws-limit', name: 'WS', idpIssuer: 'https://idp.example', adminEmail: 'admin@ws-limit.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-ws-limit', name: 'WS', idpIssuer: 'https://idp.example', adminEmail: 'admin@ws-limit.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@ws-limit.example')!
     const pairing = plane.startPairing({ tenantId: tenant.id, userId: admin.id, role: 'admin' }, 'Device')
     const paired = plane.confirmPairing({ tenantId: tenant.id, userId: admin.id, role: 'admin' }, pairing.code)
@@ -391,7 +391,7 @@ describe('control plane', () => {
 
   it('closes a device websocket after the heartbeat timeout', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-heartbeat', name: 'Heartbeat', idpIssuer: 'https://idp.example', adminEmail: 'admin@heartbeat.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-heartbeat', name: 'Heartbeat', idpIssuer: 'https://idp.example', adminEmail: 'admin@heartbeat.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@heartbeat.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     const pairing = plane.startPairing(session, 'Device')
@@ -408,7 +408,7 @@ describe('control plane', () => {
 
   it('rejects cloud project URLs with unsupported schemes or credentials', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-repo-url', name: 'Repo', idpIssuer: 'https://idp.example', adminEmail: 'admin@repo.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-repo-url', name: 'Repo', idpIssuer: 'https://idp.example', adminEmail: 'admin@repo.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@repo.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     expect(() => plane.createCloudTicket(session, { repoUrl: 'file:///etc/passwd', baseRef: 'main', prompt: 'x' })).toThrow('http or https')
@@ -417,7 +417,7 @@ describe('control plane', () => {
 
   it('revokes a server-side session token', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-revoke', name: 'Revoke', idpIssuer: 'https://idp.example', adminEmail: 'admin@revoke.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-revoke', name: 'Revoke', idpIssuer: 'https://idp.example', adminEmail: 'admin@revoke.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@revoke.example')!
     const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     expect(plane.verifySession(token).userId).toBe(admin.id)
@@ -449,7 +449,7 @@ describe('control plane', () => {
 
   it('enforces tenant user, device and ticket quotas', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-quota', name: 'Quota', idpIssuer: 'https://idp.example', adminEmail: 'admin@quota.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-quota', name: 'Quota', idpIssuer: 'https://idp.example', adminEmail: 'admin@quota.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@quota.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
     plane.setQuota(tenant.id, { maxUsers: 1, maxDevices: 1, maxCloudTicketsPerDay: 0, maxDeviceTicketsPerDay: 0 })
@@ -463,7 +463,7 @@ describe('control plane', () => {
 
   it('binds tenant model catalog entries', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-models', name: 'Models', idpIssuer: 'https://idp.example', adminEmail: 'admin@models.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-models', name: 'Models', idpIssuer: 'https://idp.example', adminEmail: 'admin@models.example' })
     expect(plane.listTenantModels(tenant.id)).toEqual([expect.objectContaining({ id: 'tenant-default', isDefault: true })])
     plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-x' })
     plane.bindTenantModel(tenant.id, 'model-a', true)
@@ -475,7 +475,7 @@ describe('control plane', () => {
 
   it('reports daily tenant usage with zero-filled days', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-usage-daily', name: 'Usage', idpIssuer: 'https://idp.example', adminEmail: 'admin@usage.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-usage-daily', name: 'Usage', idpIssuer: 'https://idp.example', adminEmail: 'admin@usage.example' })
     const usage = plane.usageDaily(tenant.id, 7)
     expect(usage).toHaveLength(7)
     expect(usage.every(day => day.cloudTickets === 0 && day.deviceTickets === 0)).toBe(true)
@@ -484,7 +484,7 @@ describe('control plane', () => {
 
   it('requires tenant approval for support access requests', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-support', name: 'Support', idpIssuer: 'https://idp.example', adminEmail: 'admin@support.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-support', name: 'Support', idpIssuer: 'https://idp.example', adminEmail: 'admin@support.example' })
     const created = await plane.createSupportRequest(tenant.id, 'platform', 'investigate incident')
     expect(created.status).toBe('pending')
     expect(await plane.listSupportRequests(tenant.id)).toEqual([expect.objectContaining({ id: created.id, status: 'pending', reason: 'investigate incident' })])
@@ -496,20 +496,20 @@ describe('control plane', () => {
 
   it('suspends a tenant and invalidates its sessions', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-suspend', name: 'Suspend', idpIssuer: 'https://idp.example', adminEmail: 'admin@suspend.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-suspend', name: 'Suspend', idpIssuer: 'https://idp.example', adminEmail: 'admin@suspend.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@suspend.example')!
     const token = plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     expect(plane.verifySession(token).tenantId).toBe(tenant.id)
-    expect(plane.setTenantStatus(tenant.id, 'suspended').status).toBe('suspended')
+    expect((await plane.setTenantStatus(tenant.id, 'suspended')).status).toBe('suspended')
     expect(() => plane.verifySession(token)).toThrow('tenant is suspended')
     expect(() => plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })).toThrow('tenant is suspended')
-    expect(plane.setTenantStatus(tenant.id, 'active').status).toBe('active')
+    expect((await plane.setTenantStatus(tenant.id, 'active')).status).toBe('active')
     expect(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })).toBeTruthy()
   })
 
   it('stores tenant billing rates and estimates usage cost', async () => {
     const { plane } = await setup()
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-billing', name: 'Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@billing.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-billing', name: 'Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@billing.example' })
     expect(await plane.getBilling(tenant.id)).toEqual({ currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null })
     const billing = await plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
     expect(billing).toEqual({ currency: 'EUR', cloudTicketCents: 100, deviceTicketCents: 10, monthlyBudgetCents: 5000 })
@@ -521,7 +521,7 @@ describe('control plane', () => {
     roots.push(root)
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'source-webhook', platformAdminToken: 'platform-secret', sourceWebhookToken: 'gitlab-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ tenantId: 'tenant-source', name: 'Source', idpIssuer: 'https://idp.example', adminEmail: 'admin@source.example' })
+    const tenant = await server.control.provisionTenant({ tenantId: 'tenant-source', name: 'Source', idpIssuer: 'https://idp.example', adminEmail: 'admin@source.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@source.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const binding = await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'gitlab', externalId: 'acme/repo', tenantId: tenant.id }) })
@@ -552,7 +552,7 @@ describe('control plane', () => {
     roots.push(root)
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'github-webhook', platformAdminToken: 'platform-secret', githubWebhookSecret: 'github-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ tenantId: 'tenant-github', name: 'GitHub', idpIssuer: 'https://idp.example', adminEmail: 'admin@github.example' })
+    const tenant = await server.control.provisionTenant({ tenantId: 'tenant-github', name: 'GitHub', idpIssuer: 'https://idp.example', adminEmail: 'admin@github.example' })
     await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'github', externalId: 'acme/repo', tenantId: tenant.id }) })
     const payload = JSON.stringify({ action: 'opened', repository: { full_name: 'acme/repo' }, issue: { number: 1, title: 'github issue', body: 'fix it' } })
     const bad = await fetch(`${server.url}/v1/sources/github/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': 'sha256=bad', 'x-github-delivery': 'gh-1', 'x-github-event': 'issues' }, body: payload })
@@ -570,7 +570,7 @@ describe('control plane', () => {
     roots.push(root)
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'im-webhook', platformAdminToken: 'platform-secret', sourceWebhookToken: 'source-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ tenantId: 'tenant-im', name: 'IM', idpIssuer: 'https://idp.example', adminEmail: 'admin@im.example' })
+    const tenant = await server.control.provisionTenant({ tenantId: 'tenant-im', name: 'IM', idpIssuer: 'https://idp.example', adminEmail: 'admin@im.example' })
     const platform = { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }
     await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: platform, body: JSON.stringify({ provider: 'feishu', externalId: 'chat-1', tenantId: tenant.id }) })
     await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: platform, body: JSON.stringify({ provider: 'teams', externalId: 'conv-1', tenantId: tenant.id }) })
@@ -614,13 +614,14 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-pg-support', name: 'PG', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-support', name: 'PG', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg.example' })
     await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [tenant.id, tenant.name, tenant.idpIssuer, tenant.status, tenant.createdAt])
     try {
       const created = await plane.createSupportRequest(tenant.id, 'platform', 'pg support')
       expect((await plane.listSupportRequests(tenant.id))[0]).toMatchObject({ id: created.id, status: 'pending' })
       expect((await plane.decideSupportRequest(tenant.id, created.id, true, 'admin@pg.example')).status).toBe('approved')
       await storage.query('DELETE FROM support_requests WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
       await storage.close()
@@ -634,12 +635,13 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     const storage = new PostgresStorage(process.env.DATABASE_URL!)
     const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
     planes.push(plane)
-    const tenant = plane.provisionTenant({ tenantId: 'tenant-pg-billing', name: 'PG Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-billing.example' })
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-billing', name: 'PG Billing', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-billing.example' })
     await storage.query('INSERT INTO tenants (id, name, idp_issuer, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [tenant.id, tenant.name, tenant.idpIssuer, tenant.status, tenant.createdAt])
     try {
       expect((await plane.setBilling(tenant.id, { currency: 'EUR', cloudTicketCents: 100 })).currency).toBe('EUR')
       expect(await plane.getBilling(tenant.id)).toMatchObject({ currency: 'EUR', cloudTicketCents: 100 })
       await storage.query('DELETE FROM tenant_billing WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
       await storage.close()

@@ -53,7 +53,7 @@ try {
     const adminEmail = flags.get('admin-email')
     if (name === undefined || issuer === undefined || adminEmail === undefined) usage()
     const tenantId = flags.get('tenant-id')
-    const tenant = control.provisionTenant(tenantId === undefined
+    const tenant = await control.provisionTenant(tenantId === undefined
       ? { name, idpIssuer: issuer, adminEmail }
       : { name, idpIssuer: issuer, adminEmail, tenantId })
     const admin = control.findUserByEmail(tenant.id, adminEmail)

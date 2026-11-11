@@ -330,7 +330,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] === undefined) {
           const body = await readJson(request)
           if (typeof body.name !== 'string' || typeof body.idpIssuer !== 'string' || typeof body.adminEmail !== 'string') throw new Error('name, idpIssuer and adminEmail are required')
-          const tenant = control.provisionTenant({
+          const tenant = await control.provisionTenant({
             name: body.name, idpIssuer: body.idpIssuer, adminEmail: body.adminEmail,
             ...(typeof body.tenantId === 'string' ? { tenantId: body.tenantId } : {}),
           })
@@ -341,14 +341,14 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'status' && parts[5] === undefined) {
           const body = await readJson(request)
           if (body.status !== 'active' && body.status !== 'suspended') throw new Error('status must be active or suspended')
-          const tenant = control.setTenantStatus(parts[3], body.status)
+          const tenant = await control.setTenantStatus(parts[3], body.status)
           await control.recordPlatformAudit({ actor: 'platform', action: 'tenant.status', target: tenant.id, detail: body.status })
           write(response, 200, { tenant })
           return
         }
         if (request.method === 'PUT' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === undefined) {
           const body = await readJson(request)
-          const tenant = control.updateTenant(parts[3], {
+          const tenant = await control.updateTenant(parts[3], {
             ...(typeof body.name === 'string' ? { name: body.name } : {}),
             ...(typeof body.idpIssuer === 'string' ? { idpIssuer: body.idpIssuer } : {}),
           })

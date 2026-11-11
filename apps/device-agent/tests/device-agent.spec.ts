@@ -36,7 +36,7 @@ describe('device agent', () => {
 
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
@@ -101,7 +101,7 @@ describe('device agent', () => {
     await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
@@ -155,7 +155,7 @@ describe('device agent', () => {
     await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret' })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
@@ -202,7 +202,7 @@ describe('device agent', () => {
     await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret', deviceOfflineLostMs: 100 })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
@@ -246,7 +246,7 @@ describe('device agent', () => {
     await execFileAsync('git', ['commit', '-q', '-m', 'base'], { cwd: root })
     const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'test-secret', deviceOfflineLostMs: 1000 })
     servers.push(server)
-    const tenant = server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
+    const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const token = server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' })
     const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
