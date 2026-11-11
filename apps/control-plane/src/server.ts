@@ -306,12 +306,12 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           return
         }
         if (parts[2] === 'source-bindings' && parts[3] === undefined) {
-          if (request.method === 'GET') { write(response, 200, { bindings: control.listSourceBindings() }); return }
+          if (request.method === 'GET') { write(response, 200, { bindings: await control.listSourceBindings() }); return }
           if (request.method === 'POST') {
             const body = await readJson(request)
             if (body.provider !== 'gitlab' && body.provider !== 'github' && body.provider !== 'feishu' && body.provider !== 'teams') throw new Error('provider is required')
             if (typeof body.externalId !== 'string' || typeof body.tenantId !== 'string') throw new Error('externalId and tenantId are required')
-            const binding = control.createSourceBinding({
+            const binding = await control.createSourceBinding({
               provider: body.provider, externalId: body.externalId, tenantId: body.tenantId,
               ...(typeof body.botId === 'string' ? { botId: body.botId } : {}),
               ...(typeof body.repoUrl === 'string' ? { repoUrl: body.repoUrl } : {}),
@@ -448,13 +448,13 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         const project = typeof body.project === 'object' && body.project !== null ? body.project as Record<string, unknown> : undefined
         const externalId = typeof project?.path_with_namespace === 'string' ? project.path_with_namespace : typeof project?.pathWithNamespace === 'string' ? project.pathWithNamespace : undefined
         if (externalId === undefined) throw new ControlPlaneError(400, 'INVALID_SOURCE_EVENT', 'GitLab project path is required')
-        const binding = control.findSourceBinding('gitlab', externalId)
+        const binding = await control.findSourceBinding('gitlab', externalId)
         if (binding === undefined) { write(response, 202, { accepted: false, ignored: 'no source binding' }); return }
         const deliveryId = typeof request.headers['x-gitlab-event-uuid'] === 'string' && request.headers['x-gitlab-event-uuid'] !== ''
           ? request.headers['x-gitlab-event-uuid']
           : createHash('sha256').update(JSON.stringify(body)).digest('hex')
         const eventType = typeof request.headers['x-gitlab-event'] === 'string' ? request.headers['x-gitlab-event'] : 'unknown'
-        const recorded = control.recordSourceEvent({ provider: 'gitlab', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
+        const recorded = await control.recordSourceEvent({ provider: 'gitlab', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
         let ticketId: string | undefined
         let dispatchError: string | undefined
         if (recorded.accepted && binding.autoDispatch && binding.repoUrl !== null) {
@@ -464,10 +464,10 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           try {
             const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: 'app:source-gitlab', channel: 'gitlab', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `GitLab ${eventType}: ${title}\n\n${description}` })
             ticketId = ticket.ticketId
-            control.markSourceEvent(recorded.id, 'dispatched', ticketId)
+            await control.markSourceEvent(recorded.id, 'dispatched', ticketId)
           } catch (error) {
             dispatchError = error instanceof Error ? error.message : String(error)
-            control.markSourceEvent(recorded.id, 'failed')
+            await control.markSourceEvent(recorded.id, 'failed')
           }
         }
         write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
@@ -483,13 +483,13 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         const repository = typeof body.repository === 'object' && body.repository !== null ? body.repository as Record<string, unknown> : undefined
         const externalId = typeof repository?.full_name === 'string' ? repository.full_name : undefined
         if (externalId === undefined) throw new ControlPlaneError(400, 'INVALID_SOURCE_EVENT', 'GitHub repository full_name is required')
-        const binding = control.findSourceBinding('github', externalId)
+        const binding = await control.findSourceBinding('github', externalId)
         if (binding === undefined) { write(response, 202, { accepted: false, ignored: 'no source binding' }); return }
         const deliveryId = typeof request.headers['x-github-delivery'] === 'string' && request.headers['x-github-delivery'] !== ''
           ? request.headers['x-github-delivery']
           : createHash('sha256').update(raw).digest('hex')
         const eventType = typeof request.headers['x-github-event'] === 'string' ? request.headers['x-github-event'] : 'unknown'
-        const recorded = control.recordSourceEvent({ provider: 'github', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
+        const recorded = await control.recordSourceEvent({ provider: 'github', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
         let ticketId: string | undefined
         let dispatchError: string | undefined
         if (recorded.accepted && binding.autoDispatch && binding.repoUrl !== null) {
@@ -499,10 +499,10 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           try {
             const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: 'app:source-github', channel: 'github', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `GitHub ${eventType}: ${title}\n\n${description}` })
             ticketId = ticket.ticketId
-            control.markSourceEvent(recorded.id, 'dispatched', ticketId)
+            await control.markSourceEvent(recorded.id, 'dispatched', ticketId)
           } catch (error) {
             dispatchError = error instanceof Error ? error.message : String(error)
-            control.markSourceEvent(recorded.id, 'failed')
+            await control.markSourceEvent(recorded.id, 'failed')
           }
         }
         write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
@@ -536,20 +536,20 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           prompt = typeof body.text === 'string' ? body.text : ''
         }
         if (externalId === undefined) throw new ControlPlaneError(400, 'INVALID_SOURCE_EVENT', `${provider} conversation id is required`)
-        const binding = control.findSourceBinding(provider, externalId)
+        const binding = await control.findSourceBinding(provider, externalId)
         if (binding === undefined) { write(response, 202, { accepted: false, ignored: 'no source binding' }); return }
         const id = deliveryId ?? createHash('sha256').update(JSON.stringify(body)).digest('hex')
-        const recorded = control.recordSourceEvent({ provider, deliveryId: id, bindingId: binding.id, tenantId: binding.tenantId, eventType: eventType ?? 'message', payload: body })
+        const recorded = await control.recordSourceEvent({ provider, deliveryId: id, bindingId: binding.id, tenantId: binding.tenantId, eventType: eventType ?? 'message', payload: body })
         let ticketId: string | undefined
         let dispatchError: string | undefined
         if (recorded.accepted && binding.autoDispatch && binding.repoUrl !== null) {
           try {
             const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: `app:source-${provider}`, channel: provider, repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `${provider}: ${prompt}` })
             ticketId = ticket.ticketId
-            control.markSourceEvent(recorded.id, 'dispatched', ticketId)
+            await control.markSourceEvent(recorded.id, 'dispatched', ticketId)
           } catch (error) {
             dispatchError = error instanceof Error ? error.message : String(error)
-            control.markSourceEvent(recorded.id, 'failed')
+            await control.markSourceEvent(recorded.id, 'failed')
           }
         }
         write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
@@ -598,12 +598,12 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         return
       }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'source-events' && parts[2] !== undefined && parts[3] === 'dispatch') {
-        write(response, 202, control.dispatchSourceEvent(session, parts[2]))
+        write(response, 202, await control.dispatchSourceEvent(session, parts[2]))
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/source-events') {
         if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
-        write(response, 200, { events: control.listSourceEvents(session.tenantId) })
+        write(response, 200, { events: await control.listSourceEvents(session.tenantId) })
         return
       }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'support-requests' && parts[2] !== undefined && parts[3] === 'decide') {

@@ -697,4 +697,30 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     }
   })
 
+  it('mirrors source bindings and events to PostgreSQL', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-sources-'))
+    roots.push(root)
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-sources', name: 'PG Sources', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-sources.example' })
+    try {
+      const binding = await plane.createSourceBinding({ provider: 'gitlab', externalId: 'acme/pg', tenantId: tenant.id, repoUrl: 'https://github.com/acme/pg.git', autoDispatch: false })
+      expect((await plane.findSourceBinding('gitlab', 'acme/pg'))?.id).toBe(binding.id)
+      const event = await plane.recordSourceEvent({ provider: 'gitlab', deliveryId: 'pg-delivery', bindingId: binding.id, tenantId: tenant.id, eventType: 'Issue Hook', payload: { object_kind: 'issue' } })
+      expect(event.accepted).toBe(true)
+      await plane.markSourceEvent(event.id, 'received')
+      expect((await plane.listSourceEvents(tenant.id))[0]).toMatchObject({ id: event.id, status: 'received' })
+      await storage.query('DELETE FROM source_events WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM source_bindings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
 })

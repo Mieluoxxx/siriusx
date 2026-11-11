@@ -39,6 +39,7 @@ boundary, not just a connection string.
    - [x] tenant/settings mirror on create/update/status
    - [x] users mirror on create/role update
    - [x] model_catalog / tenant_models runtime reads+writes
+   - [x] source_bindings / source_events runtime reads+writes
    - tenants
    - users
    - quotas

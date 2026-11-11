@@ -388,16 +388,23 @@ export class ControlPlane {
     return { currency: billing.currency, cloudTickets, deviceTickets, estimatedCents: cloudTickets * billing.cloudTicketCents + deviceTickets * billing.deviceTicketCents, monthlyBudgetCents: billing.monthlyBudgetCents }
   }
 
-  createSourceBinding(input: { provider: 'gitlab' | 'github' | 'feishu' | 'teams'; externalId: string; tenantId: string; botId?: string; repoUrl?: string; baseRef?: string; autoDispatch?: boolean }): { id: string } {
+  async createSourceBinding(input: { provider: 'gitlab' | 'github' | 'feishu' | 'teams'; externalId: string; tenantId: string; botId?: string; repoUrl?: string; baseRef?: string; autoDispatch?: boolean }): Promise<{ id: string }> {
     this.tenantRow(input.tenantId)
     if (input.externalId.trim() === '') throw new ControlPlaneError(400, 'INVALID_BINDING', 'externalId is required')
     const id = randomUUID()
+    if (this.#storage !== undefined) await this.#storage.query('INSERT INTO source_bindings (id, provider, external_id, tenant_id, bot_id, repo_url, base_ref, auto_dispatch, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [id, input.provider, input.externalId, input.tenantId, input.botId ?? null, input.repoUrl ?? null, input.baseRef ?? null, input.autoDispatch === true ? 1 : 0, this.#now()])
     this.#db.prepare('INSERT INTO source_bindings (id, provider, external_id, tenant_id, bot_id, repo_url, base_ref, auto_dispatch, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .run(id, input.provider, input.externalId, input.tenantId, input.botId ?? null, input.repoUrl ?? null, input.baseRef ?? null, input.autoDispatch === true ? 1 : 0, this.#now())
     return { id }
   }
 
-  listSourceBindings(tenantId?: string): Array<{ id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean }> {
+  async listSourceBindings(tenantId?: string): Promise<Array<{ id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean }>> {
+    if (this.#storage !== undefined) {
+      const result = tenantId === undefined
+        ? await this.#storage.query<{ id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number | string }>('SELECT * FROM source_bindings ORDER BY created_at, id')
+        : await this.#storage.query<{ id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number | string }>('SELECT * FROM source_bindings WHERE tenant_id = ? ORDER BY created_at, id', [tenantId])
+      return result.rows.map(row => ({ id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: Number(row.auto_dispatch) === 1 }))
+    }
     const rows = tenantId === undefined
       ? this.#db.prepare('SELECT * FROM source_bindings ORDER BY created_at, rowid').all()
       : this.#db.prepare('SELECT * FROM source_bindings WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId)
@@ -406,52 +413,71 @@ export class ControlPlane {
     }))
   }
 
-  findSourceBinding(provider: string, externalId: string): { id: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean } | undefined {
-    const row = this.#db.prepare('SELECT * FROM source_bindings WHERE provider = ? AND external_id = ?').get(provider, externalId) as
-      | { id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number } | undefined
-    return row === undefined ? undefined : { id: row.id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: row.auto_dispatch === 1 }
+  async findSourceBinding(provider: string, externalId: string): Promise<{ id: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean } | undefined> {
+    let row: { id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number | string } | undefined
+    if (this.#storage !== undefined) row = (await this.#storage.query<{ id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number | string }>('SELECT * FROM source_bindings WHERE provider = ? AND external_id = ?', [provider, externalId])).rows[0] as typeof row
+    else row = this.#db.prepare('SELECT * FROM source_bindings WHERE provider = ? AND external_id = ?').get(provider, externalId) as typeof row
+    return row === undefined ? undefined : { id: row.id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: Number(row.auto_dispatch) === 1 }
   }
 
-  getSourceBinding(id: string): { id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean } | undefined {
-    const row = this.#db.prepare('SELECT * FROM source_bindings WHERE id = ?').get(id) as { id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number } | undefined
-    return row === undefined ? undefined : { id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: row.auto_dispatch === 1 }
+  async getSourceBinding(id: string): Promise<{ id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean } | undefined> {
+    let row: { id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number | string } | undefined
+    if (this.#storage !== undefined) row = (await this.#storage.query<{ id: string; provider: string; external_id: string; tenant_id: string; bot_id: string | null; repo_url: string | null; base_ref: string | null; auto_dispatch: number | string }>('SELECT * FROM source_bindings WHERE id = ?', [id])).rows[0] as typeof row
+    else row = this.#db.prepare('SELECT * FROM source_bindings WHERE id = ?').get(id) as typeof row
+    return row === undefined ? undefined : { id: row.id, provider: row.provider, externalId: row.external_id, tenantId: row.tenant_id, botId: row.bot_id, repoUrl: row.repo_url, baseRef: row.base_ref, autoDispatch: Number(row.auto_dispatch) === 1 }
   }
 
-  getSourceEvent(tenantId: string, eventId: string): { id: string; provider: string; bindingId: string | null; eventType: string; payload: Record<string, unknown>; status: string; ticketId: string | null } | undefined {
-    const row = this.#db.prepare('SELECT * FROM source_events WHERE id = ? AND tenant_id = ?').get(eventId, tenantId) as { id: string; provider: string; binding_id: string | null; event_type: string; payload_json: string; status: string; ticket_id: string | null } | undefined
+  async getSourceEvent(tenantId: string, eventId: string): Promise<{ id: string; provider: string; bindingId: string | null; eventType: string; payload: Record<string, unknown>; status: string; ticketId: string | null } | undefined> {
+    let row: { id: string; provider: string; binding_id: string | null; event_type: string; payload_json: string; status: string; ticket_id: string | null } | undefined
+    if (this.#storage !== undefined) row = (await this.#storage.query<{ id: string; provider: string; binding_id: string | null; event_type: string; payload_json: string; status: string; ticket_id: string | null }>('SELECT * FROM source_events WHERE id = ? AND tenant_id = ?', [eventId, tenantId])).rows[0] as typeof row
+    else row = this.#db.prepare('SELECT * FROM source_events WHERE id = ? AND tenant_id = ?').get(eventId, tenantId) as typeof row
     if (row === undefined) return undefined
     return { id: row.id, provider: row.provider, bindingId: row.binding_id, eventType: row.event_type, payload: JSON.parse(row.payload_json) as Record<string, unknown>, status: row.status, ticketId: row.ticket_id }
   }
 
-  dispatchSourceEvent(session: Session, eventId: string): { ticketId: string } {
+  async dispatchSourceEvent(session: Session, eventId: string): Promise<{ ticketId: string }> {
     if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
-    const event = this.getSourceEvent(session.tenantId, eventId)
+    const event = await this.getSourceEvent(session.tenantId, eventId)
     if (event === undefined) throw new ControlPlaneError(404, 'SOURCE_EVENT_NOT_FOUND', eventId)
     if (event.status === 'dispatched' && event.ticketId !== null) return { ticketId: event.ticketId }
     if (event.bindingId === null) throw new ControlPlaneError(409, 'SOURCE_BINDING_MISSING', eventId)
-    const binding = this.getSourceBinding(event.bindingId)
+    const binding = await this.getSourceBinding(event.bindingId)
     if (binding === undefined || binding.repoUrl === null) throw new ControlPlaneError(409, 'SOURCE_BINDING_INCOMPLETE', eventId)
     const attributes = typeof event.payload.object_attributes === 'object' && event.payload.object_attributes !== null ? event.payload.object_attributes as Record<string, unknown> : {}
     const issue = typeof event.payload.issue === 'object' && event.payload.issue !== null ? event.payload.issue as Record<string, unknown> : {}
     const message = typeof event.payload.event === 'object' && event.payload.event !== null ? (event.payload.event as Record<string, unknown>).message as Record<string, unknown> | undefined : undefined
     const rawPrompt = typeof attributes.title === 'string' ? attributes.title : typeof issue.title === 'string' ? issue.title : typeof event.payload.text === 'string' ? event.payload.text : typeof message?.content === 'string' ? message.content : event.eventType
     const ticket = this.createCloudTicketFromSource({ tenantId: session.tenantId, operatorId: `app:${session.userId}`, channel: binding.provider as 'gitlab' | 'github' | 'feishu' | 'teams', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `${event.provider} ${event.eventType}: ${rawPrompt}` })
-    this.markSourceEvent(event.id, 'dispatched', ticket.ticketId)
+    await this.markSourceEvent(event.id, 'dispatched', ticket.ticketId)
     return ticket
   }
 
-  recordSourceEvent(input: { provider: string; deliveryId: string; bindingId?: string; tenantId?: string; eventType: string; payload: unknown }): { id: string; accepted: boolean } {
+  async recordSourceEvent(input: { provider: string; deliveryId: string; bindingId?: string; tenantId?: string; eventType: string; payload: unknown }): Promise<{ id: string; accepted: boolean }> {
     const id = randomUUID()
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query('INSERT INTO source_events (id, provider, delivery_id, binding_id, tenant_id, event_type, payload_json, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (provider, delivery_id) DO NOTHING', [id, input.provider, input.deliveryId, input.bindingId ?? null, input.tenantId ?? null, input.eventType, JSON.stringify(input.payload), this.#now()])
+      if (result.rowCount === 1) return { id, accepted: true }
+      const existing = await this.#storage.query<{ id: string }>('SELECT id FROM source_events WHERE provider = ? AND delivery_id = ?', [input.provider, input.deliveryId])
+      return { id: existing.rows[0]!.id, accepted: false }
+    }
     const result = this.#db.prepare('INSERT OR IGNORE INTO source_events (id, provider, delivery_id, binding_id, tenant_id, event_type, payload_json, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       .run(id, input.provider, input.deliveryId, input.bindingId ?? null, input.tenantId ?? null, input.eventType, JSON.stringify(input.payload), this.#now())
     return { id: result.changes === 1 ? id : (this.#db.prepare('SELECT id FROM source_events WHERE provider = ? AND delivery_id = ?').get(input.provider, input.deliveryId) as { id: string }).id, accepted: result.changes === 1 }
   }
 
-  markSourceEvent(eventId: string, status: string, ticketId?: string): void {
+  async markSourceEvent(eventId: string, status: string, ticketId?: string): Promise<void> {
+    if (this.#storage !== undefined) {
+      await this.#storage.query('UPDATE source_events SET status = ?, ticket_id = ? WHERE id = ?', [status, ticketId ?? null, eventId])
+      return
+    }
     this.#db.prepare('UPDATE source_events SET status = ?, ticket_id = ? WHERE id = ?').run(status, ticketId ?? null, eventId)
   }
 
-  listSourceEvents(tenantId: string, limit = 100): Array<{ id: string; provider: string; deliveryId: string; eventType: string; receivedAt: number; status: string; ticketId: string | null }> {
+  async listSourceEvents(tenantId: string, limit = 100): Promise<Array<{ id: string; provider: string; deliveryId: string; eventType: string; receivedAt: number; status: string; ticketId: string | null }>> {
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query<{ id: string; provider: string; delivery_id: string; event_type: string; received_at: string | number; status: string; ticket_id: string | null }>('SELECT id, provider, delivery_id, event_type, received_at, status, ticket_id FROM source_events WHERE tenant_id = ? ORDER BY received_at DESC, id DESC LIMIT ?', [tenantId, limit])
+      return result.rows.map(row => ({ id: row.id, provider: row.provider, deliveryId: row.delivery_id, eventType: row.event_type, receivedAt: Number(row.received_at), status: row.status, ticketId: row.ticket_id }))
+    }
     return (this.#db.prepare('SELECT id, provider, delivery_id, event_type, received_at, status, ticket_id FROM source_events WHERE tenant_id = ? ORDER BY received_at DESC, rowid DESC LIMIT ?').all(tenantId, limit) as Array<{
       id: string; provider: string; delivery_id: string; event_type: string; received_at: number; status: string; ticket_id: string | null
     }>).map(row => ({ id: row.id, provider: row.provider, deliveryId: row.delivery_id, eventType: row.event_type, receivedAt: row.received_at, status: row.status, ticketId: row.ticket_id }))
