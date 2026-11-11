@@ -84,7 +84,9 @@
 - [x] GitHub webhook auto-dispatch → cloud ticket（Docker 验证）
 - [x] Postgres schema + SQLite→Postgres 离线迁移（19 表，真实 PG 验证）
 - [x] Postgres 迁移 preflight（计数 + orphan 检查）
-- [ ] Postgres Stage 2：异步 storage adapter + 运行时 cutover（见 `docs/postgres-cutover.md`）
+- [x] Postgres Stage 2.1：@siriusx/storage 异步边界（SQLite + PostgreSQL，真实 PG 测试）
+- [ ] Postgres Stage 2.2：控制面管理表迁移到 Storage 接口
+- [ ] Postgres Stage 3：autobot/tool-gateway 运行时 cutover
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

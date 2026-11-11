@@ -1,0 +1,21 @@
+{
+  "name": "@siriusx/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Async storage boundary for SQLite and PostgreSQL.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/pg": "8.23.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

@@ -26,7 +26,7 @@ boundary, not just a connection string.
 
 ## Phase 2 work
 
-1. Add `packages/storage` with a narrow async interface:
+1. [x] Add `packages/storage` with a narrow async interface:
    - `query`
    - `transaction`
    - `migrate`

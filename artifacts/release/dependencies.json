@@ -11,6 +11,12 @@
         "resolved": "https://registry.npmjs.org/@types/node/-/node-24.13.3.tgz",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
       },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "8.23.1",
+        "resolved": "https://registry.npmjs.org/@types/pg/-/pg-8.23.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
+      },
       "pg": {
         "from": "pg",
         "version": "8.16.3",
@@ -70,6 +76,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -146,6 +157,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -239,6 +255,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -311,6 +332,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -357,6 +383,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -415,6 +446,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -459,6 +495,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -508,6 +549,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -591,6 +637,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -641,6 +692,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -687,6 +743,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -741,6 +802,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -785,6 +851,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -851,6 +922,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -887,6 +963,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -955,6 +1036,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1004,6 +1090,58 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
+      }
+    }
+  },
+  {
+    "name": "@siriusx/storage",
+    "version": "0.0.0",
+    "path": "/root/siriusx/packages/storage",
+    "private": true,
+    "dependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "8.16.3",
+        "resolved": "https://registry.npmjs.org/pg/-/pg-8.16.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      }
+    },
+    "devDependencies": {
+      "@types/node": {
+        "from": "@types/node",
+        "version": "24.13.3",
+        "resolved": "https://registry.npmjs.org/@types/node/-/node-24.13.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "8.23.1",
+        "resolved": "https://registry.npmjs.org/@types/pg/-/pg-8.23.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "4.1.11",
+        "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      }
+    },
+    "unsavedDependencies": {
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
       }
     }
   },
@@ -1079,6 +1217,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1163,6 +1306,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1240,6 +1388,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1317,6 +1470,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1394,6 +1552,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1488,6 +1651,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1565,6 +1733,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1658,6 +1831,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1691,6 +1869,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   },
@@ -1724,6 +1907,11 @@
         "from": "@types/node",
         "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
         "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
       }
     }
   }
