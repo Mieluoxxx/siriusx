@@ -8,6 +8,7 @@
   "billing": true,
   "model": true,
   "audit": true,
+  "platformExport": true,
   "user": true,
   "errors": []
 }

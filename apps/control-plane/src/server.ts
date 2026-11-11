@@ -122,7 +122,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
 <div id="models"><h2>Model catalog</h2><input id="modelId" placeholder="Model id (optional)"><input id="modelName" placeholder="Display name"><input id="modelProvider" placeholder="Provider"><input id="modelNameId" placeholder="Provider model id"><button id="createModel">Add model</button><div id="modelList">Load to begin.</div></div>
 <div id="sourceBindings"><h2>Source bindings</h2><input id="sourceProvider" placeholder="provider"><input id="sourceExternal" placeholder="external id"><input id="sourceTenant" placeholder="tenant id"><input id="sourceRepo" placeholder="repo URL (optional)"><input id="sourceBase" placeholder="base ref (optional)"><button id="createSource">Add source binding</button><div id="sourceList">Load to begin.</div></div>
 <h2>Support requests</h2><div id="supportRequests">Load to begin.</div>
-<h2>Platform audit</h2><div id="platformAudit">Load to begin.</div>
+<div style="display:flex;align-items:center;gap:8px"><h2>Platform audit</h2><button id="exportPlatformAudit">Export CSV</button></div><div id="platformAudit">Load to begin.</div>
 <h2>Tenants</h2><div id="tenants">Load to begin.</div>
 <h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
 <div id="error" style="color:#b00020"></div>
@@ -215,6 +215,7 @@ async function loadUsers(tenantId) {
   host.append(table);
 }
 document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit(), loadSupportRequests(), loadSourceBindings()]); } catch (e) { err(e); } };
+document.getElementById('exportPlatformAudit').onclick = async () => { try { const response = await fetch('/v1/admin/audit/export?format=csv', {headers: {'x-siriusx-platform-token': token()}}); if (!response.ok) throw new Error('HTTP ' + response.status); const blob = await response.blob(); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'siriusx-platform-audit.csv'; link.click(); URL.revokeObjectURL(link.href); } catch (e) { err(e); } };
 document.getElementById('createSource').onclick = async () => { try { await api('/v1/admin/source-bindings', {method:'POST', body: JSON.stringify({provider: document.getElementById('sourceProvider').value, externalId: document.getElementById('sourceExternal').value, tenantId: document.getElementById('sourceTenant').value, ...(document.getElementById('sourceRepo').value === '' ? {} : {repoUrl: document.getElementById('sourceRepo').value}), ...(document.getElementById('sourceBase').value === '' ? {} : {baseRef: document.getElementById('sourceBase').value})})}); await loadSourceBindings(); await loadPlatformAudit(); } catch (e) { err(e); } };
 document.getElementById('createModel').onclick = async () => { try { await api('/v1/admin/models', {method:'POST', body: JSON.stringify({id: document.getElementById('modelId').value || undefined, name: document.getElementById('modelName').value, provider: document.getElementById('modelProvider').value, model: document.getElementById('modelNameId').value})}); await loadModels(); } catch (e) { err(e); } };
 document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
@@ -289,6 +290,19 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         }
         if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === undefined) {
           write(response, 200, { audit: control.listPlatformAudit() })
+          return
+        }
+        if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === 'export') {
+          const rows = control.listPlatformAudit()
+          if (url.searchParams.get('format') === 'csv') {
+            const columns = ['id', 'actor', 'action', 'target', 'detail', 'createdAt']
+            const escape = (value: unknown): string => { const text = value === null || value === undefined ? '' : String(value); return /[",\n]/u.test(text) ? `"${text.replace(/"/gu, '""')}"` : text }
+            const csv = [columns.join(','), ...rows.map(row => columns.map(column => escape(row[column as keyof typeof row])).join(','))].join('\n') + '\n'
+            response.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="siriusx-platform-audit.csv"', 'cache-control': 'no-store' })
+            response.end(csv)
+            return
+          }
+          write(response, 200, { audit: rows })
           return
         }
         if (parts[2] === 'source-bindings' && parts[3] === undefined) {
