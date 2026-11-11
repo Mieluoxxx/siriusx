@@ -104,6 +104,9 @@ describe('tool gateway policy', () => {
     const verified = await fetch(`${server.url}/v1/audit/verify`, { headers }).then(response => response.json()) as { valid: boolean; checked: number }
     expect(verified).toMatchObject({ valid: true })
     expect(verified.checked).toBeGreaterThanOrEqual(2)
+    const exported = await fetch(`${server.url}/v1/audit/export?format=csv`, { headers })
+    expect(exported.headers.get('content-type')).toContain('text/csv')
+    expect(await exported.text()).toContain('approved:human')
   })
   it('detects tampering in the audit hash chain', async () => {
     const path = await db()

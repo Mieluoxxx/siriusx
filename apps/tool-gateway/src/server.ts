@@ -146,6 +146,23 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
         write(response, 200, await gateway.decide(parts[2], body.approved, context))
         return
       }
+      if (request.method === 'GET' && url.pathname === '/v1/audit/export') {
+        if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
+        const rows = gateway.auditForTenant(context.tenantId) as Array<Record<string, unknown>>
+        if (url.searchParams.get('format') === 'csv') {
+          const columns = ['id', 'ticket_id', 'action_class', 'system', 'decision', 'approval_id', 'approver_id', 'created_at']
+          const escape = (value: unknown): string => {
+            const text = value === null || value === undefined ? '' : String(value)
+            return /[",\n]/u.test(text) ? `"${text.replace(/"/gu, '""')}"` : text
+          }
+          const csv = [columns.join(','), ...rows.map(row => columns.map(column => escape(row[column])).join(','))].join('\n') + '\n'
+          response.writeHead(200, { ...cors, 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="siriusx-audit.csv"', 'cache-control': 'no-store' })
+          response.end(csv)
+          return
+        }
+        write(response, 200, { audit: rows })
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/audit/summary') {
         write(response, 200, gateway.auditSummary(context.tenantId))
         return

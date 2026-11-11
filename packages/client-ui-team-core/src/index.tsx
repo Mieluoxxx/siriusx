@@ -39,6 +39,7 @@ function controlPath(path: string): string {
   if (path === '/api/settings') return '/v1/settings'
   if (path === '/api/tool-policies') return '/v1/tool-policies'
   if (path === '/api/audit-summary') return '/v1/audit-summary'
+  if (path.startsWith('/api/audit/export')) return path.replace(/^\/api/u, '/v1')
   if (path === '/api/support-requests') return '/v1/support-requests'
   return path.replace(/^\/api/, '/v1')
 }
@@ -301,6 +302,20 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
 
+  const exportAudit = async (): Promise<void> => {
+    try {
+      const token = controlToken()
+      const response = await fetch(`${apiBase()}/v1/audit/export?format=csv`, { headers: token === undefined ? {} : { authorization: `Bearer ${token}` } })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const blob = await response.blob()
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = 'siriusx-audit.csv'
+      link.click()
+      URL.revokeObjectURL(link.href)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+  }
+
   const cancel = async (): Promise<void> => {
     if (selectedId === undefined) return
     setBusy(true)
@@ -493,7 +508,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
                   <div style={styles.row}><strong>{policy.actionClass}</strong><span style={{ ...styles.stage, marginLeft: 'auto' }}>{policy.effect}</span><button style={styles.button} disabled={busy} onClick={() => { void deleteToolPolicy(policy.actionClass) }}>Delete</button></div>
                 </div>
               ))}
-              <h3 style={{ fontSize: 14, marginTop: 22 }}>Audit summary</h3>
+              <div style={{ ...styles.row, marginTop: 22 }}><h3 style={{ fontSize: 14 }}>Audit summary</h3><button style={{ ...styles.button, marginLeft: 'auto' }} onClick={() => { void exportAudit() }}>Export CSV</button></div>
               {auditSummary === undefined ? <p style={{ opacity: 0.65 }}>Audit summary unavailable.</p> : <pre style={styles.report}>{JSON.stringify(auditSummary, undefined, 2)}</pre>}
               <h3 style={{ fontSize: 14, marginTop: 22 }}>Support access requests</h3>
               {supportRequests.length === 0 ? <p style={{ opacity: 0.65 }}>No support requests.</p> : null}

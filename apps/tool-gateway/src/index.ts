@@ -303,6 +303,10 @@ export class ToolGateway {
     return { status: 'approved', result }
   }
 
+  auditForTenant(tenantId: string): unknown[] {
+    return (this.#db.prepare('SELECT * FROM audit WHERE tenant_id = ? ORDER BY created_at, rowid').all(tenantId) as Array<Record<string, unknown>>).map(row => ({ ...row }))
+  }
+
   auditSummary(tenantId: string): { total: number; decisions: Record<string, number> } {
     const rows = this.#db.prepare('SELECT decision, COUNT(*) AS count FROM audit WHERE tenant_id = ? GROUP BY decision').all(tenantId) as Array<{ decision: string; count: number }>
     const decisions: Record<string, number> = {}

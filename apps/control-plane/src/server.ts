@@ -559,6 +559,19 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         write(response, 200, { billing: control.getBilling(session.tenantId), estimate: control.billingEstimate(session.tenantId) })
         return
       }
+      if (request.method === 'GET' && url.pathname === '/v1/audit/export') {
+        if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
+        const upstream = await fetch(`${toolGatewayUrl}/v1/audit/export${url.search}`, { headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role } })
+        const body = Buffer.from(await upstream.arrayBuffer())
+        response.writeHead(upstream.status, {
+          'content-type': upstream.headers.get('content-type') ?? 'application/json; charset=utf-8',
+          ...(upstream.headers.get('content-disposition') === null ? {} : { 'content-disposition': upstream.headers.get('content-disposition')! }),
+          'content-length': body.byteLength,
+          'cache-control': 'no-store',
+        })
+        response.end(body)
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/audit-summary') {
         if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
         const upstream = await fetch(`${toolGatewayUrl}/v1/audit/summary`, { headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role } })

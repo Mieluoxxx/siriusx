@@ -1,6 +1,7 @@
 {
   "set": true,
   "audit": true,
+  "exportButton": true,
   "support": true,
   "approved": true,
   "errors": []

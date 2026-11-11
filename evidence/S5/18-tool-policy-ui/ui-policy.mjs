@@ -25,6 +25,6 @@ if (support) { await page.getByRole('button', { name: 'Approve' }).first().click
 const approvedBody = await page.locator('body').innerText()
 await page.screenshot({ path: '/root/siriusx/evidence/S5/18-tool-policy-ui/policy.png', fullPage: true })
 await context.close(); await browser.close()
-const result = { set: after.includes('send_email') && after.includes('approval'), audit: after.includes('Audit summary'), support, approved: approvedBody.includes('approved'), errors }
+const result = { set: after.includes('send_email') && after.includes('approval'), audit: after.includes('Audit summary'), exportButton: after.includes('Export CSV'), support, approved: approvedBody.includes('approved'), errors }
 console.log(JSON.stringify(result, null, 2))
-if (!result.set || !result.audit || !result.support || !result.approved || errors.length > 0) process.exit(1)
+if (!result.set || !result.audit || !result.exportButton || !result.support || !result.approved || errors.length > 0) process.exit(1)
