@@ -1,0 +1,9 @@
+{
+  "sent": true,
+  "reportReady": true,
+  "body": "SX\nSiriusX\nNew Session\nPlugins\nAutomation tasks\n▣\nTeam\nMore\nWorkspaces\nNo sessions yet\n个人 · 不审计\nMore\nSiriusX Team\n0 bot · 1 ticket\ntickets\nbots\ndevices\napprovals\nRefresh\nDispatch ticket\nperson/review\nopen\na121aa17-28a5 · reported\ndocker acp reply: Continue the ticket from the previous report. Follow-up: continue from the browser\nperson/review\nreported\na121aa17-28a5-41c7-b541-ff2de5e34f07\ndocker acp reply: Continue the ticket from the previous report.\n\nFollow-up:\ncontinue from the browser\n{\n  \"filesChanged\": 0,\n  \"insertions\": 0,\n  \"deletions\": 0\n}\nSend\nStop\nEvents\n{\"type\":\"state\",\"seq\":0,\"at\":\"2026-11-11T01:50:24.761Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":1,\"at\":\"2026-11-11T01:50:24.982Z\",\"state\":\"running\"}\n{\"type\":\"state\",\"seq\":2,\"at\":\"2026-11-11T01:50:25.227Z\",\"state\":\"reported\"}\n{\"type\":\"report\",\"seq\":3,\"at\":\"2026-11-11T01:50:25.227Z\",\"report\":{\"kind\":\"ready\",\"summary\":\"docker acp reply: follow-up ui ticket\",\"diffStats\":{\"filesChanged\":0,\"insertions\":0,\"deletions\":0},\"diffBasis\":\"baseRef\"}}\n{\"type\":\"state\",\"seq\":4,\"at\":\"2026-11-11T01:50:36.147Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":5,\"at\":\"2026-11-11T01:50:36.148Z\",\"state\":\"preparing\"}\n{\"type\":\"state\",\"seq\":6,\"at\":\"2026-11-11T01:50:36.364Z\",\"state\":\"running\"}\n{\"type\":\"state\",\"seq\":7,\"at\":\"2026-11-11T01:50:36.610Z\",\"state\":\"reported\"}\n{\"type\":\"report\",\"seq\":8,\"at\":\"2026-11-11T01:50:36.611Z\",\"report\":{\"kind\":\"ready",
+  "requests": [
+    "POST http://127.0.0.1:4323/v1/tickets/a121aa17-28a5-41c7-b541-ff2de5e34f07/input"
+  ],
+  "errors": []
+}
