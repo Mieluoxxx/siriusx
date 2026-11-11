@@ -582,15 +582,23 @@ export class ControlPlane {
     void run.finally(() => { if (this.#cloudRuns.get(ticketId) === run) this.#cloudRuns.delete(ticketId) })
   }
 
+  private parseCloudRepoUrl(value: string): URL {
+    let url: URL
+    try { url = new URL(value) } catch { throw new ControlPlaneError(400, 'INVALID_REPO_URL', 'repoUrl must be a valid URL') }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new ControlPlaneError(400, 'INVALID_REPO_URL', 'repoUrl must use http or https')
+    if (url.username !== '' || url.password !== '') throw new ControlPlaneError(400, 'INVALID_REPO_URL', 'repoUrl must not contain credentials')
+    return url
+  }
+
   createCloudTicket(session: Session, input: { repoUrl: string; baseRef: string; prompt: string }): { ticketId: string } {
     if (session.role !== 'admin' && session.role !== 'member') throw new ControlPlaneError(403, 'UNAUTHORIZED', 'role required')
     const ticketId = randomUUID()
     const assignmentId = randomUUID()
+    const repoUrl = this.parseCloudRepoUrl(input.repoUrl)
     const baseRef = input.baseRef.trim() === '' ? 'main' : input.baseRef.trim()
     const stage = deriveTicketStage({ deliveryFailing: false, pendingInput: false })
     this.#db.prepare('INSERT INTO cloud_tickets (ticket_id, tenant_id, assignment_id, repo_url, base_ref, prompt, stage, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .run(ticketId, session.tenantId, assignmentId, input.repoUrl, baseRef, input.prompt, stage, 'preparing', this.#now(), this.#now())
-    const repoUrl = new URL(input.repoUrl)
     const repo = {
       provider: repoUrl.hostname.includes('gitlab') ? 'gitlab' as const : 'github' as const,
       host: repoUrl.hostname,
@@ -626,7 +634,7 @@ export class ControlPlane {
     this.#db.prepare("UPDATE cloud_tickets SET assignment_id = ?, state = 'preparing', report_json = NULL, stage = 'working/queued', updated_at = ? WHERE ticket_id = ?").run(assignmentId, this.#now(), ticketId)
     this.#db.prepare('INSERT OR REPLACE INTO cloud_ticket_events (ticket_id, seq, event_json) VALUES (?, ?, ?)')
       .run(ticketId, nextSeq, JSON.stringify({ type: 'state', seq: nextSeq, at: new Date(this.#now()).toISOString(), state: 'preparing' }))
-    const repoUrl = new URL(row.repo_url)
+    const repoUrl = this.parseCloudRepoUrl(row.repo_url)
     const repo = {
       provider: repoUrl.hostname.includes('gitlab') ? 'gitlab' as const : 'github' as const,
       host: repoUrl.hostname,

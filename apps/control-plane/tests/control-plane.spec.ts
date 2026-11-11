@@ -393,4 +393,13 @@ describe('control plane', () => {
     expect(closeCode).toBe(4002)
   })
 
+  it('rejects cloud project URLs with unsupported schemes or credentials', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-repo-url', name: 'Repo', idpIssuer: 'https://idp.example', adminEmail: 'admin@repo.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@repo.example')!
+    const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
+    expect(() => plane.createCloudTicket(session, { repoUrl: 'file:///etc/passwd', baseRef: 'main', prompt: 'x' })).toThrow('http or https')
+    expect(() => plane.createCloudTicket(session, { repoUrl: 'https://user:pass@github.com/acme/repo.git', baseRef: 'main', prompt: 'x' })).toThrow('must not contain credentials')
+  })
+
 })
