@@ -571,7 +571,7 @@ export class ControlPlane {
           kind: 'failed', summary: 'cloud executor failed', reason: error instanceof Error ? error.message : String(error),
         }, [])
       } finally {
-        executor.close()
+        await executor.dispose()
         this.#cloudExecutors.delete(ticketId)
       }
     })()

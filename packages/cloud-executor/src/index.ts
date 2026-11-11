@@ -133,7 +133,18 @@ export class CloudExecutor {
     this.#store = options.store ?? (options.dbPath === undefined ? new MemoryAssignmentStore() : new SqliteAssignmentStore(options.dbPath))
   }
 
-  close(): void { this.#store.close() }
+  /** Destroy live sandboxes, then close the assignment store. */
+  async dispose(): Promise<void> {
+    const entries = [...this.#entries.values()]
+    await Promise.all(entries.map(async entry => {
+      try { await this.#destroySandbox(entry) } catch { /* best effort during shutdown */ }
+    }))
+    this.#entries.clear()
+    this.#store.close()
+  }
+
+  /** Synchronous compatibility shim used by older callers. */
+  close(): void { void this.dispose().catch(() => undefined) }
 
   #entry(assignmentId: string): Entry {
     const existing = this.#entries.get(assignmentId)
@@ -330,6 +341,8 @@ export class MemorySandboxProvider implements SandboxProvider {
     const sandbox = this.#sandboxes.get(sandboxId)
     if (sandbox !== undefined) sandbox.destroyed = true
   }
+
+  activeSandboxIds(): string[] { return [...this.#sandboxes.entries()].filter(([, state]) => !state.destroyed).map(([id]) => id) }
 
   volumeFor(tenantId: string, workdirKey: string): ReadonlyMap<string, string> | undefined {
     return this.#volumes.get(`${tenantId}/${workdirKey}`)

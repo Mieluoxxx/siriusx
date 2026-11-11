@@ -128,4 +128,14 @@ describe('cloud executor', () => {
     }
   })
 
+  it('disposes live sandboxes on shutdown', async () => {
+    const provider = new MemorySandboxProvider()
+    const executor = new CloudExecutor({ provider, kernel: writingKernel })
+    await executor.createAssignment(assignment())
+    await executor.wait('11111111-1111-4111-8111-111111111111')
+    expect(provider.activeSandboxIds()).toHaveLength(1)
+    await executor.dispose()
+    expect(provider.activeSandboxIds()).toEqual([])
+  })
+
 })

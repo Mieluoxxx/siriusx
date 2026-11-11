@@ -100,3 +100,10 @@
 - 当前 AcpSession 只映射明确 update；缺的语义不伪造，Executor 以新 assignment 补；
 - 家目录卷按 tenant+workdirKey 单写者串行。
 - 证据：`16-acp-design/run.txt`、`docs/design/acp-gaps.md`。
+
+## Cloud sandbox disposal
+
+- `CloudExecutor.dispose()` 销毁 sandbox 后再关闭 store；
+- control-plane 完成 assignment 后调用 dispose；
+- Docker cloud project 复跑后无残留 managed container。
+- 证据：`17-cloud-dispose/`。
