@@ -101,6 +101,9 @@ describe('tool gateway policy', () => {
     expect(decided.status).toBe('approved')
     const audit = await fetch(`${server.url}/v1/audit?ticketId=ticket-1`, { headers }).then(response => response.json()) as { audit: unknown[] }
     expect(audit.audit.length).toBeGreaterThanOrEqual(2)
+    const verified = await fetch(`${server.url}/v1/audit/verify`, { headers }).then(response => response.json()) as { valid: boolean; checked: number }
+    expect(verified).toMatchObject({ valid: true })
+    expect(verified.checked).toBeGreaterThanOrEqual(2)
   })
   it('detects tampering in the audit hash chain', async () => {
     const path = await db()

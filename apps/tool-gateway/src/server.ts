@@ -89,6 +89,11 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
         write(response, 200, await gateway.decide(parts[2], body.approved, context))
         return
       }
+      if (request.method === 'GET' && url.pathname === '/v1/audit/verify') {
+        if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
+        write(response, 200, gateway.verifyAuditChain())
+        return
+      }
       if (request.method === 'GET' && url.pathname === '/v1/audit') {
         const ticketId = url.searchParams.get('ticketId')
         if (ticketId === null) throw new Error('ticketId is required')

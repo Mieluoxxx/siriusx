@@ -88,4 +88,4 @@
 ## Audit hash chain
 
 - audit 记录增加 prev_hash/hash，可检测篡改；
-- 证据：`11-audit-chain/`。
+- 证据：`11-audit-chain/`、`12-audit-verify/`。
