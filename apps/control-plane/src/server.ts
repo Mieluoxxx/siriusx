@@ -211,14 +211,16 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         if (request.method === 'GET' && parts.length === 4 && parts[3] === 'trace') {
           const ticket = control.ticketDetail(session, ticketId) as Record<string, unknown>
           let audit: unknown[] = []
+          let auditChain: unknown
           if (toolGatewayUrl !== undefined) {
-            const upstream = await fetch(`${toolGatewayUrl}/v1/audit?ticketId=${encodeURIComponent(ticketId)}`, {
-              headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role },
-            })
+            const headers = { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role }
+            const upstream = await fetch(`${toolGatewayUrl}/v1/audit?ticketId=${encodeURIComponent(ticketId)}`, { headers })
             if (upstream.ok) {
               const body = await upstream.json() as { audit?: unknown[] }
               audit = body.audit ?? []
             }
+            const integrity = await fetch(`${toolGatewayUrl}/v1/audit/verify`, { headers })
+            if (integrity.ok) auditChain = await integrity.json()
           }
           const analytics = analyticsPath === undefined ? [] : (await readFile(analyticsPath, 'utf8')).split('\n').filter(Boolean).flatMap(line => {
             try {
@@ -226,7 +228,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
               return event.ticketId === ticketId ? [event] : []
             } catch { return [] }
           })
-          write(response, 200, { ticket, audit, analytics })
+          write(response, 200, { ticket, audit, analytics, ...(auditChain === undefined ? {} : { auditChain }) })
           return
         }
         if (request.method === 'GET' && parts.length === 3) {
