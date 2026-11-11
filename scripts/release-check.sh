@@ -21,5 +21,6 @@ echo '== sbom'
 mkdir -p artifacts/release
 pnpm list -r --depth 0 --json > artifacts/release/dependencies.json
 node scripts/build-sbom.mjs
+node scripts/check-license-policy.mjs
 node scripts/build-release-manifest.mjs
  echo 'release checks OK'

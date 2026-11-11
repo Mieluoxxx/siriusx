@@ -1,0 +1,5 @@
+{
+  "components": 170,
+  "blocked": [],
+  "warnings": 52
+}
