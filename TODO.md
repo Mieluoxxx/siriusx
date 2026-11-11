@@ -48,6 +48,7 @@
 - [x] Login CSP + frame/nosniff headers
 - [x] OIDC state 绑定浏览器 cookie（缺失/不匹配 400）
 - [x] Preview 环境变量隔离（不继承 host secrets）
+- [x] Sandbox cap-drop ALL + no-new-privileges（真实 DSH 回归）
 - [x] Cloud follow-up 浏览器端到端（Team panel Send → 新 assignment → person/review）
 - [x] 许可证策略门禁（阻断 GPL/AGPL/SSPL/BUSL）
 - [x] macOS DMG 交叉构建阻塞证据

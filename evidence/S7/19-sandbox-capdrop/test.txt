@@ -1,0 +1,10 @@
+
+ RUN  v4.1.11 /root/siriusx/packages/cloud-executor
+
+ ✓ tests/sandbox-hardening.integration.spec.ts (1 test) 762ms
+     ✓ applies resource limits and does not inherit connector credentials  760ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  02:14:33
+   Duration  1.01s (transform 63ms, setup 0ms, import 129ms, tests 762ms, environment 0ms)

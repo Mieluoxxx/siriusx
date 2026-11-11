@@ -15,8 +15,9 @@ describe.skipIf(!enabled)('sandbox hardening', () => {
     process.env.GITHUB_TOKEN = 'must-not-reach-sandbox'
     const sandbox = await provider.create({ tenantId: 'tenant-hardening', workdirKey: 'hardening', network: 'none', image: 'teams-bridge:0.2.0' })
     try {
-      const inspect = execFileSync('docker', ['inspect', '--format', '{{.HostConfig.Memory}} {{.HostConfig.NanoCpus}} {{.HostConfig.PidsLimit}}', sandbox.id], { encoding: 'utf8' }).trim()
-      expect(inspect).toBe('268435456 500000000 64')
+      const inspect = execFileSync('docker', ['inspect', '--format', '{{.HostConfig.Memory}} {{.HostConfig.NanoCpus}} {{.HostConfig.PidsLimit}} {{json .HostConfig.CapDrop}} {{json .HostConfig.SecurityOpt}}', sandbox.id], { encoding: 'utf8' }).trim()
+      expect(inspect).toContain('268435456 500000000 64 ["ALL"]')
+      expect(inspect).toContain('no-new-privileges')
       const env = await sandbox.exec('env')
       expect(env.stdout).not.toContain('must-not-reach-sandbox')
       const net = await sandbox.exec('node -e "fetch(\'http://1.1.1.1\').then(()=>process.exit(0)).catch(()=>process.exit(7))"')
