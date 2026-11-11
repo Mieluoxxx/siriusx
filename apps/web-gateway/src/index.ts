@@ -65,6 +65,14 @@ function clientAddress(request: IncomingMessage, trustProxy: boolean): string {
   return request.socket.remoteAddress ?? 'unknown'
 }
 
+function isSecureRequest(request: IncomingMessage): boolean {
+  return headerValue(request.headers['x-forwarded-proto'])?.split(',', 1)[0]?.trim() === 'https' || (request.socket as { encrypted?: boolean }).encrypted === true
+}
+
+function hsts(request: IncomingMessage): Record<string, string> {
+  return isSecureRequest(request) ? { 'strict-transport-security': 'max-age=31536000' } : {}
+}
+
 function requestOrigin(request: IncomingMessage): string {
   const forwardedProto = headerValue(request.headers['x-forwarded-proto'])?.split(',', 1)[0]?.trim()
   const proto = forwardedProto ?? ((request.socket as { encrypted?: boolean }).encrypted === true ? 'https' : 'http')
@@ -252,7 +260,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
         return
       }
       if (request.method === 'GET' && url.pathname === '/login') {
-        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" })
+        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'", ...hsts(request) })
         response.end(`<!doctype html><meta charset="utf-8"><title>SiriusX Login</title>
 <script>try { localStorage.setItem('siriusx.gatewayAuth','1') } catch {}</script>
 <form id="f"><input id="t" type="password" placeholder="control-plane session token" style="width:360px"><button>Sign in</button></form>
@@ -301,6 +309,7 @@ document.getElementById('f').onsubmit = async (event) => {
         response.writeHead(204, {
           'set-cookie': `${cookieName}=${encodeURIComponent(payload.token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secureFlag(request)}`,
           'cache-control': 'no-store',
+          ...hsts(request),
         }).end()
         return
       }

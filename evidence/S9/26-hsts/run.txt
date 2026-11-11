@@ -1,0 +1,4 @@
+{
+  "secure": "max-age=31536000",
+  "plain": null
+}
