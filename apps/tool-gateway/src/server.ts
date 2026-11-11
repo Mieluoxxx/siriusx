@@ -10,6 +10,7 @@ export interface ToolGatewayServerOptions {
   readonly host?: string
   readonly policyEnabled?: boolean
   readonly onApprovalDecided?: import('./index.ts').ToolGatewayOptions['onApprovalDecided']
+  readonly corsOrigin?: string
 }
 
 export interface ToolGatewayServer {
@@ -19,11 +20,15 @@ export interface ToolGatewayServer {
   close(): Promise<void>
 }
 
-const CORS = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,x-tenant-id,x-user-id,x-role',
-  'cache-control': 'no-store',
+function corsHeaders(origin: string | undefined): Record<string, string> {
+  return origin === undefined
+    ? { 'cache-control': 'no-store' }
+    : {
+        'access-control-allow-origin': origin,
+        'access-control-allow-methods': 'GET,POST,OPTIONS',
+        'access-control-allow-headers': 'content-type,x-tenant-id,x-user-id,x-role',
+        'cache-control': 'no-store',
+      }
 }
 
 const MAX_JSON_BODY_BYTES = 1024 * 1024
@@ -44,12 +49,6 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
   return value as Record<string, unknown>
 }
 
-function write(response: ServerResponse, status: number, value: unknown): void {
-  const body = JSON.stringify(value)
-  response.writeHead(status, { ...CORS, 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body) })
-  response.end(body)
-}
-
 function contextOf(request: IncomingMessage): ToolContext {
   const tenantId = request.headers['x-tenant-id']
   const userId = request.headers['x-user-id']
@@ -68,6 +67,12 @@ function contextOf(request: IncomingMessage): ToolContext {
 }
 
 export async function startToolGatewayServer(options: ToolGatewayServerOptions): Promise<ToolGatewayServer> {
+  const cors = corsHeaders(options.corsOrigin)
+  const write = (response: ServerResponse, status: number, value: unknown): void => {
+    const body = JSON.stringify(value)
+    response.writeHead(status, { ...cors, 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body) })
+    response.end(body)
+  }
   const gateway = new ToolGateway({
     dbPath: options.dbPath,
     connectors: options.connectors,
@@ -76,7 +81,7 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
     ...(options.onApprovalDecided === undefined ? {} : { onApprovalDecided: options.onApprovalDecided }),
   })
   const server = createServer(async (request, response) => {
-    if (request.method === 'OPTIONS') { response.writeHead(204, CORS).end(); return }
+    if (request.method === 'OPTIONS') { response.writeHead(204, cors).end(); return }
     try {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       if (request.method === 'GET' && url.pathname === '/health') { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }

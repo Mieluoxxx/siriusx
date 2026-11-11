@@ -14,6 +14,7 @@ const server = await startToolGatewayServer({
   dbPath: db,
   port,
   host,
+  ...(process.env.SIRIUSX_TOOL_GATEWAY_CORS_ORIGIN === undefined ? {} : { corsOrigin: process.env.SIRIUSX_TOOL_GATEWAY_CORS_ORIGIN }),
   ...(callbackUrl === undefined ? {} : {
     onApprovalDecided: async (event) => {
       await fetch(callbackUrl, {

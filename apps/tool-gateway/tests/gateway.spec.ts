@@ -128,4 +128,16 @@ describe('tool gateway policy', () => {
     gateway.close()
   })
 
+  it('does not emit wildcard CORS unless explicitly configured', async () => {
+    const closed = await startToolGatewayServer({ dbPath: await db(), port: 0, connectors: {} })
+    servers.push(closed)
+    const preflight = await fetch(`${closed.url}/v1/actions`, { method: 'OPTIONS', headers: { origin: 'https://evil.example' } })
+    expect(preflight.status).toBe(204)
+    expect(preflight.headers.get('access-control-allow-origin')).toBeNull()
+    const allowed = await startToolGatewayServer({ dbPath: await db(), port: 0, connectors: {}, corsOrigin: 'https://app.example' })
+    servers.push(allowed)
+    const configured = await fetch(`${allowed.url}/v1/actions`, { method: 'OPTIONS', headers: { origin: 'https://app.example' } })
+    expect(configured.headers.get('access-control-allow-origin')).toBe('https://app.example')
+  })
+
 })
