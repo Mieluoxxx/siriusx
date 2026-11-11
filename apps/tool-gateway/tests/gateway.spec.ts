@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ToolGateway,
@@ -101,4 +102,17 @@ describe('tool gateway policy', () => {
     const audit = await fetch(`${server.url}/v1/audit?ticketId=ticket-1`, { headers }).then(response => response.json()) as { audit: unknown[] }
     expect(audit.audit.length).toBeGreaterThanOrEqual(2)
   })
+  it('detects tampering in the audit hash chain', async () => {
+    const path = await db()
+    const gateway = new ToolGateway({ dbPath: path, connectors: { github: { execute: async () => ({ result: { ok: true } }) } } })
+    await gateway.propose({ ...base, actionClass: 'read' }, context)
+    await gateway.propose({ ...base, actionClass: 'reply' }, context)
+    expect(gateway.verifyAuditChain()).toMatchObject({ valid: true, checked: 2 })
+    const raw = new DatabaseSync(path)
+    raw.prepare("UPDATE audit SET decision = 'tampered' WHERE rowid = (SELECT MIN(rowid) FROM audit)").run()
+    raw.close()
+    expect(gateway.verifyAuditChain().valid).toBe(false)
+    gateway.close()
+  })
+
 })

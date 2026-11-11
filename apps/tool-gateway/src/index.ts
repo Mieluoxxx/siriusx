@@ -1,5 +1,5 @@
 /** Fail-closed tool gateway with policy, approval cards, audit and connector credentials. */
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { z } from 'zod'
 import type { CredentialProvider } from './credentials.ts'
@@ -115,7 +115,9 @@ CREATE TABLE IF NOT EXISTS audit (
   approval_id TEXT,
   approver_id TEXT,
   result_json TEXT,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  prev_hash TEXT,
+  hash TEXT
 );
 `
 
@@ -123,6 +125,7 @@ export class ToolGateway {
   readonly #db: DatabaseSync
   readonly #options: { dbPath: string; connectors: Readonly<Record<string, Connector>>; policyEnabled: boolean; approvalTtlMs: number; credentials?: Readonly<Record<string, string>>; credentialProvider?: CredentialProvider; onApprovalDecided?: (event: { approvalId: string; tenantId: string; ticketId: string; status: 'approved' | 'rejected'; request: ActionRequest }) => void | Promise<void> }
   readonly #now: () => number
+  #lastAuditHash: string | undefined
   readonly #executed: ActionRequest[] = []
 
   constructor(options: ToolGatewayOptions) {
@@ -138,6 +141,11 @@ export class ToolGateway {
       ...(options.onApprovalDecided === undefined ? {} : { onApprovalDecided: options.onApprovalDecided }),
     }
     this.#now = options.now ?? Date.now
+    const auditColumns = this.#db.prepare('PRAGMA table_info(audit)').all() as Array<{ name: string }>
+    if (!auditColumns.some(column => column.name === 'prev_hash')) this.#db.exec('ALTER TABLE audit ADD COLUMN prev_hash TEXT')
+    if (!auditColumns.some(column => column.name === 'hash')) this.#db.exec('ALTER TABLE audit ADD COLUMN hash TEXT')
+    const last = this.#db.prepare('SELECT hash FROM audit ORDER BY created_at DESC, rowid DESC LIMIT 1').get() as { hash: string | null } | undefined
+    this.#lastAuditHash = last?.hash ?? undefined
   }
 
   close(): void { this.#db.close() }
@@ -147,9 +155,31 @@ export class ToolGateway {
   }
 
   private audit(request: ActionRequest, decision: string, result: unknown, approvalId?: string, approverId?: string): void {
-    this.#db.prepare('INSERT INTO audit (id, tenant_id, ticket_id, action_class, system, decision, approval_id, approver_id, result_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(randomUUID(), request.tenantId, request.ticketId, request.actionClass, request.system, decision,
-        approvalId ?? null, approverId ?? null, result === undefined ? null : JSON.stringify(result), this.#now())
+    const id = randomUUID()
+    const createdAt = this.#now()
+    const resultJson = result === undefined ? null : JSON.stringify(result)
+    const prevHash = this.#lastAuditHash ?? ''
+    const hash = createHash('sha256').update(prevHash).update(JSON.stringify({ id, tenantId: request.tenantId, ticketId: request.ticketId, actionClass: request.actionClass, system: request.system, decision, approvalId: approvalId ?? null, approverId: approverId ?? null, resultJson, createdAt })).digest('hex')
+    this.#db.prepare('INSERT INTO audit (id, tenant_id, ticket_id, action_class, system, decision, approval_id, approver_id, result_json, created_at, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, request.tenantId, request.ticketId, request.actionClass, request.system, decision,
+        approvalId ?? null, approverId ?? null, resultJson, createdAt, prevHash, hash)
+    this.#lastAuditHash = hash
+  }
+
+  /** Verify the append-only audit hash chain. */
+  verifyAuditChain(): { valid: boolean; checked: number; brokenAt?: string } {
+    const rows = this.#db.prepare('SELECT * FROM audit ORDER BY created_at, rowid').all() as Array<Record<string, unknown>>
+    let previous = ''
+    for (const row of rows) {
+      const expected = createHash('sha256').update(previous).update(JSON.stringify({
+        id: row.id, tenantId: row.tenant_id, ticketId: row.ticket_id, actionClass: row.action_class, system: row.system,
+        decision: row.decision, approvalId: row.approval_id ?? null, approverId: row.approver_id ?? null,
+        resultJson: row.result_json ?? null, createdAt: row.created_at,
+      })).digest('hex')
+      if (row.prev_hash !== previous || row.hash !== expected) return { valid: false, checked: rows.length, brokenAt: String(row.id) }
+      previous = expected
+    }
+    return { valid: true, checked: rows.length }
   }
 
   async propose(requestInput: ActionRequest, context: ToolContext): Promise<{

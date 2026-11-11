@@ -1,0 +1,10 @@
+$ vitest run tests/gateway.spec.ts
+
+ RUN  v4.1.11 /root/siriusx/apps/tool-gateway
+
+ ✓ tests/gateway.spec.ts (6 tests) 67ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  01:17:46
+   Duration  300ms (transform 50ms, setup 0ms, import 117ms, tests 67ms, environment 0ms)
