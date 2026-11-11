@@ -25,3 +25,8 @@ Use `letsencrypt-staging` for the first dry run, then switch to
 
 Real DNS, an ACME account email and publicly reachable HTTP-01 endpoints are
 required; those are external infrastructure inputs.
+
+## Logging
+
+Apply `deploy/k8s/optional/fluent-bit.yaml` for a Fluent Bit DaemonSet that
+tails CRI logs; see `deploy/observability/logging/README.md`.
