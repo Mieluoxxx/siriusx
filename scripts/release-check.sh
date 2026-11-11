@@ -13,6 +13,7 @@ echo '== install coverage'
 ./scripts/check-install-coverage.sh
 ./scripts/check-script-portability.sh
 python3 scripts/check-k8s-manifests.py
+python3 scripts/check-observability.py
 echo '== plugin bundle'
 OUT="$(mktemp -d)" ./deploy/release/build-plugin-bundle.sh
 echo '== update feed syntax'

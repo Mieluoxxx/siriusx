@@ -55,6 +55,7 @@
 - [x] Kubernetes/Kustomize 基础（4 服务、PVC、probe、NetworkPolicy、Ingress）
 - [x] SQLite backup/restore（VACUUM INTO + hash + retention）
 - [x] Prometheus `/metrics` + K8s scrape annotations
+- [x] Prometheus alert rules + Grafana dashboard
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

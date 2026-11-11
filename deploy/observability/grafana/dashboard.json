@@ -1,0 +1,71 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Control plane",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "siriusx_control_plane_up", "refId": "A" }],
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Tool gateway",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "siriusx_tool_gateway_up", "refId": "A" }],
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Web gateway",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "siriusx_web_gateway_up", "refId": "A" }],
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Audit chain valid",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "siriusx_tool_gateway_audit_chain_valid", "refId": "A" }],
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Tickets",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "siriusx_control_plane_device_tickets", "legendFormat": "device", "refId": "A" },
+        { "expr": "siriusx_control_plane_cloud_tickets", "legendFormat": "cloud", "refId": "B" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Approvals",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "siriusx_tool_gateway_approvals_pending", "legendFormat": "pending", "refId": "A" },
+        { "expr": "siriusx_tool_gateway_approvals_total", "legendFormat": "total", "refId": "B" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["siriusx"],
+  "templating": {
+    "list": [{ "name": "DS_PROMETHEUS", "type": "datasource", "query": "prometheus", "current": {} }]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "SiriusX Infrastructure",
+  "uid": "siriusx-infrastructure",
+  "version": 1
+}

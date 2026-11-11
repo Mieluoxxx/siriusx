@@ -1,0 +1,61 @@
+groups:
+  - name: siriusx-availability
+    rules:
+      - alert: SiriusxControlPlaneDown
+        expr: up{job="siriusx-control-plane"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SiriusX control-plane is down
+          description: Prometheus cannot scrape the control-plane for 5 minutes.
+      - alert: SiriusxToolGatewayDown
+        expr: up{job="siriusx-tool-gateway"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SiriusX tool-gateway is down
+          description: Prometheus cannot scrape the tool-gateway for 5 minutes.
+      - alert: SiriusxWebGatewayDown
+        expr: up{job="siriusx-web-gateway"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SiriusX web-gateway is down
+          description: Prometheus cannot scrape the web-gateway for 5 minutes.
+  - name: siriusx-integrity
+    rules:
+      - alert: SiriusxAuditChainInvalid
+        expr: siriusx_tool_gateway_audit_chain_valid == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: SiriusX audit hash chain is invalid
+          description: Tool gateway reports a tampered or broken audit chain.
+      - alert: SiriusxPendingApprovalsHigh
+        expr: siriusx_tool_gateway_approvals_pending > 50
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: SiriusX approval backlog is high
+          description: More than 50 approvals have remained pending for 30 minutes.
+      - alert: SiriusxCloudTicketBacklog
+        expr: siriusx_control_plane_cloud_tickets > 100
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: SiriusX cloud ticket count is high
+          description: Review cloud executor capacity and stuck tickets.
+      - alert: SiriusxLoginFailureSpike
+        expr: siriusx_web_gateway_login_failure_sources > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: SiriusX login failure source count is high
+          description: Check for credential stuffing or a misconfigured proxy.

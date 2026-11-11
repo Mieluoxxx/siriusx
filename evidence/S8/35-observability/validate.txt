@@ -1,0 +1,12 @@
+{
+  "alerts": [
+    "SiriusxControlPlaneDown",
+    "SiriusxToolGatewayDown",
+    "SiriusxWebGatewayDown",
+    "SiriusxAuditChainInvalid",
+    "SiriusxPendingApprovalsHigh",
+    "SiriusxCloudTicketBacklog",
+    "SiriusxLoginFailureSpike"
+  ],
+  "panels": 6
+}
