@@ -3,6 +3,7 @@
 import { startToolGatewayServer } from './server.ts'
 import { GitHubConnector } from './github.ts'
 import { GitLabConnector } from './gitlab.ts'
+import { PostgresStorage } from '@siriusx/storage'
 import { HttpCredentialProvider, StaticCredentialProvider } from './credentials.ts'
 
 const port = process.env.SIRIUSX_TOOL_GATEWAY_PORT === undefined ? 4330 : Number(process.env.SIRIUSX_TOOL_GATEWAY_PORT)
@@ -10,9 +11,12 @@ const db = process.env.SIRIUSX_TOOL_GATEWAY_DB ?? '/tmp/siriusx-tool-gateway.sql
 const host = process.env.SIRIUSX_TOOL_GATEWAY_HOST ?? '127.0.0.1'
 const callbackUrl = process.env.SIRIUSX_APPROVAL_CALLBACK_URL
 const callbackToken = process.env.SIRIUSX_INTERNAL_SERVICE_TOKEN
+const databaseUrl = process.env.DATABASE_URL?.trim()
+const storage = databaseUrl === undefined || databaseUrl === '' ? undefined : new PostgresStorage(databaseUrl)
 const server = await startToolGatewayServer({
   dbPath: db,
   port,
+  ...(storage === undefined ? {} : { storage }),
   host,
   ...(process.env.SIRIUSX_TOOL_GATEWAY_CORS_ORIGIN === undefined ? {} : { corsOrigin: process.env.SIRIUSX_TOOL_GATEWAY_CORS_ORIGIN }),
   ...(callbackUrl === undefined ? {} : {

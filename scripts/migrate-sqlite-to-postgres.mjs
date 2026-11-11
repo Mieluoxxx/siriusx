@@ -14,17 +14,22 @@ if (sqlitePath === undefined || (databaseUrl === undefined && !dryRun)) {
   console.error('usage: DATABASE_URL=postgres://... node scripts/migrate-sqlite-to-postgres.mjs --sqlite <control.sqlite> [--reset] [--dry-run]')
   process.exit(2)
 }
-const tables = [
-  'tenants', 'users', 'settings', 'devices', 'pairing_codes', 'bots',
-  'device_tickets', 'device_ticket_events', 'cloud_tickets', 'cloud_ticket_events',
-  'revoked_sessions', 'tenant_quotas', 'model_catalog', 'tenant_models',
-  'source_bindings', 'source_events', 'tenant_billing', 'support_requests', 'platform_audit',
+const mappings = [
+  ...['tenants', 'users', 'settings', 'devices', 'pairing_codes', 'bots',
+    'device_tickets', 'device_ticket_events', 'cloud_tickets', 'cloud_ticket_events',
+    'revoked_sessions', 'tenant_quotas', 'model_catalog', 'tenant_models',
+    'source_bindings', 'source_events', 'tenant_billing', 'support_requests', 'platform_audit']
+    .map(name => [name, name]),
+  ['approvals', 'tg_approvals'],
+  ['tenant_tool_policies', 'tg_tenant_tool_policies'],
+  ['audit', 'tg_audit'],
 ]
+const tables = mappings.map(([, target]) => target)
 const sqlite = new DatabaseSync(sqlitePath, { readOnly: true })
 const rowsByTable = new Map()
-for (const table of tables) {
-  try { rowsByTable.set(table, sqlite.prepare(`SELECT * FROM ${table}`).all()) }
-  catch { rowsByTable.set(table, []) }
+for (const [source, target] of mappings) {
+  try { rowsByTable.set(target, sqlite.prepare(`SELECT * FROM ${source}`).all()) }
+  catch { rowsByTable.set(target, []) }
 }
 sqlite.close()
 if (dryRun) {

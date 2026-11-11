@@ -46,7 +46,7 @@ describe('GitHub through the tool gateway', () => {
     const post = calls.find(call => call.method === 'POST')
     expect(post?.auth).toBe('Bearer github-secret')
     expect(post?.body).toContain('"head":"fix"')
-    expect(JSON.stringify(gateway.auditForTicket('ticket'))).not.toContain('github-secret')
+    expect(JSON.stringify(await gateway.auditForTicket('ticket'))).not.toContain('github-secret')
     gateway.close()
     await new Promise<void>((resolve, reject) => github.close(error => { error === undefined ? resolve() : reject(error) }))
   })

@@ -29,7 +29,7 @@ describe('connector credential manager', () => {
     const request: ActionRequest = { tenantId: 'tenant-a', botId: 'b', ticketId: 't', operatorId: 'app:u', system: 'github', actionClass: 'read', target: 'a/b', mandate: { actions: [] } }
     await gateway.propose(request, context)
     expect(seen).toHaveBeenCalledWith(request, 'vault-github-token')
-    expect(JSON.stringify(gateway.auditForTicket('t'))).not.toContain('vault-github-token')
+    expect(JSON.stringify(await gateway.auditForTicket('t'))).not.toContain('vault-github-token')
     gateway.close()
     await new Promise<void>((resolve, reject) => manager.close(error => { error === undefined ? resolve() : reject(error) }))
   })

@@ -1,5 +1,6 @@
 /** HTTP transport for the tool gateway. The entry gateway authenticates callers. */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import type { Storage } from '@siriusx/storage'
 import { ActionRequestSchema, ToolGateway, ToolGatewayError, type Connector, type ToolContext } from './index.ts'
 
 export interface ToolGatewayServerOptions {
@@ -11,6 +12,7 @@ export interface ToolGatewayServerOptions {
   readonly policyEnabled?: boolean
   readonly onApprovalDecided?: import('./index.ts').ToolGatewayOptions['onApprovalDecided']
   readonly corsOrigin?: string
+  readonly storage?: Storage
 }
 
 export interface ToolGatewayServer {
@@ -79,14 +81,16 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
     ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
     ...(options.policyEnabled === undefined ? {} : { policyEnabled: options.policyEnabled }),
     ...(options.onApprovalDecided === undefined ? {} : { onApprovalDecided: options.onApprovalDecided }),
+    ...(options.storage === undefined ? {} : { storage: options.storage }),
   })
+  await gateway.initialize()
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') { response.writeHead(204, cors).end(); return }
     try {
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       if (request.method === 'GET' && url.pathname === '/health') { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', version: process.env.SIRIUSX_VERSION ?? 'dev', commit: process.env.SIRIUSX_COMMIT ?? 'dev' }); return }
       if (request.method === 'GET' && url.pathname === '/metrics') {
-        const metrics = gateway.metrics()
+        const metrics = await gateway.metrics()
         const body = [
           '# HELP siriusx_tool_gateway_up Tool gateway process is serving.',
           '# TYPE siriusx_tool_gateway_up gauge',
@@ -106,7 +110,7 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
         return
       }
       if (request.method === 'GET' && url.pathname === '/ready') {
-        try { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', checks: gateway.ready() }) }
+        try { write(response, 200, { ok: true, service: 'siriusx-tool-gateway', checks: await gateway.ready() }) }
         catch (error) { write(response, 503, { ok: false, service: 'siriusx-tool-gateway', error: error instanceof Error ? error.message : String(error) }) }
         return
       }
@@ -119,25 +123,25 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
       }
       if (parts[0] === 'v1' && parts[1] === 'policies') {
         if (request.method === 'GET' && parts[2] === undefined) {
-          write(response, 200, { policies: gateway.listToolPolicies(context.tenantId) })
+          write(response, 200, { policies: await gateway.listToolPolicies(context.tenantId) })
           return
         }
         if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
         if (request.method === 'PUT' && parts[2] !== undefined) {
           const body = await readJson(request)
           if (body.effect !== 'approval' && body.effect !== 'deny') throw new ToolGatewayError(400, 'INVALID_POLICY', 'effect must be approval or deny')
-          gateway.setToolPolicy(context.tenantId, parts[2], body.effect)
-          write(response, 200, { policies: gateway.listToolPolicies(context.tenantId) })
+          await gateway.setToolPolicy(context.tenantId, parts[2], body.effect)
+          write(response, 200, { policies: await gateway.listToolPolicies(context.tenantId) })
           return
         }
         if (request.method === 'DELETE' && parts[2] !== undefined) {
-          gateway.deleteToolPolicy(context.tenantId, parts[2])
-          write(response, 200, { policies: gateway.listToolPolicies(context.tenantId) })
+          await gateway.deleteToolPolicy(context.tenantId, parts[2])
+          write(response, 200, { policies: await gateway.listToolPolicies(context.tenantId) })
           return
         }
       }
       if (request.method === 'GET' && url.pathname === '/v1/approvals') {
-        write(response, 200, { approvals: gateway.listApprovals(context.tenantId) })
+        write(response, 200, { approvals: await gateway.listApprovals(context.tenantId) })
         return
       }
       if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'approvals' && parts[2] !== undefined && parts[3] === 'decide') {
@@ -148,7 +152,7 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit/export') {
         if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
-        const rows = gateway.auditForTenant(context.tenantId) as Array<Record<string, unknown>>
+        const rows = await gateway.auditForTenant(context.tenantId) as Array<Record<string, unknown>>
         if (url.searchParams.get('format') === 'csv') {
           const columns = ['id', 'ticket_id', 'action_class', 'system', 'decision', 'approval_id', 'approver_id', 'created_at']
           const escape = (value: unknown): string => {
@@ -164,18 +168,18 @@ export async function startToolGatewayServer(options: ToolGatewayServerOptions):
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit/summary') {
-        write(response, 200, gateway.auditSummary(context.tenantId))
+        write(response, 200, await gateway.auditSummary(context.tenantId))
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit/verify') {
         if (context.role !== 'admin') throw new ToolGatewayError(403, 'ADMIN_REQUIRED', 'admin role required')
-        write(response, 200, gateway.verifyAuditChain())
+        write(response, 200, await gateway.verifyAuditChain())
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/audit') {
         const ticketId = url.searchParams.get('ticketId')
         if (ticketId === null) throw new Error('ticketId is required')
-        write(response, 200, { audit: gateway.auditForTicket(ticketId, context.tenantId) })
+        write(response, 200, { audit: await gateway.auditForTicket(ticketId, context.tenantId) })
         return
       }
       write(response, 404, { error: 'not found', code: 'NOT_FOUND' })

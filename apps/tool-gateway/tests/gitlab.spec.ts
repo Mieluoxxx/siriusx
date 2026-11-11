@@ -68,7 +68,7 @@ describe('GitLab connector', () => {
       expect(branchCreated).toBe(true)
       expect(fileWritten).toBe(true)
       expect(mergeRequest).toMatchObject({ source_branch: 'feature/7', target_branch: 'main', title: 'Fix #7' })
-      expect(JSON.stringify(gateway.auditForTicket('ticket-gl'))).not.toContain('gitlab-token')
+      expect(JSON.stringify(await gateway.auditForTicket('ticket-gl'))).not.toContain('gitlab-token')
     } finally {
       gateway.close()
       await new Promise<void>((resolve, reject) => api.close(error => { error === undefined ? resolve() : reject(error) }))

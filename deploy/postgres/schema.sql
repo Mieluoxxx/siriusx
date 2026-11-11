@@ -190,3 +190,43 @@ CREATE TABLE IF NOT EXISTS platform_audit (
 INSERT INTO model_catalog (id, name, provider, model, enabled, created_at)
 VALUES ('tenant-default', 'Tenant default', 'upstream', 'tenant-default', 1, 0)
 ON CONFLICT (id) DO NOTHING;
+
+-- Tool gateway tables (Stage 3).
+CREATE TABLE IF NOT EXISTS tg_approvals (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  ticket_id TEXT NOT NULL,
+  request_json TEXT NOT NULL,
+  status TEXT NOT NULL,
+  risk TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  approver_id TEXT,
+  created_at BIGINT NOT NULL,
+  decided_at BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS tg_tenant_tool_policies (
+  tenant_id TEXT NOT NULL,
+  action_class TEXT NOT NULL,
+  effect TEXT NOT NULL CHECK (effect IN ('approval', 'deny')),
+  updated_at BIGINT NOT NULL,
+  PRIMARY KEY (tenant_id, action_class)
+);
+
+CREATE TABLE IF NOT EXISTS tg_audit (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  ticket_id TEXT NOT NULL,
+  action_class TEXT NOT NULL,
+  system TEXT NOT NULL,
+  decision TEXT NOT NULL,
+  approval_id TEXT,
+  approver_id TEXT,
+  result_json TEXT,
+  created_at BIGINT NOT NULL,
+  prev_hash TEXT,
+  hash TEXT
+);
+
+CREATE INDEX IF NOT EXISTS tg_audit_tenant_created ON tg_audit (tenant_id, created_at);
+CREATE INDEX IF NOT EXISTS tg_audit_ticket_created ON tg_audit (ticket_id, created_at);

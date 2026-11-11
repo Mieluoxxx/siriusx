@@ -11,6 +11,7 @@ expected = [
     "device_tickets", "device_ticket_events", "cloud_tickets", "cloud_ticket_events",
     "revoked_sessions", "tenant_quotas", "model_catalog", "tenant_models",
     "source_bindings", "source_events", "tenant_billing", "support_requests", "platform_audit",
+    "tg_approvals", "tg_tenant_tool_policies", "tg_audit",
 ]
 for table in expected:
     if not re.search(rf"CREATE TABLE IF NOT EXISTS\s+{re.escape(table)}\s*\(", schema):
