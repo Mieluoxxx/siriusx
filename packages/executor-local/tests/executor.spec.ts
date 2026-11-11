@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -189,5 +189,18 @@ describe('local executor', () => {
     expect(() => process.kill(preview2.pid, 0)).toThrow()
   })
 
+
+  it('rejects symlinks that escape the workdir', async () => {
+    const root = await gitRepo()
+    const outside = await mkdtemp(join(tmpdir(), 'siriusx-outside-'))
+    roots.push(outside)
+    await writeFile(join(outside, 'secret.txt'), 'outside')
+    await symlink(join(outside, 'secret.txt'), join(root, 'escape.txt'))
+    const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: reportScenario() })
+    const req = request(root)
+    await executor.createAssignment(req)
+    await expect(executor.readFile(req.workdirKey, 'escape.txt')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_WORKDIR' })
+    await expect(executor.listFiles(req.workdirKey, 'escape.txt')).rejects.toMatchObject({ code: 'PATH_OUTSIDE_WORKDIR' })
+  })
 
 })

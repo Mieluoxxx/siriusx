@@ -7,8 +7,9 @@
  */
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
+import { realpathSync } from 'node:fs'
 import { copyFile, lstat, mkdir, readFile, readdir, stat } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import {
   AssignmentEventSchema,
@@ -148,6 +149,15 @@ function safePath(root: string, path: string): string {
   if (target !== base && !target.startsWith(base + sep)) {
     throw new LocalExecutorError('PATH_OUTSIDE_WORKDIR', path)
   }
+  const realBase = realpathSync(base)
+  let realTarget: string | undefined
+  try { realTarget = realpathSync(target) } catch { /* target may not exist yet */ }
+  if (realTarget !== undefined) {
+    if (realTarget !== realBase && !realTarget.startsWith(realBase + sep)) throw new LocalExecutorError('PATH_OUTSIDE_WORKDIR', path)
+    return target
+  }
+  const realParent = realpathSync(dirname(target))
+  if (realParent !== realBase && !realParent.startsWith(realBase + sep)) throw new LocalExecutorError('PATH_OUTSIDE_WORKDIR', path)
   return target
 }
 
