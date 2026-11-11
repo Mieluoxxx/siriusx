@@ -9,6 +9,7 @@ resources:
   - web.yaml
   - ingress.yaml
   - networkpolicy.yaml
+  - backup-cronjob.yaml
 images:
   - name: siriusx/control-plane
     newTag: offline

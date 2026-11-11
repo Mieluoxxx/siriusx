@@ -1,8 +1,9 @@
 {
-  "files": 9,
-  "documents": 19,
+  "files": 10,
+  "documents": 21,
   "kinds": [
     "ConfigMap",
+    "CronJob",
     "Deployment",
     "Ingress",
     "Kustomization",
@@ -12,5 +13,5 @@
     "Secret",
     "Service"
   ],
-  "resources": 7
+  "resources": 8
 }

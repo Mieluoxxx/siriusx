@@ -14,6 +14,8 @@ mkdir -p "$STAGE/app/packages"
 cp -a packages/contracts packages/app-contract packages/executor-local packages/fake-kernel packages/kernel-api packages/analytics packages/cloud-executor packages/kernel-acp "$STAGE/app/packages/"
 # A pnpm virtual-store copy makes the bundle independent of the build host's store.
 cp -a node_modules "$STAGE/app/node_modules"
+mkdir -p "$STAGE/app/deploy"
+cp -a deploy/backup "$STAGE/app/deploy/"
 cp deploy/offline/install-offline.sh "$STAGE/"
 SANDBOX_IMAGE="${SIRIUSX_SANDBOX_IMAGE:-teams-bridge:0.2.0}"
 if docker image inspect "$SANDBOX_IMAGE" >/dev/null 2>&1; then

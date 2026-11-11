@@ -15,3 +15,11 @@
 本机没有 kubectl/kustomize，因此验证范围是 YAML/结构静态检查；真实集群 rollout 仍需集群资源。
 
 证据：`validate.txt`。
+
+新增备份 CronJob：
+
+- `deploy/k8s/backup-cronjob.yaml`
+- 每日 02:00 UTC
+- 同时只读挂载 control/tool PVC
+- 输出到 `siriusx-backups` PVC
+- 保留最近 14 份

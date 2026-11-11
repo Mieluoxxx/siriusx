@@ -85,6 +85,13 @@ curl -s http://127.0.0.1:8080/ready
 
 Open `http://127.0.0.1:8080/login`, or the configured Ingress host.
 
+## Backups
+
+`backup-cronjob.yaml` runs daily at 02:00 UTC and writes compressed SQLite
+snapshots plus a `SHA256SUMS` manifest to the `siriusx-backups` PVC. It mounts
+the control-plane and tool-gateway data PVCs read-only and keeps the last 14
+archives. Restore is manual; stop writers and use `deploy/backup/restore.sh`.
+
 ## Notes
 
 - `control-plane` and `tool-gateway` are single-writer SQLite services; keep

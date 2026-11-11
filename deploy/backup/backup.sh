@@ -2,12 +2,13 @@
 # Back up SiriusX SQLite databases and the optional DSH home directory.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-DATA_DIR="${SIRIUSX_DATA_DIR:-${1:-}}"
+DATA_DIRS="${SIRIUSX_DATA_DIRS:-${SIRIUSX_DATA_DIR:-${1:-}}}"
 OUT_DIR="${BACKUP_DIR:-${2:-}}"
-if [[ -z "$DATA_DIR" || -z "$OUT_DIR" ]]; then
-  echo "usage: SIRIUSX_DATA_DIR=<data> BACKUP_DIR=<out> $0" >&2
+if [[ -z "$DATA_DIRS" || -z "$OUT_DIR" ]]; then
+  echo "usage: SIRIUSX_DATA_DIRS=<dir[:dir...]> BACKUP_DIR=<out> $0" >&2
   exit 2
 fi
+IFS=: read -r -a DATA_DIR_LIST <<< "$DATA_DIRS"
 NODE_BIN="${NODE_BIN:-node}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 WORK="$(mktemp -d)"
@@ -15,18 +16,19 @@ trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/payload" "$OUT_DIR"
 copy_sqlite() {
   local name="$1"
-  if [[ -f "$DATA_DIR/$name" ]]; then
-    "$NODE_BIN" "$ROOT/deploy/backup/sqlite-backup.mjs" "$DATA_DIR/$name" "$WORK/payload/$name"
-  fi
+  for dir in "${DATA_DIR_LIST[@]}"; do
+    if [[ -f "$dir/$name" ]]; then
+      "$NODE_BIN" "$ROOT/deploy/backup/sqlite-backup.mjs" "$dir/$name" "$WORK/payload/$name"
+      return
+    fi
+  done
 }
 copy_sqlite control.sqlite
 copy_sqlite tool-gateway.sqlite
-if [[ -d "$DATA_DIR/dsh-home" ]]; then
-  cp -a "$DATA_DIR/dsh-home" "$WORK/payload/dsh-home"
-fi
-if [[ -f "$DATA_DIR/dsh-web-url" ]]; then
-  cp "$DATA_DIR/dsh-web-url" "$WORK/payload/dsh-web-url"
-fi
+for dir in "${DATA_DIR_LIST[@]}"; do
+  if [[ -d "$dir/dsh-home" && ! -d "$WORK/payload/dsh-home" ]]; then cp -a "$dir/dsh-home" "$WORK/payload/dsh-home"; fi
+  if [[ -f "$dir/dsh-web-url" && ! -f "$WORK/payload/dsh-web-url" ]]; then cp "$dir/dsh-web-url" "$WORK/payload/dsh-web-url"; fi
+done
 (
   cd "$WORK/payload"
   find . -type f -print0 | sort -z | xargs -0 sha256sum > ../SHA256SUMS

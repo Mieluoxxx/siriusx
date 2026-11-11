@@ -22,3 +22,9 @@
 - dsh-home 文件恢复
 
 证据：`run.txt`。
+
+多数据目录支持：
+
+- `SIRIUSX_DATA_DIRS=/data/control:/data/tool`
+- backup.sh 从多个目录收集 control.sqlite / tool-gateway.sqlite
+- 验证两个 DB 均被恢复，值分别为 control/tool。
