@@ -1,0 +1,265 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-11T01:32:32.028Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "siriusx-build-sbom",
+          "version": "1"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "@agentclientprotocol/sdk",
+      "version": "1.4.0",
+      "purl": "pkg:npm/@agentclientprotocol/sdk@1.4.0"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis",
+      "version": "4.1.0",
+      "purl": "pkg:npm/@deepseek-ai/cordis@4.1.0"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-agent",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-agent@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-client-ui-conversation@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-client-ui-layout@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-client-ui-renderer",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-client-ui-renderer@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-client-ui-sidebar@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-client-ui-slots",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-client-ui-slots@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-credentials",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-credentials@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-deepseek-account",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-deepseek-account@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-host-webserver",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-host-webserver@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-llm",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-llm@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-session",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/@deepseek-ai/dsh-session@0.2.2-rc.1"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/analytics",
+      "version": "link:../../packages/analytics"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/app-contract",
+      "version": "link:../../packages/app-contract"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/app-contract",
+      "version": "link:../app-contract"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/autobot",
+      "version": "link:../../apps/autobot"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/autobot",
+      "version": "link:../autobot"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/client-ui-team-core",
+      "version": "link:../../packages/client-ui-team-core"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/cloud-executor",
+      "version": "link:../../packages/cloud-executor"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/cloud-executor",
+      "version": "link:../cloud-executor"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/contracts",
+      "version": "link:../../packages/contracts"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/contracts",
+      "version": "link:../contracts"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/control-plane",
+      "version": "link:../control-plane"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/executor-local",
+      "version": "link:../../packages/executor-local"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/fake-kernel",
+      "version": "link:../../packages/fake-kernel"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/fake-kernel",
+      "version": "link:../fake-kernel"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/kernel-acp",
+      "version": "link:../../packages/kernel-acp"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/kernel-api",
+      "version": "link:../../packages/kernel-api"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/kernel-api",
+      "version": "link:../kernel-api"
+    },
+    {
+      "type": "library",
+      "name": "@siriusx/kernel-dsh",
+      "version": "link:../../packages/kernel-dsh"
+    },
+    {
+      "type": "library",
+      "name": "@types/http-proxy",
+      "version": "1.17.17",
+      "purl": "pkg:npm/@types/http-proxy@1.17.17"
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "24.13.3",
+      "purl": "pkg:npm/@types/node@24.13.3"
+    },
+    {
+      "type": "library",
+      "name": "@types/react",
+      "version": "18.3.31",
+      "purl": "pkg:npm/@types/react@18.3.31"
+    },
+    {
+      "type": "library",
+      "name": "@types/ws",
+      "version": "8.18.1",
+      "purl": "pkg:npm/@types/ws@8.18.1"
+    },
+    {
+      "type": "library",
+      "name": "esbuild",
+      "version": "0.28.2",
+      "purl": "pkg:npm/esbuild@0.28.2"
+    },
+    {
+      "type": "library",
+      "name": "http-proxy",
+      "version": "1.18.1",
+      "purl": "pkg:npm/http-proxy@1.18.1"
+    },
+    {
+      "type": "library",
+      "name": "jose",
+      "version": "6.2.17",
+      "purl": "pkg:npm/jose@6.2.17"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "18.3.1",
+      "purl": "pkg:npm/react@18.3.1"
+    },
+    {
+      "type": "library",
+      "name": "tsx",
+      "version": "4.23.13",
+      "purl": "pkg:npm/tsx@4.23.13"
+    },
+    {
+      "type": "library",
+      "name": "typescript",
+      "version": "6.0.3",
+      "purl": "pkg:npm/typescript@6.0.3"
+    },
+    {
+      "type": "library",
+      "name": "vitest",
+      "version": "4.1.11",
+      "purl": "pkg:npm/vitest@4.1.11"
+    },
+    {
+      "type": "library",
+      "name": "ws",
+      "version": "8.18.3",
+      "purl": "pkg:npm/ws@8.18.3"
+    },
+    {
+      "type": "library",
+      "name": "zod",
+      "version": "4.4.3",
+      "purl": "pkg:npm/zod@4.4.3"
+    }
+  ]
+}
