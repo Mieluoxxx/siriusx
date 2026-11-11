@@ -105,12 +105,24 @@ describe('control plane', () => {
     gateways.push(gateway)
     const models = await fetch(`${gateway.url}/v1/models`, { headers: { authorization: `Bearer ${token}` } }).then(response => response.json()) as { tenantId: string }
     expect(models.tenantId).toBe(tenant.id)
+    plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-a' })
+    plane.bindTenantModel(tenant.id, 'model-a')
     const response = await fetch(`${gateway.url}/v1/chat/completions`, {
       method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: JSON.stringify({ model: 'tenant-default', messages: [] }),
     })
     expect(response.status).toBe(200)
-    expect(seen).toEqual(['Bearer upstream-secret'])
+    const bound = await fetch(`${gateway.url}/v1/chat/completions`, {
+      method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'model-a', messages: [] }),
+    })
+    expect(bound.status).toBe(200)
+    const unbound = await fetch(`${gateway.url}/v1/chat/completions`, {
+      method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'model-unbound', messages: [] }),
+    })
+    expect(unbound.status).toBe(400)
+    expect(seen).toEqual(['Bearer upstream-secret', 'Bearer upstream-secret'])
     const unauth = await fetch(`${gateway.url}/v1/models`)
     expect(unauth.status).toBe(401)
     await new Promise<void>((resolve, reject) => upstream.close(error => { error === undefined ? resolve() : reject(error) }))

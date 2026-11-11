@@ -28,7 +28,9 @@ try {
   await page.waitForTimeout(500)
   await page.getByRole('button', { name: 'Users' }).first().click()
   await page.waitForTimeout(300)
-  await page.getByRole('button', { name: 'Set default' }).first().click()
+  await page.getByRole('button', { name: 'Bind' }).last().click()
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Set default' }).last().click()
   await page.waitForTimeout(300)
   await page.getByPlaceholder('Max users').fill('2')
   await page.getByRole('button', { name: 'Save quota' }).click()
@@ -38,7 +40,7 @@ try {
   await page.waitForTimeout(500)
   const body = await page.locator('body').innerText()
   await page.screenshot({ path: '/root/siriusx/evidence/S5/15-platform-admin-ui/admin.png', fullPage: true })
-  const result = { tenant: body.includes('tenant-platform'), usage: body.includes('Platform Tenant'), quota: body.includes('Quota') && body.includes('Save quota'), model: body.includes('Model UI') && body.includes('Bound models'), user: body.includes('member@platform.example'), errors }
+  const result = { tenant: body.includes('tenant-platform'), usage: body.includes('Platform Tenant'), quota: body.includes('Quota') && body.includes('Save quota'), model: body.includes('Model UI') && body.includes('Catalog models'), user: body.includes('member@platform.example'), errors }
   console.log(JSON.stringify(result, null, 2))
   if (!result.tenant || !result.usage || !result.quota || !result.model || !result.user || errors.length > 0) process.exitCode = 1
 } finally {

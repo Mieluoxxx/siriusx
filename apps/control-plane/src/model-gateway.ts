@@ -64,6 +64,12 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         return
       }
       const body = await bodyOf(request)
+      let requestedModel: string | undefined
+      try { const parsed = JSON.parse(body.toString('utf8')) as { model?: unknown }; if (typeof parsed.model === 'string') requestedModel = parsed.model } catch { /* upstream handles malformed JSON */ }
+      if (requestedModel !== undefined && !options.control.listTenantModels(session.tenantId).some(model => model.id === requestedModel)) {
+        write(response, 400, { error: { message: `model is not bound to tenant: ${requestedModel}`, code: 'MODEL_NOT_BOUND' } })
+        return
+      }
       const upstream = await fetch(options.upstreamUrl, {
         method: 'POST',
         headers: {
