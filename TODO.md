@@ -95,7 +95,8 @@
 - [x] Postgres Stage 2.2h：tenants/users 主读取迁移（PG 启动缓存，真实 PG 测试）
 - [x] Postgres Stage 2.2i：settings/quota 主读取（PG cache，真实 PG 测试）
 - [x] Postgres Stage 2.2j：定时缓存刷新（真实 PG 测试）
-- [ ] Postgres Stage 2.2k：LISTEN/NOTIFY 即时失效
+- [x] Postgres Stage 2.2k：LISTEN/NOTIFY 即时失效（真实 PG 双实例测试）
+- [ ] Postgres Stage 3：autobot/tool-gateway runtime cutover
 - [ ] Postgres Stage 3：autobot/tool-gateway 运行时 cutover
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端

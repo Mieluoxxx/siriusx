@@ -252,6 +252,7 @@ export class ControlPlane {
   readonly #settingsCache = new Map<string, { nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>()
   readonly #quotaCache = new Map<string, { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }>()
   #cacheReady = false
+  #cacheStop: (() => Promise<void>) | undefined
   readonly #dataDir: string
   readonly #secret: string
   readonly #now: () => number
@@ -340,6 +341,7 @@ export class ControlPlane {
       this.#userCache.set(adminUserId, { id: adminUserId, tenantId: id, email: input.adminEmail, role: 'admin' as Role, createdAt: now })
       this.#settingsCache.set(id, { nativeConversationEnabled: true, byokEnabled: true, localExecutionEnabled: true })
       this.#quotaCache.set(id, { maxUsers: 50, maxDevices: 20, maxCloudTicketsPerDay: 100, maxDeviceTicketsPerDay: 500 })
+      await this.#notifyCacheChange()
     }
     return tenant
   }
@@ -349,7 +351,7 @@ export class ControlPlane {
     if (this.#storage !== undefined) await this.#storage.query('UPDATE tenants SET status = ? WHERE id = ?', [status, tenantId])
     this.#db.prepare('UPDATE tenants SET status = ? WHERE id = ?').run(status, tenantId)
     const tenant = { id: tenantId, name: current.name, idpIssuer: current.idp_issuer, createdAt: current.created_at, status }
-    if (this.#storage !== undefined) this.#tenantCache.set(tenantId, tenant)
+    if (this.#storage !== undefined) { this.#tenantCache.set(tenantId, tenant); await this.#notifyCacheChange() }
     return tenant
   }
 
@@ -360,7 +362,7 @@ export class ControlPlane {
     if (this.#storage !== undefined) await this.#storage.query('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?', [name, idpIssuer, tenantId])
     this.#db.prepare('UPDATE tenants SET name = ?, idp_issuer = ? WHERE id = ?').run(name, idpIssuer, tenantId)
     const tenant = { id: tenantId, name, idpIssuer, createdAt: current.created_at, status: current.status }
-    if (this.#storage !== undefined) this.#tenantCache.set(tenantId, tenant)
+    if (this.#storage !== undefined) { this.#tenantCache.set(tenantId, tenant); await this.#notifyCacheChange() }
     return tenant
   }
 
@@ -636,6 +638,7 @@ export class ControlPlane {
     if (this.#storage !== undefined) {
       await this.#storage.query('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET max_users = EXCLUDED.max_users, max_devices = EXCLUDED.max_devices, max_cloud_tickets_per_day = EXCLUDED.max_cloud_tickets_per_day, max_device_tickets_per_day = EXCLUDED.max_device_tickets_per_day, updated_at = EXCLUDED.updated_at', [tenantId, next.maxUsers, next.maxDevices, next.maxCloudTicketsPerDay, next.maxDeviceTicketsPerDay, this.#now()])
       this.#quotaCache.set(tenantId, next)
+      await this.#notifyCacheChange()
       return next
     }
     this.#db.prepare('INSERT OR REPLACE INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
@@ -698,6 +701,7 @@ export class ControlPlane {
       if (user === undefined || user.tenantId !== tenantId) throw new ControlPlaneError(404, 'USER_NOT_FOUND', userId)
       await this.#storage.query('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?', [role, userId, tenantId])
       user.role = role
+      await this.#notifyCacheChange()
       return
     }
     const result = this.#db.prepare('UPDATE users SET role = ? WHERE id = ? AND tenant_id = ?').run(role, userId, tenantId)
@@ -729,7 +733,7 @@ export class ControlPlane {
     }
     this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(userId, input.tenantId, input.email, input.role ?? 'member', this.#now())
-    if (this.#storage !== undefined) this.#userCache.set(userId, { id: userId, tenantId: input.tenantId, email: input.email, role: input.role ?? 'member', createdAt: this.#now() })
+    if (this.#storage !== undefined) { this.#userCache.set(userId, { id: userId, tenantId: input.tenantId, email: input.email, role: input.role ?? 'member', createdAt: this.#now() }); await this.#notifyCacheChange() }
     return { userId }
   }
 
@@ -822,6 +826,7 @@ export class ControlPlane {
     if (this.#storage !== undefined) {
       await this.#storage.query('INSERT INTO settings (tenant_id, native_conversation_enabled, byok_enabled, local_execution_enabled) VALUES (?, ?, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET native_conversation_enabled = EXCLUDED.native_conversation_enabled, byok_enabled = EXCLUDED.byok_enabled, local_execution_enabled = EXCLUDED.local_execution_enabled', [session.tenantId, next.nativeConversationEnabled ? 1 : 0, next.byokEnabled ? 1 : 0, next.localExecutionEnabled ? 1 : 0])
       this.#settingsCache.set(session.tenantId, next)
+      await this.#notifyCacheChange()
       return
     }
     this.#db.prepare('UPDATE settings SET native_conversation_enabled = ?, byok_enabled = ?, local_execution_enabled = ? WHERE tenant_id = ?')
@@ -1262,6 +1267,21 @@ export class ControlPlane {
   }
 
   async initialize(): Promise<void> { await this.refreshCache() }
+
+  async startCacheInvalidation(): Promise<void> {
+    if (this.#storage?.listen === undefined || this.#cacheStop !== undefined) return
+    this.#cacheStop = await this.#storage.listen('siriusx_cache_change', () => { void this.refreshCache().catch(() => undefined) })
+  }
+
+  async stopCacheInvalidation(): Promise<void> {
+    const stop = this.#cacheStop
+    this.#cacheStop = undefined
+    if (stop !== undefined) await stop()
+  }
+
+  async #notifyCacheChange(): Promise<void> {
+    if (this.#storage !== undefined) await this.#storage.query("SELECT pg_notify('siriusx_cache_change', '1')")
+  }
 
   ready(): { database: 'ok' } {
     this.#db.prepare('SELECT 1').get()

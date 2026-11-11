@@ -43,6 +43,7 @@ boundary, not just a connection string.
    - [x] tenants/users primary reads via PostgreSQL-backed process cache
    - [x] settings/tenant_quotas primary reads via PostgreSQL-backed process cache
    - [x] periodic cache refresh (default 30s)
+   - [x] LISTEN/NOTIFY immediate cache invalidation
    - tenants
    - users
    - quotas
@@ -81,6 +82,6 @@ bindings/events and tickets still use SQLite at runtime.
 
 Tenant/settings/user rows are now mirrored to PostgreSQL during lifecycle
 writes, so support/billing foreign keys work for new tenants. Tenant/user primary reads now come from the PostgreSQL-backed process cache when
-`initialize()` has run. The cache is process-local and refreshable on a timer (default 30s); immediate
-cross-replica invalidation still requires LISTEN/NOTIFY or a shared cache. Settings/quota reads use the same PostgreSQL-backed cache. Operational
+`initialize()` has run. The cache is process-local and refreshable on a timer (default 30s); immediate cross-replica invalidation uses PostgreSQL
+LISTEN/NOTIFY; the timer remains a fallback. Settings/quota reads use the same PostgreSQL-backed cache. Operational
 ticket/device reads still use SQLite.

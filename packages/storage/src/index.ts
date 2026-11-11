@@ -12,6 +12,7 @@ export interface Storage {
   query<Row extends Record<string, unknown> = Record<string, unknown>>(sql: string, parameters?: readonly unknown[]): Promise<QueryResult<Row>>
   transaction<T>(operation: (storage: Storage) => Promise<T>): Promise<T>
   close(): Promise<void>
+  listen?(channel: string, handler: () => void): Promise<() => Promise<void>>
 }
 
 function isRead(sql: string): boolean {
@@ -99,6 +100,18 @@ export class PostgresStorage implements Storage {
       await client.query('ROLLBACK').catch(() => undefined)
       throw error
     } finally {
+      client.release()
+    }
+  }
+
+  async listen(channel: string, handler: () => void): Promise<() => Promise<void>> {
+    if (!/^[a-z_][a-z0-9_]*$/u.test(channel)) throw new Error('invalid PostgreSQL channel')
+    const client = await this.#pool.connect()
+    client.on('notification', message => { if (message.channel === channel) handler() })
+    await client.query(`LISTEN "${channel}"`)
+    return async () => {
+      await client.query(`UNLISTEN "${channel}"`).catch(() => undefined)
+      client.removeAllListeners('notification')
       client.release()
     }
   }

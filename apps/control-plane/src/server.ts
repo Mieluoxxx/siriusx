@@ -87,6 +87,7 @@ function sessionOf(control: ControlPlane, request: IncomingMessage): Session {
 export async function startControlPlaneServer(options: ControlPlaneServerOptions): Promise<ControlPlaneServer> {
   const control = new ControlPlane({ dbPath: options.dbPath, dataDir: options.dataDir, ...(options.sessionSecret === undefined ? {} : { sessionSecret: options.sessionSecret }), ...(options.botScenario === undefined ? {} : { botScenario: options.botScenario }), ...(options.storage === undefined ? {} : { storage: options.storage }) })
   await control.initialize()
+  await control.startCacheInvalidation()
   const cacheRefreshTimer = options.storage === undefined ? undefined : setInterval(() => { void control.refreshCache().catch(() => undefined) }, options.cacheRefreshMs ?? 30_000)
   cacheRefreshTimer?.unref()
   let deviceGateway: DeviceGateway | undefined
@@ -899,6 +900,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
     close: async () => {
       await new Promise<void>((resolve, reject) => server.close(error => { error === undefined ? resolve() : reject(error) }))
       if (cacheRefreshTimer !== undefined) clearInterval(cacheRefreshTimer)
+      await control.stopCacheInvalidation()
       for (const timer of offlineTimers.values()) clearTimeout(timer)
       offlineTimers.clear()
       control.close()

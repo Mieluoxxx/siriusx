@@ -824,4 +824,35 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     }
   })
 
+  it('invalidates peer caches through PostgreSQL LISTEN/NOTIFY', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const rootA = await mkdtemp(join(tmpdir(), 'siriusx-pg-notify-a-'))
+    const rootB = await mkdtemp(join(tmpdir(), 'siriusx-pg-notify-b-'))
+    roots.push(rootA, rootB)
+    const storageA = new PostgresStorage(process.env.DATABASE_URL!)
+    const storageB = new PostgresStorage(process.env.DATABASE_URL!)
+    const planeA = new ControlPlane({ dbPath: join(rootA, 'control.sqlite'), dataDir: join(rootA, 'data'), storage: storageA })
+    const planeB = new ControlPlane({ dbPath: join(rootB, 'control.sqlite'), dataDir: join(rootB, 'data'), storage: storageB })
+    planes.push(planeA, planeB)
+    await planeA.initialize(); await planeB.initialize()
+    await planeA.startCacheInvalidation(); await planeB.startCacheInvalidation()
+    try {
+      await planeA.provisionTenant({ tenantId: 'tenant-pg-notify', name: 'Notify', idpIssuer: 'https://notify.example', adminEmail: 'admin@notify.example' })
+      let visible = false
+      for (let index = 0; index < 100; index++) {
+        if (planeB.listTenants().some(tenant => tenant.id === 'tenant-pg-notify')) { visible = true; break }
+        await new Promise(resolve => setTimeout(resolve, 20))
+      }
+      expect(visible).toBe(true)
+      await storageA.query('DELETE FROM tenant_models WHERE tenant_id = ?', ['tenant-pg-notify'])
+      await storageA.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', ['tenant-pg-notify'])
+      await storageA.query('DELETE FROM users WHERE tenant_id = ?', ['tenant-pg-notify'])
+      await storageA.query('DELETE FROM settings WHERE tenant_id = ?', ['tenant-pg-notify'])
+      await storageA.query('DELETE FROM tenants WHERE id = ?', ['tenant-pg-notify'])
+    } finally {
+      await planeA.stopCacheInvalidation(); await planeB.stopCacheInvalidation()
+      await storageA.close(); await storageB.close()
+    }
+  })
+
 })
