@@ -41,6 +41,7 @@ boundary, not just a connection string.
    - [x] model_catalog / tenant_models runtime reads+writes
    - [x] source_bindings / source_events runtime reads+writes
    - [x] tenants/users primary reads via PostgreSQL-backed process cache
+   - [x] settings/tenant_quotas primary reads via PostgreSQL-backed process cache
    - tenants
    - users
    - quotas
@@ -80,5 +81,5 @@ bindings/events and tickets still use SQLite at runtime.
 Tenant/settings/user rows are now mirrored to PostgreSQL during lifecycle
 writes, so support/billing foreign keys work for new tenants. Tenant/user primary reads now come from the PostgreSQL-backed process cache when
 `initialize()` has run. The cache is process-local; control-plane remains
-single-replica until a shared invalidation mechanism exists. Settings and
-operational ticket/device reads still use SQLite.
+single-replica until a shared invalidation mechanism exists. Settings/quota reads use the same PostgreSQL-backed cache. Operational
+ticket/device reads still use SQLite.

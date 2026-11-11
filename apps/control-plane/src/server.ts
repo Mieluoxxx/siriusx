@@ -414,7 +414,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
               ...(typeof body.maxCloudTicketsPerDay === 'number' ? { maxCloudTicketsPerDay: body.maxCloudTicketsPerDay } : {}),
               ...(typeof body.maxDeviceTicketsPerDay === 'number' ? { maxDeviceTicketsPerDay: body.maxDeviceTicketsPerDay } : {}),
             }
-            const quota = control.setQuota(parts[3], patch)
+            const quota = await control.setQuota(parts[3], patch)
             await control.recordPlatformAudit({ actor: 'platform', action: 'quota.update', target: parts[3], detail: JSON.stringify(quota) })
             write(response, 200, { quota, usage: control.tenantUsage(parts[3]) })
             return
@@ -645,7 +645,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (request.method === 'GET') { write(response, 200, control.getSettings(session.tenantId)); return }
         if (request.method === 'PUT') {
           const body = await readJson(request)
-          control.updateSettings(session, {
+          await control.updateSettings(session, {
             ...(typeof body.nativeConversationEnabled === 'boolean' ? { nativeConversationEnabled: body.nativeConversationEnabled } : {}),
             ...(typeof body.byokEnabled === 'boolean' ? { byokEnabled: body.byokEnabled } : {}),
             ...(typeof body.localExecutionEnabled === 'boolean' ? { localExecutionEnabled: body.localExecutionEnabled } : {}),

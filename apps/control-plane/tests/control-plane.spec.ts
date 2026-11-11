@@ -81,9 +81,9 @@ describe('control plane', () => {
     const member = await plane.addUser({ tenantId: tenant.id, email: 'member@a.example' })
     const adminSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
     const memberSession = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: member.userId, role: 'member' }))
-    plane.updateSettings(adminSession, { nativeConversationEnabled: false })
+    await plane.updateSettings(adminSession, { nativeConversationEnabled: false })
     expect(plane.getSettings(tenant.id).nativeConversationEnabled).toBe(false)
-    expect(() => plane.updateSettings(memberSession, { nativeConversationEnabled: true })).toThrow(/admin role required/u)
+    await expect(plane.updateSettings(memberSession, { nativeConversationEnabled: true })).rejects.toThrow(/admin role required/u)
   })
 
   it('validates SSO sessions and hides the upstream model key', async () => {
@@ -452,7 +452,7 @@ describe('control plane', () => {
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-quota', name: 'Quota', idpIssuer: 'https://idp.example', adminEmail: 'admin@quota.example' })
     const admin = plane.findUserByEmail(tenant.id, 'admin@quota.example')!
     const session = { tenantId: tenant.id, userId: admin.id, role: 'admin' as const }
-    plane.setQuota(tenant.id, { maxUsers: 1, maxDevices: 1, maxCloudTicketsPerDay: 0, maxDeviceTicketsPerDay: 0 })
+    await plane.setQuota(tenant.id, { maxUsers: 1, maxDevices: 1, maxCloudTicketsPerDay: 0, maxDeviceTicketsPerDay: 0 })
     await expect(plane.addUser({ tenantId: tenant.id, email: 'second@quota.example' })).rejects.toThrow('users quota exceeded')
     const pairing = plane.startPairing(session, 'Device')
     expect(() => plane.startPairing(session, 'Second')).toThrow('devices quota exceeded')
@@ -537,7 +537,7 @@ describe('control plane', () => {
     const events = await fetch(`${server.url}/v1/source-events`, { headers: auth(token) }).then(response => response.json()) as { events: Array<{ status: string; ticketId: string | null }> }
     expect(events.events).toHaveLength(1)
     expect(events.events[0]?.status).toBe('received')
-    server.control.setQuota(tenant.id, { maxCloudTicketsPerDay: 0 })
+    await server.control.setQuota(tenant.id, { maxCloudTicketsPerDay: 0 })
     await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'gitlab', externalId: 'acme/auto', tenantId: tenant.id, repoUrl: 'https://github.com/acme/auto.git', autoDispatch: true }) })
     const autoPayload = { object_kind: 'issue', project: { path_with_namespace: 'acme/auto' }, object_attributes: { iid: 2, title: 'auto issue', description: 'do it' } }
     const auto = await fetch(`${server.url}/v1/sources/gitlab/webhook`, { method: 'POST', headers: { ...headers, 'x-gitlab-event-uuid': 'delivery-auto' }, body: JSON.stringify(autoPayload) }).then(response => response.json()) as { accepted: boolean; dispatchError?: string }
@@ -625,6 +625,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       await storage.query('DELETE FROM support_requests WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -648,6 +649,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       await storage.query('DELETE FROM tenant_billing WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -671,6 +673,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await storage.query('SELECT role FROM users WHERE id = ?', [member.userId])).rows[0]).toEqual({ role: 'admin' })
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -694,6 +697,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await storage.query('SELECT model_id, is_default FROM tenant_models WHERE tenant_id = ? ORDER BY is_default DESC', [tenant.id])).rows[0]).toMatchObject({ model_id: 'model-pg' })
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
       await storage.query('DELETE FROM model_catalog WHERE id = ?', ['model-pg'])
@@ -722,6 +726,7 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       await storage.query('DELETE FROM source_bindings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
     } finally {
@@ -754,6 +759,39 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
       expect((await plane.setTenantStatus(tenant.id, 'suspended')).status).toBe('suspended')
       expect(() => plane.issueSession({ tenantId: tenant.id, userId: user.userId, role: 'member' })).toThrow('tenant is suspended')
       await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])
+    } finally {
+      await storage.close()
+    }
+  })
+
+  it('reads settings and quotas from the PostgreSQL cache', async () => {
+    const { PostgresStorage } = await import('@siriusx/storage')
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-pg-settings-'))
+    roots.push(root)
+    const dbPath = join(root, 'control.sqlite')
+    const storage = new PostgresStorage(process.env.DATABASE_URL!)
+    const plane = new ControlPlane({ dbPath, dataDir: join(root, 'data'), storage })
+    planes.push(plane)
+    await plane.initialize()
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-pg-settings', name: 'PG Settings', idpIssuer: 'https://idp.example', adminEmail: 'admin@pg-settings.example' })
+    const admin = plane.findUserByEmail(tenant.id, 'admin@pg-settings.example')!
+    const session = plane.verifySession(plane.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
+    await plane.updateSettings(session, { nativeConversationEnabled: false, localExecutionEnabled: false })
+    await plane.setQuota(tenant.id, { maxUsers: 3, maxCloudTicketsPerDay: 2 })
+    const sqlite = new DatabaseSync(dbPath)
+    sqlite.exec('PRAGMA foreign_keys = OFF; DELETE FROM tenant_quotas; DELETE FROM settings; DELETE FROM users; DELETE FROM tenants;')
+    sqlite.close()
+    try {
+      expect(plane.getSettings(tenant.id)).toMatchObject({ nativeConversationEnabled: false, localExecutionEnabled: false })
+      expect(plane.getQuota(tenant.id)).toMatchObject({ maxUsers: 3, maxCloudTicketsPerDay: 2 })
+      expect((await storage.query('SELECT native_conversation_enabled FROM settings WHERE tenant_id = ?', [tenant.id])).rows[0]).toEqual({ native_conversation_enabled: 0 })
+      expect((await storage.query('SELECT max_users FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])).rows[0]).toEqual({ max_users: 3 })
+      await storage.query('DELETE FROM tenant_models WHERE tenant_id = ?', [tenant.id])
+      await storage.query('DELETE FROM tenant_quotas WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM users WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM settings WHERE tenant_id = ?', [tenant.id])
       await storage.query('DELETE FROM tenants WHERE id = ?', [tenant.id])

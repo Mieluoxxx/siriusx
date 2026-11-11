@@ -249,6 +249,8 @@ export class ControlPlane {
   readonly #storage: Storage | undefined
   readonly #tenantCache = new Map<string, Tenant>()
   readonly #userCache = new Map<string, { id: string; tenantId: string; email: string; role: Role; createdAt: number }>()
+  readonly #settingsCache = new Map<string, { nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>()
+  readonly #quotaCache = new Map<string, { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }>()
   #cacheReady = false
   readonly #dataDir: string
   readonly #secret: string
@@ -325,6 +327,7 @@ export class ControlPlane {
         await this.#storage.query('INSERT INTO settings (tenant_id) VALUES (?) ON CONFLICT (tenant_id) DO NOTHING', [id])
         await this.#storage.query('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (tenant_id, email) DO NOTHING', [adminUserId, id, input.adminEmail, 'admin', now])
         await this.#storage.query('INSERT INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1) ON CONFLICT (tenant_id, model_id) DO NOTHING', [id, 'tenant-default'])
+        await this.#storage.query('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?) ON CONFLICT (tenant_id) DO NOTHING', [id, now])
       }
       this.#db.exec('COMMIT')
     } catch (error) {
@@ -335,6 +338,8 @@ export class ControlPlane {
     if (this.#storage !== undefined) {
       this.#tenantCache.set(id, tenant)
       this.#userCache.set(adminUserId, { id: adminUserId, tenantId: id, email: input.adminEmail, role: 'admin' as Role, createdAt: now })
+      this.#settingsCache.set(id, { nativeConversationEnabled: true, byokEnabled: true, localExecutionEnabled: true })
+      this.#quotaCache.set(id, { maxUsers: 50, maxDevices: 20, maxCloudTicketsPerDay: 100, maxDeviceTicketsPerDay: 500 })
     }
     return tenant
   }
@@ -614,6 +619,7 @@ export class ControlPlane {
 
   getQuota(tenantId: string): { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number } {
     this.tenantRow(tenantId)
+    if (this.#storage !== undefined && this.#cacheReady) return this.#quotaCache.get(tenantId) ?? { maxUsers: 50, maxDevices: 20, maxCloudTicketsPerDay: 100, maxDeviceTicketsPerDay: 500 }
     const row = this.#db.prepare('SELECT * FROM tenant_quotas WHERE tenant_id = ?').get(tenantId) as {
       max_users: number; max_devices: number; max_cloud_tickets_per_day: number; max_device_tickets_per_day: number
     } | undefined
@@ -622,11 +628,16 @@ export class ControlPlane {
       : { maxUsers: row.max_users, maxDevices: row.max_devices, maxCloudTicketsPerDay: row.max_cloud_tickets_per_day, maxDeviceTicketsPerDay: row.max_device_tickets_per_day }
   }
 
-  setQuota(tenantId: string, patch: Partial<{ maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }>): ReturnType<ControlPlane['getQuota']> {
+  async setQuota(tenantId: string, patch: Partial<{ maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }>): Promise<{ maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }> {
     this.tenantRow(tenantId)
     const current = this.getQuota(tenantId)
     const next = { ...current, ...patch }
     for (const value of Object.values(next)) if (!Number.isSafeInteger(value) || value < 0) throw new ControlPlaneError(400, 'INVALID_QUOTA', 'quota values must be non-negative integers')
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET max_users = EXCLUDED.max_users, max_devices = EXCLUDED.max_devices, max_cloud_tickets_per_day = EXCLUDED.max_cloud_tickets_per_day, max_device_tickets_per_day = EXCLUDED.max_device_tickets_per_day, updated_at = EXCLUDED.updated_at', [tenantId, next.maxUsers, next.maxDevices, next.maxCloudTicketsPerDay, next.maxDeviceTicketsPerDay, this.#now()])
+      this.#quotaCache.set(tenantId, next)
+      return next
+    }
     this.#db.prepare('INSERT OR REPLACE INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run(tenantId, next.maxUsers, next.maxDevices, next.maxCloudTicketsPerDay, next.maxDeviceTicketsPerDay, this.#now())
     return next
@@ -787,26 +798,34 @@ export class ControlPlane {
 
   getSettings(tenantId: string): { nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean } {
     this.tenantRow(tenantId)
+    if (this.#storage !== undefined && this.#cacheReady) return this.#settingsCache.get(tenantId) ?? { nativeConversationEnabled: true, byokEnabled: true, localExecutionEnabled: true }
     const row = this.#db.prepare('SELECT * FROM settings WHERE tenant_id = ?').get(tenantId) as {
       native_conversation_enabled: number; byok_enabled: number; local_execution_enabled: number
-    }
-    return {
-      nativeConversationEnabled: row.native_conversation_enabled === 1,
-      byokEnabled: row.byok_enabled === 1,
-      localExecutionEnabled: row.local_execution_enabled === 1,
-    }
+    } | undefined
+    return row === undefined
+      ? { nativeConversationEnabled: true, byokEnabled: true, localExecutionEnabled: true }
+      : {
+          nativeConversationEnabled: row.native_conversation_enabled === 1,
+          byokEnabled: row.byok_enabled === 1,
+          localExecutionEnabled: row.local_execution_enabled === 1,
+        }
   }
 
-  updateSettings(session: Session, patch: Partial<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>): void {
+  async updateSettings(session: Session, patch: Partial<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>): Promise<void> {
     if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
     const current = this.getSettings(session.tenantId)
+    const next = {
+      nativeConversationEnabled: patch.nativeConversationEnabled ?? current.nativeConversationEnabled,
+      byokEnabled: patch.byokEnabled ?? current.byokEnabled,
+      localExecutionEnabled: patch.localExecutionEnabled ?? current.localExecutionEnabled,
+    }
+    if (this.#storage !== undefined) {
+      await this.#storage.query('INSERT INTO settings (tenant_id, native_conversation_enabled, byok_enabled, local_execution_enabled) VALUES (?, ?, ?, ?) ON CONFLICT (tenant_id) DO UPDATE SET native_conversation_enabled = EXCLUDED.native_conversation_enabled, byok_enabled = EXCLUDED.byok_enabled, local_execution_enabled = EXCLUDED.local_execution_enabled', [session.tenantId, next.nativeConversationEnabled ? 1 : 0, next.byokEnabled ? 1 : 0, next.localExecutionEnabled ? 1 : 0])
+      this.#settingsCache.set(session.tenantId, next)
+      return
+    }
     this.#db.prepare('UPDATE settings SET native_conversation_enabled = ?, byok_enabled = ?, local_execution_enabled = ? WHERE tenant_id = ?')
-      .run(
-        (patch.nativeConversationEnabled ?? current.nativeConversationEnabled) ? 1 : 0,
-        (patch.byokEnabled ?? current.byokEnabled) ? 1 : 0,
-        (patch.localExecutionEnabled ?? current.localExecutionEnabled) ? 1 : 0,
-        session.tenantId,
-      )
+      .run(next.nativeConversationEnabled ? 1 : 0, next.byokEnabled ? 1 : 0, next.localExecutionEnabled ? 1 : 0, session.tenantId)
   }
 
   startPairing(session: Session, deviceName: string): { code: string; expiresAt: number } {
@@ -1234,6 +1253,11 @@ export class ControlPlane {
     this.#tenantCache.clear(); this.#userCache.clear()
     for (const row of tenants.rows) this.#tenantCache.set(row.id, { id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: Number(row.created_at), status: row.status })
     for (const row of users.rows) this.#userCache.set(row.id, { id: row.id, tenantId: row.tenant_id, email: row.email, role: row.role, createdAt: Number(row.created_at) })
+    const settings = await this.#storage.query<{ tenant_id: string; native_conversation_enabled: number | string; byok_enabled: number | string; local_execution_enabled: number | string }>('SELECT * FROM settings')
+    const quotas = await this.#storage.query<{ tenant_id: string; max_users: number | string; max_devices: number | string; max_cloud_tickets_per_day: number | string; max_device_tickets_per_day: number | string }>('SELECT * FROM tenant_quotas')
+    this.#settingsCache.clear(); this.#quotaCache.clear()
+    for (const row of settings.rows) this.#settingsCache.set(row.tenant_id, { nativeConversationEnabled: Number(row.native_conversation_enabled) === 1, byokEnabled: Number(row.byok_enabled) === 1, localExecutionEnabled: Number(row.local_execution_enabled) === 1 })
+    for (const row of quotas.rows) this.#quotaCache.set(row.tenant_id, { maxUsers: Number(row.max_users), maxDevices: Number(row.max_devices), maxCloudTicketsPerDay: Number(row.max_cloud_tickets_per_day), maxDeviceTicketsPerDay: Number(row.max_device_tickets_per_day) })
     this.#cacheReady = true
   }
 
