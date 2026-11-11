@@ -1,0 +1,5 @@
+docker run -d --name siriusx-admin-web-image-test --network host -e CONTROL_PLANE_URL=http://127.0.0.1:4327 -e PORT=8093 -e HOST=127.0.0.1 siriusx/admin-web:offline
+GET /health => 200
+GET / => 200
+<title>SiriusX Platform Admin</title>
+container removed
