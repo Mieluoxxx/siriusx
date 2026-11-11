@@ -1,5 +1,5 @@
 /** HTTP entry for the single-box control plane. Production terminates SSO at a gateway. */
-import { createHash } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { ControlPlane, ControlPlaneError, type Session } from './index.ts'
@@ -18,6 +18,7 @@ export interface ControlPlaneServerOptions {
   readonly deviceOfflineLostMs?: number
   readonly platformAdminToken?: string
   readonly sourceWebhookToken?: string
+  readonly githubWebhookSecret?: string
 }
 
 export interface ControlPlaneServer {
@@ -53,6 +54,21 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
   return value as Record<string, unknown>
 }
 
+async function readRawJson(request: IncomingMessage): Promise<{ body: Record<string, unknown>; raw: Buffer }> {
+  const chunks: Buffer[] = []
+  let total = 0
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    total += buffer.byteLength
+    if (total > MAX_JSON_BODY_BYTES) throw new ControlPlaneError(413, 'PAYLOAD_TOO_LARGE', 'request body exceeds 1 MiB')
+    chunks.push(buffer)
+  }
+  const raw = Buffer.concat(chunks)
+  const value: unknown = raw.length === 0 ? {} : JSON.parse(raw.toString('utf8'))
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('expected JSON object')
+  return { body: value as Record<string, unknown>, raw }
+}
+
 function write(response: ServerResponse, status: number, value: unknown): void {
   const body = JSON.stringify(value)
   response.writeHead(status, { ...CORS, 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body) })
@@ -73,6 +89,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   const ssoServiceToken = options.ssoServiceToken
   const platformAdminToken = options.platformAdminToken
   const sourceWebhookToken = options.sourceWebhookToken
+  const githubWebhookSecret = options.githubWebhookSecret
   const requirePlatformAdmin = (request: IncomingMessage): void => {
     if (platformAdminToken === undefined || request.headers['x-siriusx-platform-token'] !== platformAdminToken) {
       throw new ControlPlaneError(401, 'PLATFORM_ADMIN_REQUIRED', 'platform admin token required')
@@ -432,6 +449,41 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           const description = typeof attributes.description === 'string' ? attributes.description : ''
           try {
             const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: 'app:source-gitlab', channel: 'gitlab', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `GitLab ${eventType}: ${title}\n\n${description}` })
+            ticketId = ticket.ticketId
+            control.markSourceEvent(recorded.id, 'dispatched', ticketId)
+          } catch (error) {
+            dispatchError = error instanceof Error ? error.message : String(error)
+            control.markSourceEvent(recorded.id, 'failed')
+          }
+        }
+        write(response, 202, { accepted: recorded.accepted, duplicate: !recorded.accepted, eventId: recorded.id, ...(ticketId === undefined ? {} : { ticketId }), ...(dispatchError === undefined ? {} : { dispatchError }) })
+        return
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/sources/github/webhook') {
+        if (githubWebhookSecret === undefined) throw new ControlPlaneError(503, 'SOURCE_WEBHOOK_DISABLED', 'GitHub webhook secret is not configured')
+        const signature = request.headers['x-hub-signature-256']
+        if (typeof signature !== 'string' || !signature.startsWith('sha256=')) throw new ControlPlaneError(401, 'SOURCE_UNAUTHORIZED', 'missing GitHub webhook signature')
+        const { body, raw } = await readRawJson(request)
+        const expected = `sha256=${createHmac('sha256', githubWebhookSecret).update(raw).digest('hex')}`
+        if (signature !== expected) throw new ControlPlaneError(401, 'SOURCE_UNAUTHORIZED', 'invalid GitHub webhook signature')
+        const repository = typeof body.repository === 'object' && body.repository !== null ? body.repository as Record<string, unknown> : undefined
+        const externalId = typeof repository?.full_name === 'string' ? repository.full_name : undefined
+        if (externalId === undefined) throw new ControlPlaneError(400, 'INVALID_SOURCE_EVENT', 'GitHub repository full_name is required')
+        const binding = control.findSourceBinding('github', externalId)
+        if (binding === undefined) { write(response, 202, { accepted: false, ignored: 'no source binding' }); return }
+        const deliveryId = typeof request.headers['x-github-delivery'] === 'string' && request.headers['x-github-delivery'] !== ''
+          ? request.headers['x-github-delivery']
+          : createHash('sha256').update(raw).digest('hex')
+        const eventType = typeof request.headers['x-github-event'] === 'string' ? request.headers['x-github-event'] : 'unknown'
+        const recorded = control.recordSourceEvent({ provider: 'github', deliveryId, bindingId: binding.id, tenantId: binding.tenantId, eventType, payload: body })
+        let ticketId: string | undefined
+        let dispatchError: string | undefined
+        if (recorded.accepted && binding.autoDispatch && binding.repoUrl !== null) {
+          const issue = typeof body.issue === 'object' && body.issue !== null ? body.issue as Record<string, unknown> : {}
+          const title = typeof issue.title === 'string' ? issue.title : `${eventType} event`
+          const description = typeof issue.body === 'string' ? issue.body : ''
+          try {
+            const ticket = control.createCloudTicketFromSource({ tenantId: binding.tenantId, operatorId: 'app:source-github', channel: 'github', repoUrl: binding.repoUrl, baseRef: binding.baseRef ?? 'main', prompt: `GitHub ${eventType}: ${title}\n\n${description}` })
             ticketId = ticket.ticketId
             control.markSourceEvent(recorded.id, 'dispatched', ticketId)
           } catch (error) {

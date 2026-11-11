@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { createHmac } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ControlPlane } from '../src/index.ts'
 import { startControlPlaneServer, type ControlPlaneServer } from '../src/server.ts'
@@ -544,6 +545,24 @@ describe('control plane', () => {
     expect(auto.dispatchError).toContain('cloudTickets quota exceeded')
     const after = await fetch(`${server.url}/v1/source-events`, { headers: auth(token) }).then(response => response.json()) as { events: Array<{ status: string }> }
     expect(after.events[0]?.status).toBe('failed')
+  })
+
+  it('verifies and deduplicates GitHub webhook events', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-github-webhook-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'github-webhook', platformAdminToken: 'platform-secret', githubWebhookSecret: 'github-secret' })
+    servers.push(server)
+    const tenant = server.control.provisionTenant({ tenantId: 'tenant-github', name: 'GitHub', idpIssuer: 'https://idp.example', adminEmail: 'admin@github.example' })
+    await fetch(`${server.url}/v1/admin/source-bindings`, { method: 'POST', headers: { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'github', externalId: 'acme/repo', tenantId: tenant.id }) })
+    const payload = JSON.stringify({ action: 'opened', repository: { full_name: 'acme/repo' }, issue: { number: 1, title: 'github issue', body: 'fix it' } })
+    const bad = await fetch(`${server.url}/v1/sources/github/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': 'sha256=bad', 'x-github-delivery': 'gh-1', 'x-github-event': 'issues' }, body: payload })
+    expect(bad.status).toBe(401)
+    const signature = `sha256=${createHmac('sha256', 'github-secret').update(payload).digest('hex')}`
+    const headers = { 'content-type': 'application/json', 'x-hub-signature-256': signature, 'x-github-delivery': 'gh-1', 'x-github-event': 'issues' }
+    const first = await fetch(`${server.url}/v1/sources/github/webhook`, { method: 'POST', headers, body: payload }).then(response => response.json()) as { accepted: boolean; duplicate: boolean }
+    const second = await fetch(`${server.url}/v1/sources/github/webhook`, { method: 'POST', headers, body: payload }).then(response => response.json()) as { accepted: boolean; duplicate: boolean }
+    expect(first).toMatchObject({ accepted: true, duplicate: false })
+    expect(second).toMatchObject({ accepted: false, duplicate: true })
   })
 
 })
