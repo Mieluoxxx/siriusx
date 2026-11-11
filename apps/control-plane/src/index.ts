@@ -103,6 +103,16 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS support_requests (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  requested_by TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL,
+  requested_at INTEGER NOT NULL,
+  decided_at INTEGER,
+  expires_at INTEGER
+);
 CREATE TABLE IF NOT EXISTS platform_audit (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   actor TEXT NOT NULL,
@@ -274,6 +284,36 @@ export class ControlPlane {
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; idp_issuer: string; created_at: number
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
+  }
+
+  createSupportRequest(tenantId: string, requestedBy: string, reason: string): { id: string; status: string; expiresAt: number | null } {
+    this.tenantRow(tenantId)
+    if (reason.trim() === '') throw new ControlPlaneError(400, 'INVALID_REASON', 'reason is required')
+    const id = randomUUID()
+    this.#db.prepare('INSERT INTO support_requests (id, tenant_id, requested_by, reason, status, requested_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(id, tenantId, requestedBy, reason, 'pending', this.#now())
+    return { id, status: 'pending', expiresAt: null }
+  }
+
+  listSupportRequests(tenantId?: string): Array<{ id: string; tenantId: string; requestedBy: string; reason: string; status: string; requestedAt: number; decidedAt: number | null; expiresAt: number | null }> {
+    const rows = tenantId === undefined
+      ? this.#db.prepare('SELECT * FROM support_requests ORDER BY requested_at DESC, rowid DESC').all()
+      : this.#db.prepare('SELECT * FROM support_requests WHERE tenant_id = ? ORDER BY requested_at DESC, rowid DESC').all(tenantId)
+    return (rows as Array<{ id: string; tenant_id: string; requested_by: string; reason: string; status: string; requested_at: number; decided_at: number | null; expires_at: number | null }>).map(row => ({
+      id: row.id, tenantId: row.tenant_id, requestedBy: row.requested_by, reason: row.reason, status: row.status,
+      requestedAt: row.requested_at, decidedAt: row.decided_at, expiresAt: row.expires_at,
+    }))
+  }
+
+  decideSupportRequest(tenantId: string, requestId: string, approved: boolean, decidedBy: string): { id: string; status: string; expiresAt: number | null } {
+    this.tenantRow(tenantId)
+    const row = this.#db.prepare('SELECT status FROM support_requests WHERE id = ? AND tenant_id = ?').get(requestId, tenantId) as { status: string } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'SUPPORT_REQUEST_NOT_FOUND', requestId)
+    if (row.status !== 'pending') throw new ControlPlaneError(409, 'SUPPORT_REQUEST_SETTLED', row.status)
+    const status = approved ? 'approved' : 'denied'
+    const expiresAt = approved ? this.#now() + 60 * 60 * 1000 : null
+    this.#db.prepare('UPDATE support_requests SET status = ?, decided_at = ?, expires_at = ? WHERE id = ?').run(status, this.#now(), expiresAt, requestId)
+    return { id: requestId, status, expiresAt }
   }
 
   recordPlatformAudit(input: { actor: string; action: string; target: string; detail?: string }): void {

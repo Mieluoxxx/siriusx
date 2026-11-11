@@ -1,5 +1,7 @@
 {
   "set": true,
   "audit": true,
+  "support": true,
+  "approved": true,
   "errors": []
 }

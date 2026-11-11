@@ -100,6 +100,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
 <div><input id="token" type="password" placeholder="X-SiriusX-Platform-Token"><button id="load">Load</button></div>
 <div id="create"><h2>Create tenant</h2><input id="name" placeholder="Name"><input id="issuer" placeholder="IdP issuer"><input id="email" placeholder="Admin email"><input id="tenantId" placeholder="Tenant id (optional)"><button id="createTenant">Create</button></div>
 <div id="models"><h2>Model catalog</h2><input id="modelId" placeholder="Model id (optional)"><input id="modelName" placeholder="Display name"><input id="modelProvider" placeholder="Provider"><input id="modelNameId" placeholder="Provider model id"><button id="createModel">Add model</button><div id="modelList">Load to begin.</div></div>
+<h2>Support requests</h2><div id="supportRequests">Load to begin.</div>
 <h2>Platform audit</h2><div id="platformAudit">Load to begin.</div>
 <h2>Tenants</h2><div id="tenants">Load to begin.</div>
 <h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
@@ -111,6 +112,13 @@ const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'ap
 const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
 async function api(path, init = {}) { const r = await fetch(path, {...init, headers: headers()}); const v = await r.json(); if (!r.ok) throw new Error(v.error || ('HTTP ' + r.status)); return v; }
 function row(text) { const tr = document.createElement('tr'); for (const value of text) { const td = document.createElement('td'); td.textContent = String(value); tr.append(td); } return tr; }
+async function loadSupportRequests() {
+  const data = await api('/v1/admin/support-requests');
+  const host = document.getElementById('supportRequests'); host.textContent = '';
+  const table = document.createElement('table'); table.append(row(['Tenant','Reason','Status','Requested by']));
+  for (const request of data.requests) table.append(row([request.tenantId, request.reason, request.status, request.requestedBy]));
+  host.append(table);
+}
 async function loadPlatformAudit() {
   const data = await api('/v1/admin/audit');
   const host = document.getElementById('platformAudit'); host.textContent = '';
@@ -150,6 +158,8 @@ async function loadUsers(tenantId) {
   const q = document.createElement('div'); q.innerHTML = '<h4>Quota</h4><input id="maxUsers" placeholder="Max users"><input id="maxDevices" placeholder="Max devices"><input id="maxCloud" placeholder="Max cloud/day"><input id="maxDevice" placeholder="Max device tickets/day"><button id="saveQuota">Save quota</button>'; host.append(q);
   q.querySelector('#maxUsers').value = quota.quota.maxUsers; q.querySelector('#maxDevices').value = quota.quota.maxDevices; q.querySelector('#maxCloud').value = quota.quota.maxCloudTicketsPerDay; q.querySelector('#maxDevice').value = quota.quota.maxDeviceTicketsPerDay;
   q.querySelector('#saveQuota').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota', {method:'PUT', body: JSON.stringify({maxUsers:Number(q.querySelector('#maxUsers').value), maxDevices:Number(q.querySelector('#maxDevices').value), maxCloudTicketsPerDay:Number(q.querySelector('#maxCloud').value), maxDeviceTicketsPerDay:Number(q.querySelector('#maxDevice').value)})}); await loadUsers(tenantId); } catch (e) { err(e); } };
+  const support = document.createElement('div'); support.innerHTML = '<h4>Support access</h4><input id="supportReason" placeholder="Support reason"><button id="requestSupport">Request support</button>'; host.append(support);
+  support.querySelector('#requestSupport').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/support-requests', {method:'POST', body: JSON.stringify({reason: support.querySelector('#supportReason').value})}); await loadSupportRequests(); await loadPlatformAudit(); } catch (e) { err(e); } };
   const daily = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/usage-daily?days=14');
   const trend = document.createElement('div'); trend.innerHTML = '<h4>Usage (14d)</h4>'; host.append(trend);
   const ttable = document.createElement('table'); ttable.append(row(['Date','Cloud tickets','Device tickets'])); for (const day of daily.usage) ttable.append(row([day.date, day.cloudTickets, day.deviceTickets])); trend.append(ttable);
@@ -164,7 +174,7 @@ async function loadUsers(tenantId) {
   for (const user of data.users) table.append(row([user.email, user.role, user.userId]));
   host.append(table);
 }
-document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit()]); } catch (e) { err(e); } };
+document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit(), loadSupportRequests()]); } catch (e) { err(e); } };
 document.getElementById('createModel').onclick = async () => { try { await api('/v1/admin/models', {method:'POST', body: JSON.stringify({id: document.getElementById('modelId').value || undefined, name: document.getElementById('modelName').value, provider: document.getElementById('modelProvider').value, model: document.getElementById('modelNameId').value})}); await loadModels(); } catch (e) { err(e); } };
 document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
 </script>`)
@@ -225,6 +235,17 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       }
       if (parts[0] === 'v1' && parts[1] === 'admin') {
         requirePlatformAdmin(request)
+        if (parts[2] === 'support-requests' && parts[3] === undefined) {
+          if (request.method === 'GET') { write(response, 200, { requests: control.listSupportRequests() }); return }
+        }
+        if (request.method === 'POST' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'support-requests') {
+          const body = await readJson(request)
+          if (typeof body.reason !== 'string' || body.reason.trim() === '') throw new Error('reason is required')
+          const supportRequest = control.createSupportRequest(parts[3], 'platform', body.reason.trim())
+          control.recordPlatformAudit({ actor: 'platform', action: 'support.request', target: `${parts[3]}/${supportRequest.id}`, detail: body.reason.trim() })
+          write(response, 201, supportRequest)
+          return
+        }
         if (request.method === 'GET' && parts[2] === 'audit' && parts[3] === undefined) {
           write(response, 200, { audit: control.listPlatformAudit() })
           return
@@ -342,6 +363,18 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         if (toolGatewayUrl === undefined) throw new ControlPlaneError(503, 'TOOL_GATEWAY_UNAVAILABLE', 'tool gateway is not configured')
         const upstream = await fetch(`${toolGatewayUrl}/v1/audit/summary`, { headers: { 'x-tenant-id': session.tenantId, 'x-user-id': session.userId, 'x-role': session.role } })
         write(response, upstream.status, await upstream.json())
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/support-requests') {
+        if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
+        write(response, 200, { requests: control.listSupportRequests(session.tenantId) })
+        return
+      }
+      if (request.method === 'POST' && parts[0] === 'v1' && parts[1] === 'support-requests' && parts[2] !== undefined && parts[3] === 'decide') {
+        if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
+        const body = await readJson(request)
+        if (typeof body.approved !== 'boolean') throw new Error('approved is required')
+        write(response, 200, control.decideSupportRequest(session.tenantId, parts[2], body.approved, session.userId))
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/models') {

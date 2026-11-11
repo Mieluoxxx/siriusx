@@ -39,6 +39,7 @@ function controlPath(path: string): string {
   if (path === '/api/settings') return '/v1/settings'
   if (path === '/api/tool-policies') return '/v1/tool-policies'
   if (path === '/api/audit-summary') return '/v1/audit-summary'
+  if (path === '/api/support-requests') return '/v1/support-requests'
   return path.replace(/^\/api/, '/v1')
 }
 
@@ -99,6 +100,7 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
   const [policyAction, setPolicyAction] = useState('')
   const [policyEffect, setPolicyEffect] = useState<'approval' | 'deny'>('approval')
   const [auditSummary, setAuditSummary] = useState<{ total: number; decisions: Record<string, number> } | undefined>()
+  const [supportRequests, setSupportRequests] = useState<Array<{ id: string; requestedBy: string; reason: string; status: string }>>([])
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserRole, setNewUserRole] = useState<'admin' | 'member'>('member')
   const [pairName, setPairName] = useState('')
@@ -130,18 +132,20 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
         const current = await json<{ role: string }>('/api/me').catch(() => undefined)
         setMe(current)
         if (current?.role === 'admin') {
-          const [userResult, settingResult, policyResult, auditResult] = await Promise.all([
+          const [userResult, settingResult, policyResult, auditResult, supportResult] = await Promise.all([
             json<{ users: Array<{ userId: string; email: string; role: string }> }>('/api/users').catch(() => ({ users: [] })),
             json<{ nativeConversationEnabled: boolean; byokEnabled: boolean; localExecutionEnabled: boolean }>('/api/settings').catch(() => undefined),
             json<{ policies: Array<{ actionClass: string; effect: string }> }>('/api/tool-policies').catch(() => ({ policies: [] })),
             json<{ total: number; decisions: Record<string, number> }>('/api/audit-summary').catch(() => undefined),
+            json<{ requests: Array<{ id: string; requestedBy: string; reason: string; status: string }> }>('/api/support-requests').catch(() => ({ requests: [] })),
           ])
           setUsers(userResult.users)
           setSettings(settingResult)
           setToolPolicies(policyResult.policies)
           setAuditSummary(auditResult)
-        } else { setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined) }
-      } else { setMe(undefined); setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined) }
+          setSupportRequests(supportResult.requests)
+        } else { setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined); setSupportRequests([]) }
+      } else { setMe(undefined); setUsers([]); setSettings(undefined); setToolPolicies([]); setAuditSummary(undefined); setSupportRequests([]) }
       if (selectedId !== undefined) {
         setSelected(await json<TicketDetail>(`/api/tickets/${selectedId}`))
       }
@@ -286,6 +290,14 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
     try {
       const result = await json<{ policies: Array<{ actionClass: string; effect: string }> }>(`/api/tool-policies/${encodeURIComponent(actionClass)}`, { method: 'DELETE' })
       setToolPolicies(result.policies)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
+  const decideSupportRequest = async (id: string, approved: boolean): Promise<void> => {
+    setBusy(true)
+    try {
+      await json(`/api/support-requests/${id}/decide`, { method: 'POST', body: JSON.stringify({ approved }) })
+      await refresh()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
 
@@ -483,6 +495,15 @@ function TicketPanel({ initialTab }: { initialTab: TeamTab }): ReactNode {
               ))}
               <h3 style={{ fontSize: 14, marginTop: 22 }}>Audit summary</h3>
               {auditSummary === undefined ? <p style={{ opacity: 0.65 }}>Audit summary unavailable.</p> : <pre style={styles.report}>{JSON.stringify(auditSummary, undefined, 2)}</pre>}
+              <h3 style={{ fontSize: 14, marginTop: 22 }}>Support access requests</h3>
+              {supportRequests.length === 0 ? <p style={{ opacity: 0.65 }}>No support requests.</p> : null}
+              {supportRequests.map(request => (
+                <div key={request.id} style={{ ...styles.ticket, cursor: 'default', maxWidth: 620 }}>
+                  <div style={styles.row}><strong>{request.reason}</strong><span style={{ ...styles.stage, marginLeft: 'auto' }}>{request.status}</span></div>
+                  <div style={styles.stage}>{request.requestedBy} · {request.id}</div>
+                  <div style={styles.row}><button style={styles.button} disabled={busy || request.status !== 'pending'} onClick={() => { void decideSupportRequest(request.id, true) }}>Approve</button><button style={styles.button} disabled={busy || request.status !== 'pending'} onClick={() => { void decideSupportRequest(request.id, false) }}>Deny</button></div>
+                </div>
+              ))}
             </>
           )}
         </div>

@@ -20,8 +20,11 @@ await page.getByPlaceholder('Action class').fill('send_email')
 await page.getByRole('button', { name: 'Set policy' }).click()
 await page.waitForTimeout(600)
 const after = await page.locator('body').innerText()
+const support = after.includes('incident support')
+if (support) { await page.getByRole('button', { name: 'Approve' }).first().click(); await page.waitForTimeout(500) }
+const approvedBody = await page.locator('body').innerText()
 await page.screenshot({ path: '/root/siriusx/evidence/S5/18-tool-policy-ui/policy.png', fullPage: true })
 await context.close(); await browser.close()
-const result = { set: after.includes('send_email') && after.includes('approval'), audit: after.includes('Audit summary'), errors }
+const result = { set: after.includes('send_email') && after.includes('approval'), audit: after.includes('Audit summary'), support, approved: approvedBody.includes('approved'), errors }
 console.log(JSON.stringify(result, null, 2))
-if (!result.set || !result.audit || errors.length > 0) process.exit(1)
+if (!result.set || !result.audit || !result.support || !result.approved || errors.length > 0) process.exit(1)

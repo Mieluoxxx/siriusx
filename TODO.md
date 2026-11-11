@@ -71,6 +71,7 @@
 - [x] Platform admin audit trail（tenant/model/quota/user operations）
 - [x] Daily usage trend（cloud/device tickets）
 - [x] Tenant SSO/config editing + platform audit
+- [x] Emergency support access request/approval workflow
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

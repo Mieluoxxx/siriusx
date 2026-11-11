@@ -481,4 +481,16 @@ describe('control plane', () => {
     expect(usage[0]?.date).not.toBe(usage[6]?.date)
   })
 
+  it('requires tenant approval for support access requests', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-support', name: 'Support', idpIssuer: 'https://idp.example', adminEmail: 'admin@support.example' })
+    const created = plane.createSupportRequest(tenant.id, 'platform', 'investigate incident')
+    expect(created.status).toBe('pending')
+    expect(plane.listSupportRequests(tenant.id)).toEqual([expect.objectContaining({ id: created.id, status: 'pending', reason: 'investigate incident' })])
+    const approved = plane.decideSupportRequest(tenant.id, created.id, true, 'admin@support.example')
+    expect(approved.status).toBe('approved')
+    expect(approved.expiresAt).toBeGreaterThan(Date.now())
+    expect(() => plane.decideSupportRequest(tenant.id, created.id, false, 'admin@support.example')).toThrow('approved')
+  })
+
 })
