@@ -65,6 +65,7 @@
 - [x] Management plane UI（tenant settings/users/role）
 - [x] Platform admin `/admin` UI（租户列表/创建/usage/users）
 - [x] Tenant quotas + usage enforcement（users/devices/tickets）
+- [x] Model catalog + tenant model binding（backend + /admin UI）
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS

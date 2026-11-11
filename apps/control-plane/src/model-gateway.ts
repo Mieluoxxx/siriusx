@@ -51,7 +51,7 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         write(response, 200, {
           object: 'list',
           tenantId: session.tenantId,
-          data: [{ id: 'tenant-default', object: 'model', owned_by: session.tenantId }],
+          data: options.control.listTenantModels(session.tenantId).map(model => ({ id: model.id, object: 'model', owned_by: session.tenantId, name: model.name, provider: model.provider, default: model.isDefault })),
         })
         return
       }

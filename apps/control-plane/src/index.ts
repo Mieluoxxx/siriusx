@@ -103,6 +103,20 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS model_catalog (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tenant_models (
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  model_id TEXT NOT NULL REFERENCES model_catalog(id),
+  is_default INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (tenant_id, model_id)
+);
 CREATE TABLE IF NOT EXISTS tenant_quotas (
   tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
   max_users INTEGER NOT NULL,
@@ -195,6 +209,8 @@ export class ControlPlane {
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
+    this.#db.prepare('INSERT OR IGNORE INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)').run('tenant-default', 'Tenant default', 'upstream', 'tenant-default', this.#now())
+    this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) SELECT id, ?, 1 FROM tenants').run('tenant-default')
     this.#db.prepare('INSERT OR IGNORE INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) SELECT id, 50, 20, 100, 500, ? FROM tenants').run(this.#now())
     const deviceColumns = this.#db.prepare('PRAGMA table_info(devices)').all() as Array<{ name: string }>
     if (!deviceColumns.some(column => column.name === 'token_expires_at')) this.#db.exec('ALTER TABLE devices ADD COLUMN token_expires_at INTEGER')
@@ -226,6 +242,7 @@ export class ControlPlane {
       this.#db.prepare('INSERT INTO tenants (id, name, idp_issuer, created_at) VALUES (?, ?, ?, ?)')
         .run(id, input.name, input.idpIssuer, now)
       this.#db.prepare('INSERT INTO settings (tenant_id) VALUES (?)').run(id)
+      this.#db.prepare('INSERT OR IGNORE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, 1)').run(id, 'tenant-default')
       this.#db.prepare('INSERT INTO tenant_quotas (tenant_id, max_users, max_devices, max_cloud_tickets_per_day, max_device_tickets_per_day, updated_at) VALUES (?, 50, 20, 100, 500, ?)').run(id, now)
       this.#db.prepare('INSERT INTO users (id, tenant_id, email, role, created_at) VALUES (?, ?, ?, ?, ?)')
         .run(randomUUID(), id, input.adminEmail, 'admin', now)
@@ -241,6 +258,33 @@ export class ControlPlane {
     return (this.#db.prepare('SELECT * FROM tenants ORDER BY created_at, rowid').all() as Array<{
       id: string; name: string; idp_issuer: string; created_at: number
     }>).map(row => ({ id: row.id, name: row.name, idpIssuer: row.idp_issuer, createdAt: row.created_at }))
+  }
+
+  listModelCatalog(): Array<{ id: string; name: string; provider: string; model: string; enabled: boolean }> {
+    return (this.#db.prepare('SELECT * FROM model_catalog ORDER BY created_at, rowid').all() as Array<{
+      id: string; name: string; provider: string; model: string; enabled: number
+    }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: row.enabled === 1 }))
+  }
+
+  addModel(input: { id?: string; name: string; provider: string; model: string }): { id: string } {
+    const id = input.id ?? randomUUID()
+    this.#db.prepare('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)').run(id, input.name, input.provider, input.model, this.#now())
+    return { id }
+  }
+
+  listTenantModels(tenantId: string): Array<{ id: string; name: string; provider: string; model: string; isDefault: boolean }> {
+    this.tenantRow(tenantId)
+    return (this.#db.prepare('SELECT c.*, tm.is_default FROM tenant_models tm JOIN model_catalog c ON c.id = tm.model_id WHERE tm.tenant_id = ? AND c.enabled = 1 ORDER BY tm.is_default DESC, c.created_at').all(tenantId) as Array<{
+      id: string; name: string; provider: string; model: string; is_default: number
+    }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: row.is_default === 1 }))
+  }
+
+  bindTenantModel(tenantId: string, modelId: string, isDefault = false): void {
+    this.tenantRow(tenantId)
+    const model = this.#db.prepare('SELECT id FROM model_catalog WHERE id = ? AND enabled = 1').get(modelId) as { id: string } | undefined
+    if (model === undefined) throw new ControlPlaneError(404, 'MODEL_NOT_FOUND', modelId)
+    if (isDefault) this.#db.prepare('UPDATE tenant_models SET is_default = 0 WHERE tenant_id = ?').run(tenantId)
+    this.#db.prepare('INSERT OR REPLACE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, ?)').run(tenantId, modelId, isDefault ? 1 : 0)
   }
 
   getQuota(tenantId: string): { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number } {

@@ -2,6 +2,7 @@
   "tenant": true,
   "usage": true,
   "quota": true,
+  "model": true,
   "user": true,
   "errors": []
 }

@@ -99,6 +99,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
 <p>Platform admin token is kept in <code>sessionStorage</code> only.</p>
 <div><input id="token" type="password" placeholder="X-SiriusX-Platform-Token"><button id="load">Load</button></div>
 <div id="create"><h2>Create tenant</h2><input id="name" placeholder="Name"><input id="issuer" placeholder="IdP issuer"><input id="email" placeholder="Admin email"><input id="tenantId" placeholder="Tenant id (optional)"><button id="createTenant">Create</button></div>
+<div id="models"><h2>Model catalog</h2><input id="modelId" placeholder="Model id (optional)"><input id="modelName" placeholder="Display name"><input id="modelProvider" placeholder="Provider"><input id="modelNameId" placeholder="Provider model id"><button id="createModel">Add model</button><div id="modelList">Load to begin.</div></div>
 <h2>Tenants</h2><div id="tenants">Load to begin.</div>
 <h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
 <div id="error" style="color:#b00020"></div>
@@ -108,6 +109,13 @@ const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'ap
 const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
 async function api(path, init = {}) { const r = await fetch(path, {...init, headers: headers()}); const v = await r.json(); if (!r.ok) throw new Error(v.error || ('HTTP ' + r.status)); return v; }
 function row(text) { const tr = document.createElement('tr'); for (const value of text) { const td = document.createElement('td'); td.textContent = String(value); tr.append(td); } return tr; }
+async function loadModels() {
+  const data = await api('/v1/admin/models');
+  const host = document.getElementById('modelList'); host.textContent = '';
+  const table = document.createElement('table'); table.append(row(['ID','Name','Provider','Model']));
+  for (const model of data.models) table.append(row([model.id, model.name, model.provider, model.model]));
+  host.append(table);
+}
 async function loadTenants() {
   err('');
   const data = await api('/v1/admin/tenants');
@@ -128,13 +136,17 @@ async function loadUsers(tenantId) {
   const q = document.createElement('div'); q.innerHTML = '<h4>Quota</h4><input id="maxUsers" placeholder="Max users"><input id="maxDevices" placeholder="Max devices"><input id="maxCloud" placeholder="Max cloud/day"><input id="maxDevice" placeholder="Max device tickets/day"><button id="saveQuota">Save quota</button>'; host.append(q);
   q.querySelector('#maxUsers').value = quota.quota.maxUsers; q.querySelector('#maxDevices').value = quota.quota.maxDevices; q.querySelector('#maxCloud').value = quota.quota.maxCloudTicketsPerDay; q.querySelector('#maxDevice').value = quota.quota.maxDeviceTicketsPerDay;
   q.querySelector('#saveQuota').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota', {method:'PUT', body: JSON.stringify({maxUsers:Number(q.querySelector('#maxUsers').value), maxDevices:Number(q.querySelector('#maxDevices').value), maxCloudTicketsPerDay:Number(q.querySelector('#maxCloud').value), maxDeviceTicketsPerDay:Number(q.querySelector('#maxDevice').value)})}); await loadUsers(tenantId); } catch (e) { err(e); } };
+  const tm = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/models');
+  const modelBox = document.createElement('div'); modelBox.innerHTML = '<h4>Bound models</h4>'; host.append(modelBox);
+  for (const model of tm.models) { const div = document.createElement('div'); div.textContent = model.id + ' · ' + model.name + (model.isDefault ? ' (default)' : '') + ' '; const button = document.createElement('button'); button.textContent = 'Set default'; button.onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/models/' + encodeURIComponent(model.id), {method:'PUT', body: JSON.stringify({isDefault:true})}); await loadUsers(tenantId); } catch (e) { err(e); } }; div.append(button); modelBox.append(div); }
   const add = document.createElement('div'); add.innerHTML = '<input id="newEmail" placeholder="User email"><select id="newRole"><option>member</option><option>admin</option></select><button id="addUser">Add user</button>'; host.append(add);
   add.querySelector('#addUser').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users', {method:'POST', body: JSON.stringify({email: add.querySelector('#newEmail').value, role: add.querySelector('#newRole').value})}); await loadUsers(tenantId); } catch (e) { err(e); } };
   const table = document.createElement('table'); table.append(row(['Email','Role','User ID']));
   for (const user of data.users) table.append(row([user.email, user.role, user.userId]));
   host.append(table);
 }
-document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await loadTenants(); } catch (e) { err(e); } };
+document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels()]); } catch (e) { err(e); } };
+document.getElementById('createModel').onclick = async () => { try { await api('/v1/admin/models', {method:'POST', body: JSON.stringify({id: document.getElementById('modelId').value || undefined, name: document.getElementById('modelName').value, provider: document.getElementById('modelProvider').value, model: document.getElementById('modelNameId').value})}); await loadModels(); } catch (e) { err(e); } };
 document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); } catch (e) { err(e); } };
 </script>`)
         return
@@ -208,6 +220,24 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           write(response, 201, { tenant })
           return
         }
+        if (parts[2] === 'models' && parts[3] === undefined) {
+          if (request.method === 'GET') { write(response, 200, { models: control.listModelCatalog() }); return }
+          if (request.method === 'POST') {
+            const body = await readJson(request)
+            if (typeof body.name !== 'string' || typeof body.provider !== 'string' || typeof body.model !== 'string') throw new Error('name, provider and model are required')
+            write(response, 201, control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) }))
+            return
+          }
+        }
+        if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'models') {
+          if (request.method === 'GET' && parts[5] === undefined) { write(response, 200, { models: control.listTenantModels(parts[3]) }); return }
+          if (request.method === 'PUT' && parts[5] !== undefined) {
+            const body = await readJson(request)
+            control.bindTenantModel(parts[3], parts[5], body.isDefault === true)
+            write(response, 200, { models: control.listTenantModels(parts[3]) })
+            return
+          }
+        }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'quota' && parts[5] === undefined) {
           if (request.method === 'GET') { write(response, 200, { quota: control.getQuota(parts[3]), usage: control.tenantUsage(parts[3]) }); return }
           if (request.method === 'PUT') {
@@ -248,6 +278,16 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       }
       if (request.method === 'GET' && url.pathname === '/v1/quota') {
         write(response, 200, { quota: control.getQuota(session.tenantId), usage: control.tenantUsage(session.tenantId) })
+        return
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/models') {
+        write(response, 200, { models: control.listTenantModels(session.tenantId) })
+        return
+      }
+      if (request.method === 'PUT' && parts[0] === 'v1' && parts[1] === 'models' && parts[2] !== undefined && parts[3] === 'default') {
+        if (session.role !== 'admin') throw new ControlPlaneError(403, 'ADMIN_REQUIRED', 'admin role required')
+        control.bindTenantModel(session.tenantId, parts[2], true)
+        write(response, 200, { models: control.listTenantModels(session.tenantId) })
         return
       }
       if (parts[0] === 'v1' && parts[1] === 'users') {

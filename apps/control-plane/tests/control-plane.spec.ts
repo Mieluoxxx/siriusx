@@ -448,4 +448,16 @@ describe('control plane', () => {
     expect(() => plane.createCloudTicket(session, { repoUrl: 'https://github.com/acme/repo.git', baseRef: 'main', prompt: 'quota' })).toThrow('cloudTickets quota exceeded')
   })
 
+  it('binds tenant model catalog entries', async () => {
+    const { plane } = await setup()
+    const tenant = plane.provisionTenant({ tenantId: 'tenant-models', name: 'Models', idpIssuer: 'https://idp.example', adminEmail: 'admin@models.example' })
+    expect(plane.listTenantModels(tenant.id)).toEqual([expect.objectContaining({ id: 'tenant-default', isDefault: true })])
+    plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-x' })
+    plane.bindTenantModel(tenant.id, 'model-a', true)
+    expect(plane.listTenantModels(tenant.id)).toEqual([
+      expect.objectContaining({ id: 'model-a', isDefault: true }),
+      expect.objectContaining({ id: 'tenant-default', isDefault: false }),
+    ])
+  })
+
 })
