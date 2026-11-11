@@ -33,6 +33,7 @@ const gateway = await startWebGateway({
   port: flags.get('port') === undefined ? 8080 : Number(flags.get('port')),
   host: flags.get('host') ?? process.env.SIRIUSX_WEB_HOST ?? '127.0.0.1',
   ...(process.env.SIRIUSX_SSO_SERVICE_TOKEN === undefined ? {} : { controlPlaneServiceToken: process.env.SIRIUSX_SSO_SERVICE_TOKEN }),
+  ...(process.env.SIRIUSX_WEB_TRUST_PROXY === '1' ? { trustProxy: true } : {}),
   ...(oidc === undefined ? {} : { oidc }),
 })
 console.log(JSON.stringify({ ready: true, url: gateway.url }, undefined, 2))

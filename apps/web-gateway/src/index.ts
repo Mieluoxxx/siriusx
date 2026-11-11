@@ -28,6 +28,7 @@ export interface WebGatewayOptions {
   readonly host?: string
   readonly cookieName?: string
   readonly controlPlaneServiceToken?: string
+  readonly trustProxy?: boolean
   readonly oidc?: OidcOptions
 }
 
@@ -54,6 +55,14 @@ export interface WebGateway {
 
 function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
+}
+
+function clientAddress(request: IncomingMessage, trustProxy: boolean): string {
+  if (trustProxy) {
+    const forwarded = headerValue(request.headers['x-forwarded-for'])?.split(',', 1)[0]?.trim()
+    if (forwarded !== undefined && forwarded !== '') return forwarded
+  }
+  return request.socket.remoteAddress ?? 'unknown'
 }
 
 function requestOrigin(request: IncomingMessage): string {
@@ -137,6 +146,7 @@ export async function startWebGateway(options: WebGatewayOptions): Promise<WebGa
   const cookieName = options.cookieName ?? 'siriusx_session'
   const secureFlag = (request: IncomingMessage): string => request.headers['x-forwarded-proto'] === 'https' || (request.socket as { encrypted?: boolean }).encrypted === true ? '; Secure' : ''
   const controlPlaneUrl = options.controlPlaneUrl.replace(/\/$/u, '')
+  const trustProxy = options.trustProxy ?? process.env.SIRIUSX_WEB_TRUST_PROXY === '1'
   const dshWebUrl = new URL(options.dshWebUrl)
   const dshCookie = await exchangeDshCookie(options.dshWebUrl)
   const proxy = httpProxy.createProxyServer({ target: dshWebUrl.origin, changeOrigin: true, ws: true })
@@ -277,7 +287,7 @@ document.getElementById('f').onsubmit = async (event) => {
         return
       }
       if (request.method === 'POST' && url.pathname === '/auth/session') {
-        const client = request.socket.remoteAddress ?? 'unknown'
+        const client = clientAddress(request, trustProxy)
         const failures = loginFailures.get(client)
         if (failures !== undefined && failures.resetAt > Date.now() && failures.count >= 5) {
           json(response, 429, { error: 'too many login attempts' }); return

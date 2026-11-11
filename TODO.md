@@ -53,6 +53,7 @@
 - [x] 容器内全栈离线安装（无 curl，node fetch fallback）
 - [x] Update feed realpath/path-traversal 防护
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
+- [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] Cloud follow-up 浏览器端到端（Team panel Send → 新 assignment → person/review）
 - [x] 许可证策略门禁（阻断 GPL/AGPL/SSPL/BUSL）
 - [x] macOS DMG 交叉构建阻塞证据
