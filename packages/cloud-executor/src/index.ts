@@ -99,6 +99,7 @@ export interface CloudExecutorOptions {
   readonly network?: 'none' | 'allowlist'
   readonly now?: () => number
   readonly prepareWorkspace?: WorkspacePreparer
+  readonly assignmentTimeoutMs?: number
   /** Durable store; when omitted the executor is process-local. */
   readonly store?: AssignmentStore
   readonly dbPath?: string
@@ -121,6 +122,7 @@ export class CloudExecutor {
   readonly #network: 'none' | 'allowlist'
   readonly #now: () => number
   readonly #prepareWorkspace: WorkspacePreparer | undefined
+  readonly #assignmentTimeoutMs: number
   readonly #store: AssignmentStore
 
   constructor(options: CloudExecutorOptions) {
@@ -130,6 +132,7 @@ export class CloudExecutor {
     this.#network = options.network ?? 'none'
     this.#now = options.now ?? Date.now
     this.#prepareWorkspace = options.prepareWorkspace
+    this.#assignmentTimeoutMs = options.assignmentTimeoutMs ?? 30 * 60 * 1000
     this.#store = options.store ?? (options.dbPath === undefined ? new MemoryAssignmentStore() : new SqliteAssignmentStore(options.dbPath))
   }
 
@@ -198,12 +201,19 @@ export class CloudExecutor {
       if (entry.cancelled) { await sandbox.destroy(); return }
       entry.assignment.state = 'running'
       this.#emit(entry, 'running')
-      const report = await this.#kernel.run({
+      let timeout: ReturnType<typeof setTimeout> | undefined
+      const report = await Promise.race([
+        this.#kernel.run({
         assignment: request,
         sandbox,
         cwd: cwd ?? sandbox.workdir,
-        emitActivity: event => this.#emitActivity(entry, event),
-      })
+          emitActivity: event => this.#emitActivity(entry, event),
+        }),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('cloud assignment timeout')), this.#assignmentTimeoutMs)
+          timeout.unref?.()
+        }),
+      ]).finally(() => { if (timeout !== undefined) clearTimeout(timeout) })
       if (entry.cancelled || this.#store.get(entry.assignment.assignmentId)?.assignment.state === 'lost') return
       entry.assignment.state = 'reported'
       entry.assignment.report = report

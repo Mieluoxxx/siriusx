@@ -528,6 +528,7 @@ export class ControlPlane {
       provider: new DockerSandboxProvider({ image }),
       image,
       network: 'none',
+      ...(process.env.SIRIUSX_CLOUD_ASSIGNMENT_TIMEOUT_MS === undefined ? {} : { assignmentTimeoutMs: Number(process.env.SIRIUSX_CLOUD_ASSIGNMENT_TIMEOUT_MS) }),
       kernel: new AcpCloudKernel({
         command: 'node',
         args: ['/workspace/fake-acp.mjs'],

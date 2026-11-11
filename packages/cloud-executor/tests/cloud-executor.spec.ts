@@ -138,4 +138,18 @@ describe('cloud executor', () => {
     expect(provider.activeSandboxIds()).toEqual([])
   })
 
+  it('fails an assignment when the kernel exceeds the assignment timeout', async () => {
+    const provider = new MemorySandboxProvider()
+    const executor = new CloudExecutor({
+      provider,
+      assignmentTimeoutMs: 25,
+      kernel: { async run() { return await new Promise(() => {}) } },
+    })
+    await executor.createAssignment(assignment())
+    const done = await executor.wait('11111111-1111-4111-8111-111111111111')
+    expect(done.state).toBe('reported')
+    expect(done.report).toMatchObject({ kind: 'failed', reason: 'cloud assignment timeout' })
+    await executor.dispose()
+  })
+
 })

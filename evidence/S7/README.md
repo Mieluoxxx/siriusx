@@ -107,3 +107,9 @@
 - control-plane 完成 assignment 后调用 dispose；
 - Docker cloud project 复跑后无残留 managed container。
 - 证据：`17-cloud-dispose/`。
+
+## Cloud assignment timeout
+
+- CloudExecutor 有整体 assignment timeout，默认 30 分钟；
+- 超时结算 failed。
+- 证据：`18-assignment-timeout/`。
