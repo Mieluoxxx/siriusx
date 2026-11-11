@@ -274,6 +274,9 @@ document.getElementById('f').onsubmit = async (event) => {
   })
   server.on('upgrade', (request, socket, head) => {
     void (async () => {
+      const origin = request.headers.origin
+      const expected = `http://${request.headers.host ?? '127.0.0.1'}`
+      if (origin !== undefined && origin !== expected) { socket.write('HTTP/1.1 403 Forbidden\r\n\r\n'); socket.destroy(); return }
       const token = await authenticated(request)
       if (token === undefined) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); socket.destroy(); return }
       request.headers.cookie = `${dshCookie}; ${request.headers.cookie ?? ''}`

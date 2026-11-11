@@ -142,3 +142,9 @@ Team panel 现在支持 `localStorage.siriusx.controlToken` 与 `siriusx.control
 - cloud ticket 的 executor state 落 SQLite；
 - control-plane 重启后把未报告 cloud ticket 结算为 failed；
 - 证据：`14-cloud-recovery/`。
+
+## WebSocket Origin
+
+- upgrade 请求校验 Origin；
+- 恶意 Origin 返回 403。
+- 证据：`16-ws-origin/run.txt`。
