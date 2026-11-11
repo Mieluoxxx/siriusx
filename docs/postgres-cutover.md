@@ -60,3 +60,20 @@ DATABASE_URL="$DATABASE_URL" node scripts/postgres-preflight.mjs
 
 `postgres-preflight.mjs` checks row counts and orphan relationships. It is a
 preflight, not proof of runtime cutover.
+
+## Hybrid runtime status (important)
+
+`DATABASE_URL` currently routes only these tables through `PostgresStorage`:
+
+- `platform_audit`
+- `support_requests`
+- `tenant_billing`
+
+`tenants`, `users`, `settings`, `devices`, quotas, model catalog, source
+bindings/events and tickets still use SQLite at runtime.
+
+Because support/billing have PostgreSQL foreign keys to `tenants`, this hybrid
+mode is only valid for tenants already present in PostgreSQL (the migration
+rehearsal creates them). New tenants are not yet mirrored automatically. Do not
+use hybrid mode for production traffic until tenant/user lifecycle has moved to
+the storage boundary.
