@@ -42,6 +42,13 @@ export class LocalExecutorError extends Error {
   }
 }
 
+function killPreviewTree(child: import('node:child_process').ChildProcess, signal: NodeJS.Signals): void {
+  if (process.platform !== 'win32' && child.pid !== undefined) {
+    try { process.kill(-child.pid, signal); return } catch { /* fall back to direct kill */ }
+  }
+  child.kill(signal)
+}
+
 export interface LocalExecutorOptions {
   readonly tenantId: string
   readonly backend: AgentBackend
@@ -623,7 +630,7 @@ export class LocalExecutor {
     if (workdir === undefined) throw new LocalExecutorError('WORKDIR_NOT_FOUND', workdirKey)
     if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new LocalExecutorError('INVALID_PAYLOAD', `invalid preview port: ${port}`)
     await this.sweepPreviews()
-    const child = spawn(command, [...args], { cwd: workdir.path, env: process.env, stdio: 'ignore' })
+    const child = spawn(command, [...args], { cwd: workdir.path, env: process.env, stdio: 'ignore', detached: process.platform !== 'win32' })
     if (child.pid === undefined) throw new Error(`preview process did not start: ${command}`)
     const previewId = randomUUID()
     const now = this.#now()
@@ -662,8 +669,8 @@ export class LocalExecutor {
     const stopped: string[] = []
     for (const preview of [...this.#previews.values()]) {
       if (preview.workdirKey !== workdirKey || (previewId !== undefined && preview.previewId !== previewId)) continue
-      preview.child.kill('SIGTERM')
-      const killTimer = setTimeout(() => { preview.child.kill('SIGKILL') }, 2000)
+      killPreviewTree(preview.child, 'SIGTERM')
+      const killTimer = setTimeout(() => { killPreviewTree(preview.child, 'SIGKILL') }, 2000)
       killTimer.unref()
       this.#previews.delete(preview.previewId)
       stopped.push(preview.previewId)
@@ -677,7 +684,9 @@ export class LocalExecutor {
     const stale = [...this.#previews.values()].filter(preview => preview.lastAccessAt < cutoff)
     const stopped: string[] = []
     for (const preview of stale) {
-      preview.child.kill('SIGTERM')
+      killPreviewTree(preview.child, 'SIGTERM')
+      const killTimer = setTimeout(() => { killPreviewTree(preview.child, 'SIGKILL') }, 2000)
+      killTimer.unref()
       this.#previews.delete(preview.previewId)
       stopped.push(preview.previewId)
     }

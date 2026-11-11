@@ -120,3 +120,8 @@
 - native installer 生成 `siriusx-reap.service` + `siriusx-reap.timer`（每 5 分钟）；
 - 实测手工创建 labeled orphan 后 CLI 返回 `removed: 1`。
 - 证据：`12-reap-scheduler/cli.txt`、`install.txt`、`siriusx-reap.timer`。
+
+## Preview process group
+
+- preview 独立进程组，stop/TTL 杀整个组并补 SIGKILL。
+- 证据：`12-preview-process-group/`。
