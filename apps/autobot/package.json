@@ -20,7 +20,8 @@
     "zod": "4.4.3",
     "@siriusx/executor-local": "workspace:*",
     "@siriusx/app-contract": "workspace:*",
-    "@siriusx/analytics": "workspace:*"
+    "@siriusx/analytics": "workspace:*",
+    "@siriusx/storage": "workspace:*"
   },
   "devDependencies": {
     "tsx": "4.23.13",

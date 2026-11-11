@@ -50,10 +50,11 @@ function fake(): FakeKernel {
   })
 }
 
-function makeService(dbPath: string, kernel: FakeKernel, inputDebounceMs = 0): BotService {
+async function makeService(dbPath: string, kernel: FakeKernel, inputDebounceMs = 0): Promise<BotService> {
   const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: kernel })
   const service = new BotService({ dbPath, executor, inputDebounceMs })
   services.push(service)
+  await service.initialize()
   return service
 }
 
@@ -61,8 +62,8 @@ describe('single-tenant local Bot loop', () => {
   it('dispatches a local assignment, stores its events, and derives person/review', async () => {
     const root = await repo()
     const dbPath = await dbFile()
-    const service = makeService(dbPath, fake())
-    const ticketId = service.createTicket({
+    const service = await makeService(dbPath, fake())
+    const ticketId = await service.createTicket({
       tenantId: 'tenant-a',
       workspace: { kind: 'local_dir', deviceId: 'device-1', path: root },
       prompt: 'add a line',
@@ -87,8 +88,8 @@ describe('single-tenant local Bot loop', () => {
   it('interrupts a running Assignment and resumes the same Ticket', async () => {
     const root = await repo()
     const dbPath = await dbFile()
-    const service = makeService(dbPath, fake())
-    const ticketId = service.createTicket({
+    const service = await makeService(dbPath, fake())
+    const ticketId = await service.createTicket({
       tenantId: 'tenant-a',
       workspace: { kind: 'local_dir', deviceId: 'device-1', path: root },
       prompt: 'do it',
@@ -114,8 +115,8 @@ describe('single-tenant local Bot loop', () => {
     const kernel = new FakeKernel({
       defaultScenario: { steps: [{ kind: 'wait', millis: 80 }, { kind: 'delta', text: 'done' }] },
     })
-    const service = makeService(dbPath, kernel, 50)
-    const ticketId = service.createTicket({
+    const service = await makeService(dbPath, kernel, 50)
+    const ticketId = await service.createTicket({
       tenantId: 'tenant-a',
       workspace: { kind: 'local_dir', deviceId: 'device-1', path: root },
       prompt: 'do it',
@@ -124,7 +125,7 @@ describe('single-tenant local Bot loop', () => {
     await new Promise(resolve => setTimeout(resolve, 10))
     await service.sendInput(ticketId, 'first')
     await service.sendInput(ticketId, 'second')
-    const queued = service.getTicket(ticketId)
+    const queued = await service.getTicket(ticketId)
     expect(queued.pendingInputs).toBe(2)
     const resumed = await service.flushInput(ticketId)
     expect(resumed.latestAssignment?.state).toBe('reported')
@@ -142,8 +143,8 @@ describe('single-tenant local Bot loop', () => {
     const kernel = new FakeKernel({
       defaultScenario: { steps: [{ kind: 'delta', text: `\`\`\`siriusx-report\n${report}\n\`\`\`` }] },
     })
-    const service = makeService(dbPath, kernel)
-    const ticketId = service.createTicket({
+    const service = await makeService(dbPath, kernel)
+    const ticketId = await service.createTicket({
       tenantId: 'tenant-a',
       workspace: { kind: 'local_dir', deviceId: 'device-1', path: root },
       prompt: 'choose a branch',
@@ -172,8 +173,8 @@ describe('single-tenant local Bot loop', () => {
       .run(assignmentId, 'tenant-a', ticketId, 'start', ticketId, 'running', Date.now())
     db.close()
 
-    const service = makeService(dbPath, fake())
-    const view = service.getTicket(ticketId)
+    const service = await makeService(dbPath, fake())
+    const view = await service.getTicket(ticketId)
     expect(view.latestAssignment?.state).toBe('lost')
     expect(view.stage).toBe('idle')
   })
@@ -186,8 +187,9 @@ describe('single-tenant local Bot loop', () => {
     const analytics = new AnalyticsCollector({ sink })
     const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: fake() })
     const service = new BotService({ dbPath: await dbFile(), executor, analytics })
+    await service.initialize()
     services.push(service)
-    const ticketId = service.createTicket({
+    const ticketId = await service.createTicket({
       tenantId: 'tenant-a',
       workspace: { kind: 'local_dir', deviceId: 'device-1', path: await repo() },
       prompt: 'write a secret prompt',
@@ -220,11 +222,12 @@ describe('single-tenant local Bot loop', () => {
     const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: fake() })
     const service = new BotService({ dbPath, executor, autoRetryLost: true })
     services.push(service)
+    await service.initialize()
     for (let index = 0; index < 100; index++) {
-      if (service.getTicket(ticketId).latestAssignment?.state === 'reported') break
+      if ((await service.getTicket(ticketId)).latestAssignment?.state === 'reported') break
       await new Promise(resolve => setTimeout(resolve, 20))
     }
-    const view = service.getTicket(ticketId)
+    const view = await service.getTicket(ticketId)
     expect(view.latestAssignment?.state).toBe('reported')
     const db2 = new DatabaseSync(dbPath)
     const kinds = db2.prepare('SELECT kind FROM assignments WHERE ticket_id = ? ORDER BY created_at, rowid').all(ticketId) as Array<{ kind: string }>

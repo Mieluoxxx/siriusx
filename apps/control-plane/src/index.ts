@@ -1359,7 +1359,7 @@ export class ControlPlane {
     return { ...ticket, events }
   }
 
-  private botRuntime(tenantId: string): BotService {
+  private async botRuntime(tenantId: string): Promise<BotService> {
     const existing = this.#runtimes.get(tenantId)
     if (existing !== undefined) return existing
     this.tenantRow(tenantId)
@@ -1372,16 +1372,17 @@ export class ControlPlane {
     })
     const executor = new LocalExecutor({ tenantId, backend: kernel })
     const runtime = new BotService({ dbPath: join(dir, 'bot.sqlite'), executor })
+    await runtime.initialize()
     this.#runtimes.set(tenantId, runtime)
     return runtime
   }
 
-  createTicket(session: Session, input: { path: string; prompt: string }): { ticketId: string } {
+  async createTicket(session: Session, input: { path: string; prompt: string }): Promise<{ ticketId: string }> {
     if (!this.getSettings(session.tenantId).localExecutionEnabled) {
       throw new ControlPlaneError(403, 'LOCAL_EXECUTION_DISABLED', 'local execution is disabled')
     }
-    const runtime = this.botRuntime(session.tenantId)
-    const ticketId = runtime.createTicket({
+    const runtime = await this.botRuntime(session.tenantId)
+    const ticketId = await runtime.createTicket({
       tenantId: session.tenantId,
       workspace: { kind: 'local_dir', deviceId: 'local-device', path: input.path },
       prompt: input.prompt,
@@ -1390,14 +1391,14 @@ export class ControlPlane {
     return { ticketId }
   }
 
-  listTickets(session: Session): unknown[] {
-    return [...this.botRuntime(session.tenantId).listTickets(), ...this.listDeviceTickets(session.tenantId), ...this.listCloudTickets(session.tenantId)]
+  async listTickets(session: Session): Promise<unknown[]> {
+    return [...await (await this.botRuntime(session.tenantId)).listTickets(), ...this.listDeviceTickets(session.tenantId), ...this.listCloudTickets(session.tenantId)]
   }
 
-  ticketDetail(session: Session, ticketId: string): unknown {
-    const runtime = this.botRuntime(session.tenantId)
+  async ticketDetail(session: Session, ticketId: string): Promise<unknown> {
+    const runtime = await this.botRuntime(session.tenantId)
     try {
-      return { ...runtime.getTicket(ticketId), events: runtime.eventsForTicket(ticketId) }
+      return { ...await runtime.getTicket(ticketId), events: await runtime.eventsForTicket(ticketId) }
     } catch {
       try { return this.getDeviceTicket(session.tenantId, ticketId) } catch { return this.getCloudTicket(session.tenantId, ticketId) }
     }
@@ -1405,19 +1406,19 @@ export class ControlPlane {
 
   async resumeTicketFromApproval(tenantId: string, ticketId: string, approvalId: string, status: 'approved' | 'rejected'): Promise<boolean> {
     try {
-      this.botRuntime(tenantId).getTicket(ticketId)
+      await (await this.botRuntime(tenantId)).getTicket(ticketId)
     } catch {
       return false
     }
-    await this.botRuntime(tenantId).sendInput(ticketId, `Approval ${approvalId} was ${status}. Continue the ticket from the previous report.`, 'tool-gateway:approval')
+    await (await this.botRuntime(tenantId)).sendInput(ticketId, `Approval ${approvalId} was ${status}. Continue the ticket from the previous report.`, 'tool-gateway:approval')
     return true
   }
 
   async sendTicketInput(session: Session, ticketId: string, text: string): Promise<unknown> {
-    return this.botRuntime(session.tenantId).sendInput(ticketId, text, `app:${session.userId}`)
+    return (await this.botRuntime(session.tenantId)).sendInput(ticketId, text, `app:${session.userId}`)
   }
 
   async cancelTicket(session: Session, ticketId: string): Promise<unknown> {
-    return this.botRuntime(session.tenantId).cancelTicket(ticketId)
+    return (await this.botRuntime(session.tenantId)).cancelTicket(ticketId)
   }
 }

@@ -50,9 +50,11 @@ describe('Bot process loss', () => {
 
     const kernel = new FakeKernel({ defaultScenario: { steps: [{ kind: 'delta', text: '```siriusx-report\n{"kind":"ready","summary":"restart"}\n```' }] } })
     const first = new BotService({ dbPath, executor: new LocalExecutor({ tenantId: 'tenant-a', backend: kernel }) })
-    expect(first.getTicket(ticketId).latestAssignment?.state).toBe('lost')
+    await first.initialize()
+    expect((await first.getTicket(ticketId)).latestAssignment?.state).toBe('lost')
     first.close()
     const second = new BotService({ dbPath, executor: new LocalExecutor({ tenantId: 'tenant-a', backend: kernel }) })
+    await second.initialize()
     second.close()
     const db = new DatabaseSync(dbPath)
     const outbox = db.prepare("SELECT kind FROM outbox WHERE ticket_id = ? ORDER BY created_at").all(ticketId) as Array<{ kind: string }>

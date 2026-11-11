@@ -8,11 +8,12 @@ if (dbPath === undefined || repo === undefined) throw new Error('dbPath and repo
 const kernel = new FakeKernel({ defaultScenario: { steps: [{ kind: 'wait', millis: 60_000 }] } })
 const executor = new LocalExecutor({ tenantId: 'tenant-a', backend: kernel })
 const service = new BotService({ dbPath, executor })
-const ticketId = service.createTicket({
+const ticketId = await service.createTicket({
   tenantId: 'tenant-a',
   workspace: { kind: 'local_dir', deviceId: 'd1', path: repo },
   prompt: 'crash this bot process',
 })
+await service.initialize()
 void service.dispatch(ticketId)
 setTimeout(() => console.log(ticketId), 300)
 setInterval(() => {}, 1000)

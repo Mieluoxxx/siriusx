@@ -56,9 +56,10 @@ boundary, not just a connection string.
 6. [x] Tool-gateway approvals/policies/audit runtime cutover.
 7. [x] Autobot PostgreSQL schema + offline migration
 8. [x] Autobot migration preflight
-9. [ ] Autobot runtime storage cutover
+9. [x] Autobot runtime storage cutover
 9. Run dual-read/dual-write verification, then a maintenance-window cutover.
 10. Keep SQLite as the offline/single-box mode.
+11. [x] Autobot PostgreSQL runtime cutover complete
 7. Run dual-read/dual-write verification, then a maintenance-window cutover.
 8. Keep SQLite as the offline/single-box mode.
 

@@ -759,13 +759,13 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
         return
       }
       if (request.method === 'GET' && url.pathname === '/v1/tickets') {
-        write(response, 200, { tickets: control.listTickets(session) })
+        write(response, 200, { tickets: await control.listTickets(session) })
         return
       }
       if (request.method === 'POST' && url.pathname === '/v1/tickets') {
         const body = await readJson(request)
         if (typeof body.path !== 'string' || typeof body.prompt !== 'string') throw new Error('path and prompt are required')
-        write(response, 202, control.createTicket(session, { path: body.path, prompt: body.prompt }))
+        write(response, 202, await control.createTicket(session, { path: body.path, prompt: body.prompt }))
         return
       }
       if (request.method === 'POST' && url.pathname === '/v1/cloud-projects/tickets') {
@@ -781,7 +781,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
       if (parts[0] === 'v1' && parts[1] === 'tickets' && parts[2] !== undefined) {
         const ticketId = parts[2]
         if (request.method === 'GET' && parts.length === 4 && parts[3] === 'trace') {
-          const ticket = control.ticketDetail(session, ticketId) as Record<string, unknown>
+          const ticket = await control.ticketDetail(session, ticketId) as Record<string, unknown>
           let audit: unknown[] = []
           let auditChain: unknown
           if (toolGatewayUrl !== undefined) {
@@ -804,7 +804,7 @@ document.getElementById('createTenant').onclick = async () => { try { await api(
           return
         }
         if (request.method === 'GET' && parts.length === 3) {
-          write(response, 200, control.ticketDetail(session, ticketId))
+          write(response, 200, await control.ticketDetail(session, ticketId))
           return
         }
         if (request.method === 'POST' && parts[3] === 'input') {

@@ -225,7 +225,7 @@ describe('control plane', () => {
     const decided = await fetch(`${server.url}/v1/approvals/a1/decide`, { method: 'POST', headers: auth(token), body: JSON.stringify({ approved: true }) }).then(response => response.json()) as { status: string }
     expect(decided.status).toBe('approved')
     // A Bot ticket trace combines ticket events with tool-gateway audit.
-    const ticket = server.control.createTicket({ tenantId: tenant.id, userId: admin.id, role: 'admin' } as never, { path: root, prompt: 'trace me' })
+    const ticket = await server.control.createTicket({ tenantId: tenant.id, userId: admin.id, role: 'admin' } as never, { path: root, prompt: 'trace me' })
     const trace = await fetch(`${server.url}/v1/tickets/${ticket.ticketId}/trace`, { headers: auth(token) }).then(response => response.json()) as { ticket: { ticketId: string }; audit: unknown[]; auditChain?: { valid: boolean } }
     expect(trace.ticket.ticketId).toBe(ticket.ticketId)
     expect(trace.audit).toHaveLength(1)
@@ -260,7 +260,7 @@ describe('control plane', () => {
     const tenant = await server.control.provisionTenant({ name: 'A', idpIssuer: 'https://a.example', adminEmail: 'admin@a.example' })
     const admin = server.control.findUserByEmail(tenant.id, 'admin@a.example')!
     const session = server.control.verifySession(server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
-    const ticket = server.control.createTicket(session, { path: root, prompt: 'trace analytics' })
+    const ticket = await server.control.createTicket(session, { path: root, prompt: 'trace analytics' })
     await writeFile(analyticsPath, [
       JSON.stringify({ ticketId: ticket.ticketId, schema: 'report.produced', payload: { reportKind: 'ready' } }),
       JSON.stringify({ ticketId: 'other', schema: 'report.produced', payload: { reportKind: 'ready' } }),
@@ -315,7 +315,7 @@ describe('control plane', () => {
     planes.push(second)
     const admin = second.findUserByEmail(tenant.id, 'admin@cloud.example')!
     const session = second.verifySession(second.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
-    const tickets = second.listTickets(session) as Array<{ ticketId: string; stage: string; latestAssignment?: { state: string; report?: { kind: string } } }>
+    const tickets = await second.listTickets(session) as Array<{ ticketId: string; stage: string; latestAssignment?: { state: string; report?: { kind: string } } }>
     const recovered = tickets.find(ticket => ticket.ticketId === 'ticket-cloud-restart')
     expect(recovered?.stage).toBe('person/blocked_failed')
     expect(recovered?.latestAssignment).toMatchObject({ state: 'reported', report: { kind: 'failed' } })

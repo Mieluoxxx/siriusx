@@ -1,0 +1,15 @@
+$ vitest run
+
+ RUN  v4.1.11 /root/siriusx/apps/autobot
+
+ ✓ tests/scenarios.spec.ts (16 tests) 31ms
+ ✓ tests/postgres.spec.ts (1 test) 64ms
+ ✓ tests/server.spec.ts (2 tests) 323ms
+ ✓ tests/bot-service.spec.ts (7 tests) 940ms
+ ✓ tests/process-loss.spec.ts (1 test) 1133ms
+     ✓ marks a real SIGKILLed running assignment lost exactly once on restart  1132ms
+
+ Test Files  5 passed (5)
+      Tests  27 passed (27)
+   Start at  07:00:53
+   Duration  1.43s (transform 384ms, setup 0ms, import 879ms, tests 2.49s, environment 1ms)

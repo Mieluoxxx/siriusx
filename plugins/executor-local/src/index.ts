@@ -80,7 +80,7 @@ export async function apply(ctx: Context): Promise<void> {
         const body = await readJson(request)
         if (typeof body.path !== 'string' || !body.path.startsWith('/')) throw new Error('path must be absolute')
         if (typeof body.prompt !== 'string' || body.prompt.trim() === '') throw new Error('prompt is required')
-        const ticketId = bot.createTicket({
+        const ticketId = await bot.createTicket({
           tenantId: 'tenant-local',
           workspace: { kind: 'local_dir', deviceId: 'local-device', path: body.path },
           prompt: body.prompt,
@@ -101,7 +101,7 @@ export async function apply(ctx: Context): Promise<void> {
       const ticketId = new URL(request.url ?? '/', 'http://127.0.0.1').searchParams.get('ticketId')
       if (ticketId === null || ticketId === '') { send(response, 400, { error: 'ticketId is required' }); return }
       try {
-        const result = { ...bot.getTicket(ticketId), events: bot.eventsForTicket(ticketId) }
+        const result = { ...await bot.getTicket(ticketId), events: await bot.eventsForTicket(ticketId) }
         send(response, 200, result)
       } catch (error) {
         send(response, 404, { error: error instanceof Error ? error.message : String(error) })

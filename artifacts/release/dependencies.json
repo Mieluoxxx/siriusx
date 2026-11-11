@@ -120,6 +120,11 @@
         "version": "link:../../packages/kernel-api",
         "path": "/root/siriusx/packages/kernel-api"
       },
+      "@siriusx/storage": {
+        "from": "@siriusx/storage",
+        "version": "link:../../packages/storage",
+        "path": "/root/siriusx/packages/storage"
+      },
       "zod": {
         "from": "zod",
         "version": "4.4.3",

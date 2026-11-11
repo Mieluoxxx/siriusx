@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { FakeKernel } from '@siriusx/fake-kernel'
 import { LocalExecutor } from '@siriusx/executor-local'
+import { PostgresStorage } from '@siriusx/storage'
 import { BotService } from './bot-service.ts'
 import { startBotServer } from './server.ts'
 import { SCENARIOS, runScenario, type ScenarioName } from './scenarios.ts'
@@ -26,10 +27,13 @@ if (command === 'serve') {
     options.set(key.slice(2), value)
   }
   const analyticsPath = options.get('analytics')
+  const databaseUrl = process.env.DATABASE_URL?.trim()
+  const storage = databaseUrl === undefined || databaseUrl === '' ? undefined : new PostgresStorage(databaseUrl)
   const server = await startBotServer({
     dbPath: options.get('db') ?? ':memory:',
     port: options.get('port') === undefined ? 4319 : Number(options.get('port')),
     ...(analyticsPath === undefined ? {} : { analyticsPath }),
+    ...(storage === undefined ? {} : { storage }),
   })
   console.log(JSON.stringify({ ready: true, url: server.url }, undefined, 2))
   const stop = async (): Promise<void> => { await server.close(); process.exit(0) }
@@ -57,9 +61,10 @@ if (command === 'dispatch') {
     defaultScenario: { steps: [{ kind: 'delta', text: `\`\`\`siriusx-report\n${report}\n\`\`\`` }] },
   })
   const executor = new LocalExecutor({ tenantId: options.get('tenant') ?? 'tenant-local', backend: kernel })
-  const service = new BotService({ dbPath, executor })
+  const service = new BotService({ dbPath, executor, ...(process.env.DATABASE_URL?.trim() === undefined || process.env.DATABASE_URL?.trim() === '' ? {} : { storage: new PostgresStorage(process.env.DATABASE_URL!.trim()) }) })
   try {
-    const ticketId = service.createTicket({
+    await service.initialize()
+    const ticketId = await service.createTicket({
       tenantId: options.get('tenant') ?? 'tenant-local',
       workspace: { kind: 'local_dir', deviceId: 'local-device', path: repo },
       prompt,

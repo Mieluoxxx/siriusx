@@ -2,6 +2,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { FakeKernel } from '@siriusx/fake-kernel'
 import { LocalExecutor } from '@siriusx/executor-local'
+import type { Storage } from '@siriusx/storage'
 import { AnalyticsCollector, FileAnalyticsSink } from '@siriusx/analytics'
 import { BotService } from './bot-service.ts'
 
@@ -10,6 +11,7 @@ export interface BotServerOptions {
   readonly port?: number
   readonly host?: string
   readonly analyticsPath?: string
+  readonly storage?: Storage
 }
 
 export interface BotServer {
@@ -57,7 +59,8 @@ export async function startBotServer(options: BotServerOptions): Promise<BotServ
     sink: new FileAnalyticsSink(options.analyticsPath),
     local: true,
   })
-  const service = new BotService({ dbPath: options.dbPath, executor, inputDebounceMs: 0, ...(analytics === undefined ? {} : { analytics }) })
+  const service = new BotService({ dbPath: options.dbPath, executor, inputDebounceMs: 0, ...(analytics === undefined ? {} : { analytics }), ...(options.storage === undefined ? {} : { storage: options.storage }) })
+  await service.initialize()
   const server = createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, CORS).end()
@@ -79,14 +82,14 @@ export async function startBotServer(options: BotServerOptions): Promise<BotServ
         return
       }
       if (request.method === 'GET' && url.pathname === '/api/tickets') {
-        writeJson(response, 200, { tickets: service.listTickets() })
+        writeJson(response, 200, { tickets: await service.listTickets() })
         return
       }
       if (request.method === 'POST' && url.pathname === '/api/tickets') {
         const body = await readJson(request)
         if (typeof body.path !== 'string' || typeof body.prompt !== 'string') throw new Error('path and prompt are required')
         if (!body.path.startsWith('/')) throw new Error('path must be absolute')
-        const ticketId = service.createTicket({
+        const ticketId = await service.createTicket({
           tenantId: 'tenant-local',
           workspace: { kind: 'local_dir', deviceId: 'local-device', path: body.path },
           prompt: body.prompt,
@@ -94,13 +97,13 @@ export async function startBotServer(options: BotServerOptions): Promise<BotServ
         void service.dispatch(ticketId).catch((error: unknown) => {
           console.error('siriusx bot dispatch failed', error)
         })
-        writeJson(response, 202, service.getTicket(ticketId))
+        writeJson(response, 202, await service.getTicket(ticketId))
         return
       }
       if (parts[0] === 'api' && parts[1] === 'tickets' && parts[2] !== undefined) {
         const ticketId = parts[2]
         if (request.method === 'GET' && parts.length === 3) {
-          writeJson(response, 200, { ...service.getTicket(ticketId), events: service.eventsForTicket(ticketId) })
+          writeJson(response, 200, { ...await service.getTicket(ticketId), events: await service.eventsForTicket(ticketId) })
           return
         }
         if (request.method === 'POST' && parts[3] === 'input') {
