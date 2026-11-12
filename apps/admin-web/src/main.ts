@@ -16,6 +16,8 @@ const tokenInput = document.getElementById('token') as HTMLInputElement
 const loadButton = document.getElementById('load') as HTMLButtonElement
 const errorBox = document.getElementById('error')!
 let selectedTenant: string | undefined
+let tenantQuery = ''
+let tenantStatus = ''
 
 function showError(error: unknown): void {
   errorBox.textContent = error instanceof Error ? error.message : String(error)
@@ -106,7 +108,7 @@ function renderShell(): void {
     <div class="workspace">
       <aside class="sidenav">
         <div class="nav-label">Workspace</div>
-        <nav aria-label="Platform administration">
+        <nav aria-label="Platform administration" id="admin-nav">
           <button class="nav-button" type="button" data-view="overview" aria-current="page"><span class="dot"></span>Overview</button>
           <button class="nav-button" type="button" data-view="tenants"><span class="dot"></span>Tenants</button>
           <button class="nav-button" type="button" data-view="models"><span class="dot"></span>Models</button>
@@ -117,6 +119,7 @@ function renderShell(): void {
         <div class="nav-foot">Connected to<br><strong>Control Plane</strong></div>
       </aside>
       <div class="content">
+        <div class="mobile-tools"><button class="button" type="button" popovertarget="admin-nav" aria-controls="admin-nav">Menu</button><button class="button" type="button" id="density-toggle">Density</button></div>
         <section class="view active" data-view="overview" id="view-overview">
           <div class="page-head"><div><p class="eyebrow">Platform</p><h1>Overview</h1><p class="lede">Tenants, model routing, source integrations, and audit activity in one place.</p></div><button class="button primary" type="button" data-go="tenants">Manage tenants</button></div>
           <div class="metric-grid" id="metrics"></div>
@@ -124,6 +127,13 @@ function renderShell(): void {
         </section>
         <section class="view" data-view="tenants" id="view-tenants">
           <div class="page-head"><div><p class="eyebrow">Directory</p><h1>Tenants</h1><p class="lede">Provision tenants, manage status, and inspect usage.</p></div></div>
+          <search class="toolbar" aria-label="Filter tenants">
+            <form id="tenant-filters" class="form">
+              <div class="form-field"><label for="tenant-filter">Search tenants</label><input id="tenant-filter" type="search" placeholder="Name, ID, or issuer" autocomplete="off"></div>
+              <div class="form-field compact-field"><label for="tenant-status-filter">Status</label><select id="tenant-status-filter"><option value="">All</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
+              <output id="tenant-count" class="muted" for="tenant-filter tenant-status-filter"></output>
+            </form>
+          </search>
           <section id="create-tenant" class="card form-card"><div class="section-heading"><div><h2>Create tenant</h2><p class="muted">The tenant ID must match the IdP tenant claim.</p></div></div><div class="form">
             <div class="form-field"><label for="tenant-name">Name</label><input id="tenant-name" placeholder="Acme"></div>
             <div class="form-field"><label for="tenant-issuer">IdP issuer</label><input id="tenant-issuer" placeholder="https://idp.example/realms/siriusx"></div>
@@ -174,6 +184,8 @@ function renderShell(): void {
 function showView(view: string): void {
   for (const element of document.querySelectorAll<HTMLElement>('.view')) element.classList.toggle('active', element.dataset.view === view)
   for (const element of document.querySelectorAll<HTMLButtonElement>('.nav-button')) element.setAttribute('aria-current', element.dataset.view === view ? 'page' : 'false')
+  const nav = document.getElementById('admin-nav')
+  if (nav?.matches(':popover-open')) nav.hidePopover()
   document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -189,6 +201,36 @@ function addHandlers(): void {
   for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
     item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
   }
+  document.getElementById('tenant-filter')!.addEventListener('input', event => { tenantQuery = (event.target as HTMLInputElement).value; renderTenants() })
+  document.getElementById('tenant-status-filter')!.addEventListener('change', event => { tenantStatus = (event.target as HTMLSelectElement).value; renderTenants() })
+  document.getElementById('tenant-filters')!.addEventListener('submit', event => event.preventDefault())
+  const density = document.getElementById('density-toggle') as HTMLButtonElement
+  const applyDensity = (value: string): void => {
+    const normalized = value === 'compact' ? 'compact' : 'comfortable'
+    document.documentElement.dataset.density = normalized
+    density.textContent = normalized === 'compact' ? 'Comfortable density' : 'Compact density'
+    localStorage.setItem('siriusx.adminDensity', normalized)
+  }
+  applyDensity(localStorage.getItem('siriusx.adminDensity') ?? 'compact')
+  density.addEventListener('click', () => applyDensity(document.documentElement.dataset.density === 'compact' ? 'comfortable' : 'compact'))
+  setupMobileNav()
+}
+
+function setupMobileNav(): void {
+  const nav = document.getElementById('admin-nav')!
+  const button = document.querySelector<HTMLButtonElement>('[popovertarget="admin-nav"]')
+  const media = matchMedia('(max-width: 820px)')
+  const sync = (): void => {
+    if (media.matches) nav.setAttribute('popover', 'auto')
+    else {
+      if (nav.matches(':popover-open')) nav.hidePopover()
+      nav.removeAttribute('popover')
+    }
+    button?.setAttribute('aria-expanded', 'false')
+  }
+  media.addEventListener('change', sync)
+  nav.addEventListener('toggle', event => button?.setAttribute('aria-expanded', String((event as ToggleEvent).newState === 'open')))
+  sync()
 }
 
 async function createTenant(): Promise<void> {
@@ -239,7 +281,15 @@ async function exportPlatformAudit(): Promise<void> {
 
 function renderTenants(): void {
   const host = document.getElementById('tenants')!
-  const rows = tenants.map(tenant => {
+  const query = tenantQuery.trim().toLowerCase()
+  const filtered = tenants.filter(tenant => {
+    const matchesQuery = query === '' || `${tenant.name} ${tenant.id} ${tenant.idpIssuer}`.toLowerCase().includes(query)
+    return matchesQuery && (tenantStatus === '' || tenant.status === tenantStatus)
+  })
+  const count = document.getElementById('tenant-count')
+  if (count !== null) count.textContent = `${filtered.length} of ${tenants.length} tenants`
+  if (filtered.length === 0) { host.replaceChildren(node('div', 'No tenants match these filters.', 'table-empty')); return }
+  const rows = filtered.map(tenant => {
     const actions = node('div', undefined, 'row')
     actions.append(button('Open', () => { selectedTenant = tenant.id; void openTenant(tenant.id).catch(showError) }))
     actions.append(button(tenant.status === 'active' ? 'Suspend' : 'Resume', async () => {

@@ -10,3 +10,11 @@
 - Playwright verified Overview, Tenants, dialog open/close, Escape, mobile layout, console errors
 
 Evidence: `overview.png`, `mobile.png`, `verify.txt`, `typecheck.txt`, `build.txt`.
+
+Second pass:
+
+- Popover mobile navigation
+- Tenant search + status filter
+- Compact / comfortable density switch
+- Sticky dialog header and scrollable tenant detail
+- Dense table row tokens

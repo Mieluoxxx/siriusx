@@ -1,0 +1,9 @@
+{
+  "navVisible": true,
+  "navClosed": true,
+  "filtered": true,
+  "densityBefore": "compact",
+  "densityAfter": "comfortable",
+  "overflow": false,
+  "errors": []
+}
