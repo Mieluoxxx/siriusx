@@ -685,3 +685,15 @@ dialog { border-radius: 4px; }
   .form-card-head { display: block; }
   .form-card-head p { margin-block-start: 4px; }
 }
+
+.app-header { gap: 12px; }
+.header-actions { flex-wrap: nowrap; }
+.auth-form-root { inline-size: 300px; }
+@media (max-width: 1100px) {
+  .auth-form-root { inline-size: 260px; }
+}
+@media (max-width: 900px) and (min-width: 821px) {
+  .auth-form-root { inline-size: 240px; }
+  .breadcrumb { font-size: 12px; }
+}
+caption { white-space: nowrap; }

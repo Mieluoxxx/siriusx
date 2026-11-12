@@ -47,10 +47,11 @@ const styles = stylex.create({
   },
   field: {
     display: 'grid',
-    gridTemplateColumns: '108px minmax(0, 1fr)',
+    gridTemplateColumns: '128px minmax(0, 1fr)',
     gap: '8px 12px',
     alignItems: 'center',
     minInlineSize: 0,
+    '@media (max-width: 560px)': { gridTemplateColumns: '1fr', gap: '4px' },
   },
   label: {
     color: '#606266',
@@ -58,6 +59,8 @@ const styles = stylex.create({
     fontWeight: 400,
     lineHeight: '32px',
     textAlign: 'end',
+    whiteSpace: 'nowrap',
+    '@media (max-width: 560px)': { lineHeight: '18px', textAlign: 'start' },
   },
   optional: {
     color: '#8a97aa',
@@ -137,6 +140,7 @@ const styles = stylex.create({
   },
   checkboxRow: {
     gridColumn: '2 / 3',
+    '@media (max-width: 560px)': { gridColumn: '1' },
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
@@ -214,12 +218,14 @@ const styles = stylex.create({
     color: '#f56c6c',
     fontSize: '12px',
     lineHeight: '16px',
+    '@media (max-width: 560px)': { gridColumn: '1' },
   },
   hint: {
     gridColumn: '2 / 3',
     color: '#909399',
     fontSize: '12px',
     lineHeight: '16px',
+    '@media (max-width: 560px)': { gridColumn: '1' },
   },
   section: {
     display: 'grid',

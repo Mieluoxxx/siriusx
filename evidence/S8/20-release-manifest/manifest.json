@@ -1,9 +1,9 @@
 {
   "schema": "siriusx.release-manifest/v1",
-  "generatedAt": "2026-11-12T03:29:59.291Z",
+  "generatedAt": "2026-11-12T03:34:46.168Z",
   "siriusx": {
-    "commit": "5f51aa2419baf0cce75a1bc4e045354d70b2b800",
-    "describe": "5f51aa2"
+    "commit": "5c3b67050038ab636ccda7a0c8ffc9a056844366",
+    "describe": "5c3b670"
   },
   "dshFork": {
     "commit": "8fc7084af9dcbb0a3b0ea76368b1842a651795cf",
