@@ -1,0 +1,17 @@
+{
+  "onPage": true,
+  "editable": 0,
+  "readonly": true,
+  "back": true,
+  "statusBox": {
+    "x": 1055.109375,
+    "y": 175,
+    "width": 250,
+    "height": 32,
+    "top": 175,
+    "right": 1305.109375,
+    "bottom": 207,
+    "left": 1055.109375
+  },
+  "errors": []
+}

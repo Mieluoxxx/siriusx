@@ -268,7 +268,7 @@ const styles = stylex.create({
   },
   filterForm: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(220px, 1fr) 160px auto',
+    gridTemplateColumns: 'minmax(200px, 1fr) 250px minmax(70px, auto)',
     gap: '12px',
     alignItems: 'end',
     '@media (max-width: 720px)': {
