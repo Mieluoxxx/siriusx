@@ -22,22 +22,32 @@ const styles = stylex.create({
     inlineSize: '100%',
   },
   authForm: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(190px, 240px) auto',
+    display: 'flex',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
     gap: '8px',
-    alignItems: 'end',
-    '@media (max-width: 820px)': { gridTemplateColumns: '1fr' },
-  },
-  authLabel: {
-    color: '#606266',
-    fontSize: '11px',
-    fontWeight: 400,
-    lineHeight: '14px',
   },
   authField: {
     display: 'grid',
-    gap: '3px',
+    gridTemplateColumns: 'auto minmax(0, 1fr)',
+    alignItems: 'center',
+    gap: '8px',
+    flex: '1 1 0',
     minInlineSize: 0,
+  },
+  authError: {
+    gridColumn: '1 / -1',
+    color: '#f56c6c',
+    fontSize: '11px',
+    lineHeight: '14px',
+  },
+  authLabel: {
+    color: '#606266',
+    fontSize: '12px',
+    fontWeight: 400,
+    lineHeight: '20px',
+    whiteSpace: 'nowrap',
+    '@media (max-width: 980px)': { display: 'none' },
   },
   formGrid: {
     display: 'grid',
@@ -212,7 +222,7 @@ const styles = stylex.create({
     fontSize: '12px',
     lineHeight: '17px',
   },
-  errorFull: { gridColumn: '1 / -1' },
+  errorFull: { gridColumn: '1 / -1', flexBasis: '100%' },
   fieldError: {
     gridColumn: '2 / 3',
     color: '#f56c6c',
@@ -392,7 +402,7 @@ export function AuthForm({ initialToken, onConnect }: AuthFormProps): React.Reac
       <Field.Root name="token" className={cls(styles.authField)}>
         <Field.Label className={cls(styles.authLabel)}>Platform token</Field.Label>
         <Input className={cls(styles.input)} defaultValue={initialToken} type="password" required autoComplete="off" spellCheck={false} placeholder="Platform admin token" />
-        <Field.Error className={cls(styles.fieldError)}>Platform token is required.</Field.Error>
+        <Field.Error className={cls(styles.authError)}>Platform token is required.</Field.Error>
       </Field.Root>
       <SubmitButton busy={busy}>Connect</SubmitButton>
       <ErrorMessage message={error} fullWidth />

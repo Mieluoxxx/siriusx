@@ -693,7 +693,7 @@ dialog { border-radius: 4px; }
   .auth-form-root { inline-size: 260px; }
 }
 @media (max-width: 900px) and (min-width: 821px) {
-  .auth-form-root { inline-size: 240px; }
+  .auth-form-root { inline-size: 280px; }
   .breadcrumb { font-size: 12px; }
 }
 caption { white-space: nowrap; }
