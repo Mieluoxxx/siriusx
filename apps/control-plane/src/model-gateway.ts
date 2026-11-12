@@ -87,7 +87,8 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         parsedBody = { ...(parsedBody ?? {}), model: `${session.tenantId}/${selected.id}` }
         forwardBody = Buffer.from(JSON.stringify(parsedBody))
       }
-      const upstream = await fetch(`${upstreamUrl.replace(/\/$/u, '')}${url.pathname}${url.search}`, {
+      const targetUrl = `${upstreamUrl.replace(/\/$/u, '')}${url.pathname}${url.search}`
+      const upstreamRequest = (): Promise<Response> => fetch(targetUrl, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -97,6 +98,14 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         },
         body: new Uint8Array(forwardBody),
       })
+      let upstream = await upstreamRequest()
+      // Some LiteLLM deployments round-robin between pods and a pod may
+      // temporarily return 404 for the Anthropic route. Retry only that
+      // protocol, and never retry an upstream that is already streaming.
+      for (let attempt = 0; attempt < 2 && options.modelRouterUrl !== undefined && url.pathname === '/v1/messages' && upstream.status === 404; attempt += 1) {
+        await upstream.body?.cancel()
+        upstream = await upstreamRequest()
+      }
       response.writeHead(upstream.status, {
         ...CORS,
         'content-type': upstream.headers.get('content-type') ?? 'application/json',

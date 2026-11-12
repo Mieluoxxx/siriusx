@@ -1911,6 +1911,73 @@
     }
   },
   {
+    "name": "@siriusx/dsh-llm-siriusx",
+    "version": "0.0.0",
+    "path": "/root/siriusx/plugins/llm-siriusx",
+    "private": true,
+    "dependencies": {
+      "@deepseek-ai/cordis": {
+        "from": "@deepseek-ai/cordis",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.1.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/cordis"
+      },
+      "@deepseek-ai/dsh-llm": {
+        "from": "@deepseek-ai/dsh-llm",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-llm/-/dsh-llm-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-llm@0.2.2-rc.1_@deepseek-ai+cordis@4.1.0/node_modules/@deepseek-ai/dsh-llm"
+      },
+      "@deepseek-ai/dsh-llm-deepseek": {
+        "from": "@deepseek-ai/dsh-llm-deepseek",
+        "version": "0.2.2-rc.1",
+        "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh-llm-deepseek/-/dsh-llm-deepseek-0.2.2-rc.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@deepseek-ai+dsh-llm-deepseek@0.2.2-rc.1_214ea2ca75a796a005d889dc4f693f32/node_modules/@deepseek-ai/dsh-llm-deepseek"
+      }
+    },
+    "devDependencies": {
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "6.0.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript"
+      }
+    },
+    "unsavedDependencies": {
+      "pg": {
+        "from": "pg",
+        "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
+      },
+      "tsx": {
+        "from": "tsx",
+        "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
+        "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "link:../../node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+node@24.13.3/node_modules/@types/node"
+      },
+      "@types/pg": {
+        "from": "@types/pg",
+        "version": "link:../../node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
+      }
+    }
+  },
+  {
     "name": "@siriusx/dsh-telemetry-off",
     "version": "0.0.0",
     "path": "/root/siriusx/plugins/telemetry-off",

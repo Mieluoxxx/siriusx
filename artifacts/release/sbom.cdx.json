@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-12T09:09:05.772Z",
+    "timestamp": "2026-11-12T10:18:40.550Z",
     "tools": {
       "components": [
         {
@@ -368,6 +368,45 @@
     },
     {
       "type": "library",
+      "name": "@deepseek-ai/dsh-anonymous-user-id",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-anonymous-user-id@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-atomic-write",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-atomic-write@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-attachment",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-attachment@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "@deepseek-ai/dsh-brand",
       "version": "0.2.2-rc.1",
       "purl": "pkg:npm/%40deepseek-ai%2Fdsh-brand@0.2.2-rc.1",
@@ -472,6 +511,58 @@
     },
     {
       "type": "library",
+      "name": "@deepseek-ai/dsh-deepseek-llm-api-extensions",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-deepseek-llm-api-extensions@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-fs-patch",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-fs-patch@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-fs",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-fs@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-home-paths",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-home-paths@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "@deepseek-ai/dsh-host-webserver",
       "version": "0.2.2-rc.1",
       "purl": "pkg:npm/%40deepseek-ai%2Fdsh-host-webserver@0.2.2-rc.1",
@@ -485,9 +576,48 @@
     },
     {
       "type": "library",
+      "name": "@deepseek-ai/dsh-launch-environment",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-launch-environment@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-llm-deepseek",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-llm-deepseek@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "@deepseek-ai/dsh-llm",
       "version": "0.2.2-rc.1",
       "purl": "pkg:npm/%40deepseek-ai%2Fdsh-llm@0.2.2-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/dsh-sandbox",
+      "version": "0.2.2-rc.1",
+      "purl": "pkg:npm/%40deepseek-ai%2Fdsh-sandbox@0.2.2-rc.1",
       "licenses": [
         {
           "license": {
@@ -2038,6 +2168,19 @@
     },
     {
       "type": "library",
+      "name": "eventsource-parser",
+      "version": "3.1.1",
+      "purl": "pkg:npm/eventsource-parser@3.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "expect-type",
       "version": "1.4.0",
       "purl": "pkg:npm/expect-type@1.4.0",
@@ -2783,6 +2926,19 @@
       "name": "semver",
       "version": "6.3.2",
       "purl": "pkg:npm/semver@6.3.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "semver",
+      "version": "7.8.6",
+      "purl": "pkg:npm/semver@7.8.6",
       "licenses": [
         {
           "license": {
