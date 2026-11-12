@@ -1,0 +1,12 @@
+{
+  "rowsBefore": 20,
+  "more": 1,
+  "rowsSearch": 3,
+  "searchText": true,
+  "rowsAction": 12,
+  "actionText": true,
+  "rowsReset": 20,
+  "json": 12,
+  "rowsMore": 38,
+  "errors": []
+}

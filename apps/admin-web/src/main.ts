@@ -1,7 +1,7 @@
 /** Standalone SiriusX platform administration SPA. */
 import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { AddTenantUserForm, AddUpstreamForm, AuthForm, CreateBindingForm, CreateModelForm, CreateTenantForm, RequestSupportForm, TenantBillingForm, TenantFilters, TenantInitialValues, TenantProfileForm, TenantQuotaForm, numberValue, valueOf } from './forms'
+import { AddTenantUserForm, AddUpstreamForm, AuditFilters, AuditFilterValue, AuthForm, CreateBindingForm, CreateModelForm, CreateTenantForm, RequestSupportForm, TenantBillingForm, TenantFilters, TenantInitialValues, TenantProfileForm, TenantQuotaForm, numberValue, valueOf } from './forms'
 
 type Json = Record<string, unknown>
 
@@ -23,6 +23,10 @@ const app = document.getElementById('app')!
 const errorBox = document.getElementById('error')!
 const shellFormRoots: Root[] = []
 let tenantEditRoot: Root | undefined
+let auditFilterRoot: Root | undefined
+let auditEvents: Audit[] = []
+let auditFilter: AuditFilterValue = { query: '', action: '', range: 'all' }
+let auditPage = 1
 let selectedTenant: string | undefined
 let tenantQuery = ''
 let tenantStatus = ''
@@ -190,6 +194,9 @@ function navIcon(path: string): string {
 
 function renderShell(): void {
   unmountShellForms()
+  auditFilterRoot?.unmount()
+  auditFilterRoot = undefined
+  auditEvents = []
   app.innerHTML = `
     <div class="workspace">
       <aside class="sidenav">
@@ -242,6 +249,7 @@ function renderShell(): void {
         </section>
         <section class="view" data-view="audit" id="view-audit">
           <div class="page-head"><div><p class="eyebrow">Governance</p><h1>Platform audit</h1><p class="lede">Administrative changes across tenants, models, sources, and quotas.</p></div><button id="export-audit" class="button" type="button">Export CSV</button></div>
+          <div id="audit-filter-root" class="toolbar"></div>
           <div id="audit"></div>
         </section>
         <section class="view" data-view="tenant" id="view-tenant"><div id="tenant-page"></div></section>
@@ -260,6 +268,17 @@ function mountShellForms(): void {
   mountShellForm('tenant-filter-root', createElement(TenantFilters, {
     total: tenants.length,
     onChange: (query, status) => { tenantQuery = query; tenantStatus = status; renderTenants(true) },
+  }))
+}
+
+function mountAuditFilters(): void {
+  const host = document.getElementById('audit-filter-root')
+  if (host === null) return
+  auditFilterRoot?.unmount()
+  auditFilterRoot = createRoot(host)
+  auditFilterRoot.render(createElement(AuditFilters, {
+    actions: [...new Set(auditEvents.map(event => event.action))].sort(),
+    onChange: value => { auditFilter = value; auditPage = 1; renderAudit() },
   }))
 }
 
@@ -460,6 +479,83 @@ function renderBindings(): void {
   host.replaceChildren(table(['ID', 'Provider', 'External', 'Tenant', 'Repo', 'Base', 'Auto'], bindings.map(binding => [binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '', String(binding.autoDispatch)]), 'Source bindings'))
 }
 
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  'model.create': 'Model created',
+  'model.bind': 'Model bound',
+  'model.upstream': 'Upstream added',
+  'quota.update': 'Quota updated',
+  'tenant.status': 'Tenant status changed',
+  'tenant.create': 'Tenant created',
+  'tenant.update': 'Tenant updated',
+  'source.binding.create': 'Source binding added',
+  'support.request': 'Support requested',
+}
+
+function auditActionLabel(action: string): string {
+  return AUDIT_ACTION_LABELS[action] ?? action.replaceAll('.', ' ')
+}
+
+function auditDetailSummary(detail: string | null): string {
+  if (detail === null || detail === '') return '—'
+  try {
+    const value: unknown = JSON.parse(detail)
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      const row = value as Record<string, unknown>
+      if ('maxUsers' in row || 'maxDevices' in row) {
+        return `Quota: ${String(row.maxUsers ?? '?')} users / ${String(row.maxDevices ?? '?')} devices / ${String(row.maxCloudTicketsPerDay ?? '?')} cloud/day / ${String(row.maxDeviceTicketsPerDay ?? '?')} device/day`
+      }
+      return Object.entries(row).map(([key, item]) => `${key}: ${String(item)}`).join(' · ')
+    }
+  } catch { /* plain text detail */ }
+  return detail.length > 120 ? `${detail.slice(0, 120)}…` : detail
+}
+
+function auditTarget(target: string): HTMLElement {
+  const tenantId = target.split('/')[0] ?? ''
+  if (!tenantId.startsWith('tenant-')) return node('span', target)
+  const link = node('a', target, 'audit-target')
+  link.href = `/tenants/${encodeURIComponent(tenantId)}`
+  link.addEventListener('click', event => { event.preventDefault(); selectedTenant = tenantId; void openTenant(tenantId).catch(showError) })
+  return link
+}
+
+function renderAudit(): void {
+  const host = document.getElementById('audit')
+  if (host === null) return
+  const now = Date.now()
+  const since = auditFilter.range === '24h' ? now - 86_400_000 : auditFilter.range === '7d' ? now - 7 * 86_400_000 : auditFilter.range === '30d' ? now - 30 * 86_400_000 : 0
+  const query = auditFilter.query.trim().toLowerCase()
+  const filtered = auditEvents
+    .filter(event => (auditFilter.action === '' || event.action === auditFilter.action) && event.createdAt >= since)
+    .filter(event => query === '' || `${event.actor} ${event.action} ${event.target} ${event.detail ?? ''}`.toLowerCase().includes(query))
+    .sort((left, right) => right.createdAt - left.createdAt)
+  const visible = filtered.slice(0, auditPage * 20)
+  if (visible.length === 0) { host.replaceChildren(node('div', 'No audit events match these filters.', 'table-empty')); return }
+  const rows = visible.map(event => {
+    const time = node('time', new Date(event.createdAt).toLocaleString(), 'audit-time')
+    time.dateTime = new Date(event.createdAt).toISOString()
+    const detail = node('div', undefined, 'audit-detail')
+    const summary = node('span', auditDetailSummary(event.detail), 'audit-summary')
+    detail.append(summary)
+    if (event.detail !== null && event.detail !== '' && summary.textContent !== event.detail) {
+      const disclosure = node('details')
+      disclosure.append(node('summary', 'Show JSON'), node('pre', event.detail, 'audit-json'))
+      detail.append(disclosure)
+    }
+    return [time, event.actor, auditActionLabel(event.action), auditTarget(event.target), detail]
+  })
+  const wrapper = table(['Time', 'Actor', 'Action', 'Target', 'Detail'], rows, 'Audit log')
+  wrapper.classList.add('audit-table-wrap')
+  if (filtered.length > visible.length) {
+    const more = node('button', `Load more (${filtered.length - visible.length} remaining)`, 'button audit-more')
+    more.type = 'button'
+    more.addEventListener('click', () => { auditPage += 1; renderAudit() })
+    host.replaceChildren(wrapper, more)
+  } else {
+    host.replaceChildren(wrapper)
+  }
+}
+
 function renderMetrics(support: SupportRequest[], audit: Audit[]): void {
   const active = tenants.filter(tenant => tenant.status === 'active').length
   const totalUsers = tenants.reduce((total, tenant) => total + tenant.usage.users, 0)
@@ -503,8 +599,10 @@ async function loadAll(): Promise<void> {
   const supportHost = document.getElementById('support')!
   supportHost.replaceChildren(table(['Tenant', 'Reason', 'Status', 'Requested by'], supportResult.requests.map(request => [request.tenantId, request.reason, request.status, request.requestedBy])))
   renderNotifications(supportResult.requests)
-  const auditHost = document.getElementById('audit')!
-  auditHost.replaceChildren(table(['Actor', 'Action', 'Target', 'Detail', 'At'], auditResult.audit.map(event => [event.actor, event.action, event.target, event.detail ?? '', new Date(event.createdAt).toLocaleString()]), 'Platform audit'))
+  auditEvents = auditResult.audit
+  auditPage = 1
+  renderAudit()
+  mountAuditFilters()
   renderMetrics(supportResult.requests, auditResult.audit)
   if (selectedTenant !== undefined) await openTenant(selectedTenant)
 }

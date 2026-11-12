@@ -275,6 +275,23 @@ const styles = stylex.create({
       gridTemplateColumns: '1fr',
     },
   },
+  auditFilterForm: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(220px, 1fr) 190px 170px auto',
+    gap: '12px',
+    alignItems: 'end',
+    '@media (max-width: 760px)': { gridTemplateColumns: '1fr' },
+  },
+  filterField: {
+    display: 'grid',
+    gap: '6px',
+    minInlineSize: 0,
+  },
+  filterLabel: {
+    color: '#6f6f6a',
+    fontSize: '11px',
+    fontWeight: 600,
+  },
   output: {
     alignSelf: 'center',
     color: '#61708a',
@@ -676,5 +693,53 @@ export function RequestSupportForm({ onSubmit }: { onSubmit: FormSubmit }): Reac
       <ErrorMessage message={form.error} />
       <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Request support</SubmitButton></div>
     </Form>
+  )
+}
+
+export interface AuditFilterValue {
+  query: string
+  action: string
+  range: string
+}
+
+export interface AuditFiltersProps {
+  actions: string[]
+  onChange: (value: AuditFilterValue) => void
+}
+
+export function AuditFilters({ actions, onChange }: AuditFiltersProps): React.ReactElement {
+  const [query, setQuery] = React.useState('')
+  const [action, setAction] = React.useState('')
+  const [range, setRange] = React.useState('all')
+  const update = (next: Partial<AuditFilterValue>): void => {
+    const value = { query, action, range, ...next }
+    if (next.query !== undefined) setQuery(next.query)
+    if (next.action !== undefined) setAction(next.action)
+    if (next.range !== undefined) setRange(next.range)
+    onChange(value)
+  }
+  const actionItems = [{ value: '', label: 'All actions' }, ...actions.map(value => ({ value, label: value }))]
+  return (
+    <form className={cls(styles.auditFilterForm)} onSubmit={event => event.preventDefault()}>
+      <Field.Root name="auditQuery" className={cls(styles.filterField)}>
+        <Field.Label className={cls(styles.filterLabel)}>Search audit</Field.Label>
+        <Input className={cls(styles.input)} type="search" value={query} onValueChange={value => update({ query: value })} placeholder="Actor, target, or detail" autoComplete="off" />
+      </Field.Root>
+      <Field.Root name="auditAction" className={cls(styles.filterField)}>
+        <Field.Label className={cls(styles.filterLabel)}>Action</Field.Label>
+        <Select.Root name="auditAction" items={Object.fromEntries(actionItems.map(item => [item.value, item.label]))} value={action} onValueChange={value => update({ action: value === null ? '' : String(value) })}>
+          <Select.Trigger className={cls(styles.selectTrigger)}><Select.Value /><Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon></Select.Trigger>
+          <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{actionItems.map(item => <Select.Item key={item.value} value={item.value} className={cls(styles.item)}>{item.label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
+        </Select.Root>
+      </Field.Root>
+      <Field.Root name="auditRange" className={cls(styles.filterField)}>
+        <Field.Label className={cls(styles.filterLabel)}>Date range</Field.Label>
+        <Select.Root name="auditRange" items={{ all: 'All time', '24h': 'Last 24 hours', '7d': 'Last 7 days', '30d': 'Last 30 days' }} value={range} onValueChange={value => update({ range: value === null ? 'all' : String(value) })}>
+          <Select.Trigger className={cls(styles.selectTrigger)}><Select.Value /><Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon></Select.Trigger>
+          <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{[['all', 'All time'], ['24h', 'Last 24 hours'], ['7d', 'Last 7 days'], ['30d', 'Last 30 days']].map(([value, label]) => <Select.Item key={value} value={value} className={cls(styles.item)}>{label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
+        </Select.Root>
+      </Field.Root>
+      <button className={cls(styles.button)} type="button" onClick={() => update({ query: '', action: '', range: 'all' })}>Reset</button>
+    </form>
   )
 }
