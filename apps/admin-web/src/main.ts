@@ -195,9 +195,8 @@ function renderShell(): void {
       <aside class="sidenav">
         <div class="sidebar-brand"><span class="brand-mark" aria-hidden="true">S</span><div><strong>SiriusX</strong><span>Platform</span></div></div>
         <div class="sidebar-context">
-          <span class="context-label">Environment</span>
-          <strong>Local LAN</strong>
-          <span>192.168.14.39 · Control Plane</span>
+          <span class="status-dot"></span>
+          <div><strong>Local LAN</strong><span>192.168.14.39</span></div>
         </div>
         <nav aria-label="Platform administration" id="admin-nav">
           <span class="nav-indicator" aria-hidden="true"></span>

@@ -1029,3 +1029,50 @@ caption { white-space: nowrap; }
   .overview-grid { grid-template-columns: 1fr; }
   .summary-actions { grid-template-columns: 1fr; }
 }
+
+/* Compact grouped navigation */
+.sidebar-context {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 12px 2px;
+  padding: 8px 10px;
+  border: 1px solid rgb(255 255 255 / 6%);
+  border-radius: 4px;
+  background: rgb(255 255 255 / 3%);
+}
+.sidebar-context > div { display: grid; gap: 1px; min-inline-size: 0; }
+.sidebar-context strong { color: #d6e2ee; font-size: 11px; font-weight: 600; }
+.sidebar-context span:last-child { color: #8093a8; font-size: 10px; white-space: nowrap; }
+.sidenav nav { padding-block: 0; }
+.nav-group-label {
+  padding: 14px 18px 4px;
+  color: #6f8398;
+  font-size: 9px;
+  letter-spacing: .11em;
+}
+.nav-button {
+  justify-content: flex-start;
+  min-block-size: 38px;
+  padding: 5px 10px;
+  gap: 9px;
+  color: #b4c4d5;
+}
+.nav-icon {
+  inline-size: 18px;
+  block-size: 18px;
+  flex: 0 0 18px;
+  border-radius: 0;
+  background: transparent;
+  color: #8093a8;
+}
+.nav-icon svg { inline-size: 18px; block-size: 18px; }
+.nav-button:hover .nav-icon { background: transparent; color: #dce8f5; }
+.nav-button[aria-current="page"] .nav-icon { background: transparent; color: #66b1ff; }
+.nav-button[aria-current="page"] { color: #ffffff; }
+.nav-indicator { background: linear-gradient(90deg, rgb(64 158 255 / 18%), rgb(64 158 255 / 3%)); }
+.nav-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 820px) {
+  #admin-nav[popover] .nav-icon { inline-size: 18px; block-size: 18px; flex-basis: 18px; background: transparent; }
+  #admin-nav[popover] .nav-button { min-block-size: 40px; }
+}
