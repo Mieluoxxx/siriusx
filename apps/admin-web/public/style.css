@@ -895,3 +895,18 @@ caption { white-space: nowrap; }
   .info-list > div { grid-template-columns: 100px minmax(0, 1fr); }
   #tenant-edit-dialog .dialog-body { padding: 16px; }
 }
+
+/* Keep tenant page actions in one row; .page-head > div would otherwise turn them into a grid. */
+.page-head > .detail-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  inline-size: auto;
+}
+@media (max-width: 560px) {
+  .page-head > .detail-actions { justify-content: flex-start; }
+}
