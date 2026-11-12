@@ -17,7 +17,7 @@ const files = { '/': join(dist, 'index.html'), '/admin.js': join(dist, 'admin.js
 function headers(path) {
   return {
     'content-type': path === '/' ? types['.html'] : types[extname(path)] ?? 'application/octet-stream',
-    'cache-control': path === '/' ? 'no-store' : 'public, max-age=300',
+    'cache-control': 'no-store',
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'no-referrer',
     'x-frame-options': 'DENY',

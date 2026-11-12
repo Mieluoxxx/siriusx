@@ -910,3 +910,30 @@ caption { white-space: nowrap; }
 @media (max-width: 560px) {
   .page-head > .detail-actions { justify-content: flex-start; }
 }
+
+/* Tenant page header: independent toolbar, never affected by generic .page-head child rules. */
+.tenant-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding-block: 4px 2px;
+}
+.tenant-heading { display: grid; gap: 4px; min-inline-size: 0; }
+.tenant-heading h1 { font-size: 22px; font-weight: 600; }
+.tenant-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.detail-grid { align-items: start; }
+.detail-panel { align-self: start; }
+@media (max-width: 720px) {
+  .tenant-page-head { align-items: stretch; }
+  .tenant-actions { justify-content: flex-start; }
+}

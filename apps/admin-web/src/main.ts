@@ -579,9 +579,9 @@ async function openTenant(tenantId: string): Promise<void> {
   const host = document.getElementById('tenant-page')!
   closeTenantEditor()
   host.innerHTML = `
-    <div class="page-head tenant-page-head">
-      <div><p class="eyebrow">Tenant detail</p><h1 id="detail-title"></h1><p class="lede"><span id="detail-id" class="mono"></span> <span id="detail-status"></span></p></div>
-      <div class="detail-actions"><button id="back-tenants" class="button" type="button">Back to tenants</button><button id="edit-tenant" class="button" type="button">Edit profile</button><button id="detail-status-button" class="button" type="button"></button></div>
+    <div class="tenant-page-head">
+      <div class="tenant-heading"><p class="eyebrow">Tenant detail</p><h1 id="detail-title"></h1><p class="lede"><span id="detail-id" class="mono"></span> <span id="detail-status"></span></p></div>
+      <div class="tenant-actions" aria-label="Tenant actions"><button id="back-tenants" class="button" type="button">Back to tenants</button><button id="edit-tenant" class="button" type="button">Edit profile</button><button id="detail-status-button" class="button" type="button"></button></div>
     </div>
     <div class="metric-grid" id="detail-metrics"></div>
     <div class="detail-grid">
