@@ -275,8 +275,30 @@ function moveNavIndicator(): void {
 }
 
 const VIEW_LABELS: Record<string, string> = { overview: 'Overview', tenants: 'Tenants', models: 'Models', sources: 'Sources', support: 'Support', audit: 'Audit', tenant: 'Tenant detail' }
+const VIEW_PATHS: Record<string, string> = { overview: '/', tenants: '/tenants', models: '/models', sources: '/sources', support: '/support', audit: '/audit' }
+type HistoryMode = 'push' | 'replace' | 'none'
 
-function showView(view: string): void {
+interface AppRoute { view: string; tenantId?: string }
+
+function routeFromLocation(): AppRoute {
+  const path = decodeURIComponent(location.pathname).replace(/\/+$/u, '') || '/'
+  if (path.startsWith('/tenants/')) {
+    const tenantId = path.slice('/tenants/'.length)
+    return tenantId === '' ? { view: 'tenants' } : { view: 'tenant', tenantId }
+  }
+  for (const [view, routePath] of Object.entries(VIEW_PATHS)) if (routePath === path) return { view }
+  return { view: 'overview' }
+}
+
+function writeRoute(view: string, mode: HistoryMode, tenantId?: string): void {
+  if (mode === 'none') return
+  const target = view === 'tenant' && tenantId !== undefined ? `/tenants/${encodeURIComponent(tenantId)}` : (VIEW_PATHS[view] ?? '/')
+  if (location.pathname === target) return
+  if (mode === 'replace') history.replaceState({}, '', target)
+  else history.pushState({}, '', target)
+}
+
+function showView(view: string, mode: HistoryMode = 'push'): void {
   if (view !== 'tenant') selectedTenant = undefined
   const navView = view === 'tenant' ? 'tenants' : view
   const breadcrumb = document.getElementById('breadcrumb')
@@ -287,6 +309,24 @@ function showView(view: string): void {
   if (nav?.matches(':popover-open')) nav.hidePopover()
   document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   requestAnimationFrame(moveNavIndicator)
+  writeRoute(view, mode)
+}
+
+async function applyRoute(): Promise<void> {
+  const route = routeFromLocation()
+  if (route.view !== 'tenant') { showView(route.view, 'none'); return }
+  if (route.tenantId === undefined || !tenants.some(tenant => tenant.id === route.tenantId)) {
+    showView('tenants', 'replace')
+    return
+  }
+  selectedTenant = route.tenantId
+  await openTenant(route.tenantId)
+}
+
+async function bootApp(): Promise<void> {
+  renderShell()
+  await loadAll()
+  await applyRoute()
 }
 
 let tenants: Tenant[] = []
@@ -578,9 +618,10 @@ async function openTenant(tenantId: string): Promise<void> {
     <div class="section-heading"><h3>Support access</h3><button id="request-support" class="button small" type="button">Request support</button></div><div id="detail-support"></div>
     <h3>Usage (14d)</h3><div id="detail-usage"></div>
     <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>`
-  showView('tenant')
+  showView('tenant', 'none')
   const breadcrumb = document.getElementById('breadcrumb')
   if (breadcrumb !== null) breadcrumb.replaceChildren('Platform', ' / ', 'Tenants', ' / ', tenant.name)
+  writeRoute('tenant', 'push', tenant.id)
   document.getElementById('back-tenants')!.addEventListener('click', () => { showView('tenants'); void loadAll().catch(showError) })
   ;(document.getElementById('detail-title') as HTMLElement).textContent = tenant.name
   ;(document.getElementById('detail-id') as HTMLElement).textContent = tenant.id
@@ -714,9 +755,10 @@ createRoot(authHost).render(createElement(AuthForm, {
   onConnect: async value => {
     sessionStorage.setItem('siriusx.platformToken', value)
     selectedTenant = undefined
-    renderShell()
-    await loadAll()
+    await bootApp()
   },
 }))
 
-if (token() !== '') { renderShell(); void loadAll().catch(showError) }
+if (token() !== '') { void bootApp().catch(showError) }
+
+window.addEventListener('popstate', () => { if (token() !== '') void applyRoute().catch(showError) })

@@ -64,7 +64,17 @@ createServer(async (request, response) => {
       return
     }
     const file = files[url.pathname]
-    if (file === undefined) { response.writeHead(404, { 'content-type': 'text/plain' }).end('not found'); return }
+    if (file === undefined) {
+      const spaPath = url.pathname === '/tenants' || url.pathname === '/models' || url.pathname === '/sources' || url.pathname === '/support' || url.pathname === '/audit' || /^\/tenants\/[^/]+$/u.test(url.pathname)
+      if (request.method !== 'GET' || !spaPath) {
+        response.writeHead(404, { 'content-type': 'text/plain' }).end('not found')
+        return
+      }
+      const bytes = await readFile(files['/'])
+      response.writeHead(200, { ...headers('/'), 'content-length': bytes.byteLength })
+      response.end(bytes)
+      return
+    }
     const bytes = await readFile(file)
     response.writeHead(200, { ...headers(url.pathname), 'content-length': bytes.byteLength })
     response.end(bytes)
