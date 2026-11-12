@@ -1,0 +1,10 @@
+{
+  "authError": "platform admin token required",
+  "validation": true,
+  "empty": true,
+  "suspended": true,
+  "detail": true,
+  "toast": true,
+  "overflow": false,
+  "errors": []
+}

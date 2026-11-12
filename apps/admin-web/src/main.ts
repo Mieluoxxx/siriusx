@@ -185,23 +185,35 @@ function pill(status: string, className?: string): HTMLElement {
   return node('span', status, `pill ${className ?? (status === 'active' ? 'active' : status === 'suspended' ? 'suspended' : '')}`.trim())
 }
 
+function navIcon(path: string): string {
+  return `<span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>`
+}
+
 function renderShell(): void {
   unmountShellForms()
   app.innerHTML = `
     <div class="workspace">
       <aside class="sidenav">
         <div class="sidebar-brand"><span class="brand-mark" aria-hidden="true">S</span><div><strong>SiriusX</strong><span>Platform</span></div></div>
-        <div class="nav-label">Workspace</div>
+        <div class="sidebar-context">
+          <span class="context-label">Environment</span>
+          <strong>Local LAN</strong>
+          <span>192.168.14.39 · Control Plane</span>
+        </div>
         <nav aria-label="Platform administration" id="admin-nav">
           <span class="nav-indicator" aria-hidden="true"></span>
-          <button class="nav-button" type="button" data-view="overview" aria-current="page"><span class="dot"></span>Overview</button>
-          <button class="nav-button" type="button" data-view="tenants"><span class="dot"></span>Tenants</button>
-          <button class="nav-button" type="button" data-view="models"><span class="dot"></span>Models</button>
-          <button class="nav-button" type="button" data-view="sources"><span class="dot"></span>Sources</button>
-          <button class="nav-button" type="button" data-view="support"><span class="dot"></span>Support</button>
-          <button class="nav-button" type="button" data-view="audit"><span class="dot"></span>Audit</button>
+          <div class="nav-group-label">Workspace</div>
+          <button class="nav-button" type="button" data-view="overview" aria-current="page">${navIcon('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>')}<span class="nav-text">Overview</span></button>
+          <button class="nav-button" type="button" data-view="tenants">${navIcon('<path d="M4 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/><circle cx="10" cy="7" r="3"/><path d="M17 20v-1a3 3 0 0 0-2-2.8"/><path d="M16 4.2a3 3 0 0 1 0 5.6"/>')}<span class="nav-text">Tenants</span></button>
+          <div class="nav-group-label">Operations</div>
+          <button class="nav-button" type="button" data-view="models">${navIcon('<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.8 7.6 7.2 4 7.2-4M12 11.6V21"/>')}<span class="nav-text">Models</span></button>
+          <button class="nav-button" type="button" data-view="sources">${navIcon('<path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/>')}<span class="nav-text">Sources</span></button>
+          <div class="nav-group-label">Governance</div>
+          <button class="nav-button" type="button" data-view="support">${navIcon('<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.7 1c0 2-2.9 2.2-2.9 4"/><circle cx="12" cy="17" r=".6" fill="currentColor" stroke="none"/>')}<span class="nav-text">Support</span></button>
+          <button class="nav-button" type="button" data-view="audit">${navIcon('<path d="M12 3 20 6v5.5c0 5-3.4 8-8 9.5-4.6-1.5-8-4.5-8-9.5V6l8-3Z"/><path d="m8.8 12 2.1 2.1 4.4-4.4"/>')}<span class="nav-text">Audit</span></button>
         </nav>
-        <div class="nav-foot">Connected to<br><strong>Control Plane</strong></div>
+        <div class="sidebar-status"><span class="status-dot"></span><div><strong>Control Plane</strong><span>Connected</span></div></div>
+        <div class="sidebar-version">SiriusX Admin · v0.1.0</div>
       </aside>
       <div class="content">
         <div class="mobile-tools"><button class="button" type="button" popovertarget="admin-nav" aria-controls="admin-nav">Menu</button><button class="button" type="button" id="density-toggle">Density</button></div>
