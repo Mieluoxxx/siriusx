@@ -190,6 +190,7 @@ function renderShell(): void {
   app.innerHTML = `
     <div class="workspace">
       <aside class="sidenav">
+        <div class="sidebar-brand"><span class="brand-mark" aria-hidden="true">S</span><div><strong>SiriusX</strong><span>Platform</span></div></div>
         <div class="nav-label">Workspace</div>
         <nav aria-label="Platform administration" id="admin-nav">
           <span class="nav-indicator" aria-hidden="true"></span>
@@ -212,17 +213,17 @@ function renderShell(): void {
         <section class="view" data-view="tenants" id="view-tenants">
           <div class="page-head"><div><p class="eyebrow">Directory</p><h1>Tenants</h1><p class="lede">Provision tenants, manage status, and inspect usage.</p></div></div>
           <div id="tenant-filter-root" class="toolbar"></div>
-          <section id="create-tenant" class="card form-card"><div id="create-tenant-form-root"></div></section>
+          <section id="create-tenant" class="card form-card"><div class="form-card-head"><h2>Create tenant</h2><p>Provision a tenant and its first admin.</p></div><div id="create-tenant-form-root"></div></section>
           <div id="tenants"></div>
         </section>
         <section class="view" data-view="models" id="view-models">
           <div class="page-head"><div><p class="eyebrow">Routing</p><h1>Models</h1><p class="lede">Catalog models and connect each tenant to one or more upstream providers.</p></div></div>
-          <section class="card form-card"><div id="create-model-form-root"></div></section>
+          <section class="card form-card"><div class="form-card-head"><h2>Add model</h2><p>Create a catalog entry and client-facing alias.</p></div><div id="create-model-form-root"></div></section>
           <div id="models"></div>
         </section>
         <section class="view" data-view="sources" id="view-sources">
           <div class="page-head"><div><p class="eyebrow">Integrations</p><h1>Sources</h1><p class="lede">Map Git repositories and messaging channels to tenant workspaces.</p></div></div>
-          <section class="card form-card"><div id="create-binding-form-root"></div></section>
+          <section class="card form-card"><div class="form-card-head"><h2>Add source binding</h2><p>Map a repository or channel to a tenant.</p></div><div id="create-binding-form-root"></div></section>
           <div id="bindings"></div>
         </section>
         <section class="view" data-view="support" id="view-support">
@@ -261,7 +262,11 @@ function moveNavIndicator(): void {
   indicator.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`
 }
 
+const VIEW_LABELS: Record<string, string> = { overview: 'Overview', tenants: 'Tenants', models: 'Models', sources: 'Sources', support: 'Support', audit: 'Audit' }
+
 function showView(view: string): void {
+  const breadcrumb = document.getElementById('breadcrumb')
+  if (breadcrumb !== null) breadcrumb.replaceChildren('Platform', ' / ', VIEW_LABELS[view] ?? 'Overview')
   for (const element of document.querySelectorAll<HTMLElement>('.view')) element.classList.toggle('active', element.dataset.view === view)
   for (const element of document.querySelectorAll<HTMLButtonElement>('.nav-button')) element.setAttribute('aria-current', element.dataset.view === view ? 'page' : 'false')
   const nav = document.getElementById('admin-nav')

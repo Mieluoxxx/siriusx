@@ -33,19 +33,19 @@ apps/tool-gateway typecheck: Done
 packages/kernel-pi typecheck$ tsc -p tsconfig.json --noEmit
 packages/executor-local typecheck: Done
 apps/autobot typecheck$ tsc -p tsconfig.json --noEmit
-packages/kernel-acp typecheck: Done
-packages/kernel-pi typecheck: Done
 packages/client-ui-team-core typecheck: Done
-plugins/client-ui-bots typecheck$ tsc -p tsconfig.json --noEmit
 plugins/client-ui-approvals typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-acp typecheck: Done
+plugins/client-ui-bots typecheck$ tsc -p tsconfig.json --noEmit
+packages/kernel-pi typecheck: Done
 plugins/client-ui-sessions typecheck$ tsc -p tsconfig.json --noEmit
 apps/autobot typecheck: Done
 plugins/client-ui-team typecheck$ tsc -p tsconfig.json --noEmit
-plugins/client-ui-sessions typecheck: Done
-plugins/client-ui-tickets typecheck$ tsc -p tsconfig.json --noEmit
 plugins/client-ui-approvals typecheck: Done
-apps/control-plane typecheck$ tsc -p tsconfig.json --noEmit
+plugins/client-ui-tickets typecheck$ tsc -p tsconfig.json --noEmit
 plugins/client-ui-bots typecheck: Done
+apps/control-plane typecheck$ tsc -p tsconfig.json --noEmit
+plugins/client-ui-sessions typecheck: Done
 plugins/executor-local typecheck$ tsc -p tsconfig.json --noEmit
 plugins/client-ui-team typecheck: Done
 plugins/executor-local typecheck: Done
@@ -61,78 +61,78 @@ packages/contracts test$ vitest run
 packages/storage test$ vitest run
 plugins/account-sso test$ vitest run --passWithNoTests
 apps/web-gateway test:  RUN  v4.1.11 /root/siriusx/apps/web-gateway
+packages/contracts test:  RUN  v4.1.11 /root/siriusx/packages/contracts
 apps/web-gateway test: No test files found, exiting with code 0
 apps/web-gateway test: include: **/*.{test,spec}.?(c|m)[jt]s?(x)
 apps/web-gateway test: exclude:  **/node_modules/**, **/.git/**
-packages/storage test:  RUN  v4.1.11 /root/siriusx/packages/storage
-apps/web-gateway test: Done
-packages/contracts test:  RUN  v4.1.11 /root/siriusx/packages/contracts
-packages/fake-kernel test$ vitest run
 plugins/account-sso test:  RUN  v4.1.11 /root/siriusx/plugins/account-sso
+packages/storage test:  RUN  v4.1.11 /root/siriusx/packages/storage
 plugins/account-sso test: No test files found, exiting with code 0
 plugins/account-sso test: include: **/*.{test,spec}.?(c|m)[jt]s?(x)
 plugins/account-sso test: exclude:  **/node_modules/**, **/.git/**
+apps/web-gateway test: Done
+packages/fake-kernel test$ vitest run
 plugins/account-sso test: Done
 packages/kernel-dsh test$ vitest run
-packages/storage test:  ✓ tests/storage.spec.ts (2 tests | 1 skipped) 8ms
+packages/storage test:  ✓ tests/storage.spec.ts (2 tests | 1 skipped) 9ms
 packages/storage test:  Test Files  1 passed (1)
 packages/storage test:       Tests  1 passed | 1 skipped (2)
-packages/storage test:    Start at  03:21:45
-packages/storage test:    Duration  212ms (transform 32ms, setup 0ms, import 63ms, tests 8ms, environment 0ms)
+packages/storage test:    Start at  03:29:35
+packages/storage test:    Duration  198ms (transform 33ms, setup 0ms, import 66ms, tests 9ms, environment 0ms)
 packages/storage test: Done
 apps/tool-gateway test$ vitest run
-packages/fake-kernel test:  RUN  v4.1.11 /root/siriusx/packages/fake-kernel
-packages/contracts test:  ✓ tests/contracts.spec.ts (25 tests) 18ms
+packages/contracts test:  ✓ tests/contracts.spec.ts (25 tests) 20ms
 packages/contracts test:  Test Files  1 passed (1)
 packages/contracts test:       Tests  25 passed (25)
-packages/contracts test:    Start at  03:21:45
-packages/contracts test:    Duration  284ms (transform 63ms, setup 0ms, import 129ms, tests 18ms, environment 0ms)
+packages/contracts test:    Start at  03:29:35
+packages/contracts test:    Duration  282ms (transform 62ms, setup 0ms, import 134ms, tests 20ms, environment 0ms)
 packages/kernel-dsh test:  RUN  v4.1.11 /root/siriusx/packages/kernel-dsh
+packages/fake-kernel test:  RUN  v4.1.11 /root/siriusx/packages/fake-kernel
 packages/contracts test: Done
 packages/analytics test$ vitest run
+packages/kernel-dsh test:  ✓ tests/adapter.spec.ts (3 tests) 12ms
 apps/tool-gateway test:  RUN  v4.1.11 /root/siriusx/apps/tool-gateway
-packages/kernel-dsh test:  ✓ tests/adapter.spec.ts (3 tests) 13ms
 packages/kernel-dsh test:  Test Files  1 passed (1)
 packages/kernel-dsh test:       Tests  3 passed (3)
-packages/kernel-dsh test:    Start at  03:21:45
-packages/kernel-dsh test:    Duration  203ms (transform 41ms, setup 0ms, import 66ms, tests 13ms, environment 0ms)
+packages/kernel-dsh test:    Start at  03:29:35
+packages/kernel-dsh test:    Duration  197ms (transform 37ms, setup 0ms, import 59ms, tests 12ms, environment 0ms)
 packages/kernel-dsh test: Done
 packages/cloud-executor test$ vitest run
 packages/analytics test:  RUN  v4.1.11 /root/siriusx/packages/analytics
-packages/fake-kernel test:  ✓ tests/fake-kernel.spec.ts (4 tests) 202ms
+packages/fake-kernel test:  ✓ tests/fake-kernel.spec.ts (4 tests) 203ms
 packages/fake-kernel test:  Test Files  1 passed (1)
 packages/fake-kernel test:       Tests  4 passed (4)
-packages/fake-kernel test:    Start at  03:21:45
-packages/fake-kernel test:    Duration  391ms (transform 39ms, setup 0ms, import 54ms, tests 202ms, environment 0ms)
+packages/fake-kernel test:    Start at  03:29:35
+packages/fake-kernel test:    Duration  389ms (transform 42ms, setup 0ms, import 58ms, tests 203ms, environment 0ms)
 packages/fake-kernel test: Done
 packages/executor-local test$ vitest run
+apps/tool-gateway test:  ✓ tests/github.spec.ts (1 test) 42ms
 apps/tool-gateway test:  ↓ tests/postgres.spec.ts (1 test | 1 skipped)
-apps/tool-gateway test:  ✓ tests/github.spec.ts (1 test) 39ms
-apps/tool-gateway test:  ✓ tests/github-gateway.spec.ts (1 test) 52ms
 packages/cloud-executor test:  RUN  v4.1.11 /root/siriusx/packages/cloud-executor
-apps/tool-gateway test:  ✓ tests/gitlab.spec.ts (1 test) 57ms
-apps/tool-gateway test:  ✓ tests/credentials.spec.ts (4 tests) 89ms
+apps/tool-gateway test:  ✓ tests/github-gateway.spec.ts (1 test) 48ms
+apps/tool-gateway test:  ✓ tests/gitlab.spec.ts (1 test) 59ms
 packages/analytics test:  ✓ tests/analytics.spec.ts (4 tests) 12ms
 packages/analytics test:  Test Files  1 passed (1)
 packages/analytics test:       Tests  4 passed (4)
-packages/analytics test:    Start at  03:21:45
-packages/analytics test:    Duration  266ms (transform 48ms, setup 0ms, import 103ms, tests 12ms, environment 0ms)
-apps/tool-gateway test:  ✓ tests/gateway.spec.ts (11 tests) 93ms
+packages/analytics test:    Start at  03:29:36
+packages/analytics test:    Duration  244ms (transform 45ms, setup 0ms, import 100ms, tests 12ms, environment 0ms)
+apps/tool-gateway test:  ✓ tests/credentials.spec.ts (4 tests) 78ms
+packages/analytics test: Done
+apps/tool-gateway test:  ✓ tests/gateway.spec.ts (11 tests) 109ms
 apps/tool-gateway test:  Test Files  5 passed | 1 skipped (6)
 apps/tool-gateway test:       Tests  18 passed | 1 skipped (19)
-apps/tool-gateway test:    Start at  03:21:45
-apps/tool-gateway test:    Duration  386ms (transform 208ms, setup 0ms, import 720ms, tests 329ms, environment 1ms)
-packages/analytics test: Done
+apps/tool-gateway test:    Start at  03:29:36
+apps/tool-gateway test:    Duration  407ms (transform 262ms, setup 0ms, import 719ms, tests 336ms, environment 1ms)
 apps/tool-gateway test: Done
 packages/executor-local test:  RUN  v4.1.11 /root/siriusx/packages/executor-local
-packages/cloud-executor test:  ↓ tests/egress-allowlist.integration.spec.ts (1 test | 1 skipped)
 packages/cloud-executor test:  ↓ tests/docker.integration.spec.ts (1 test | 1 skipped)
+packages/cloud-executor test:  ↓ tests/egress-allowlist.integration.spec.ts (1 test | 1 skipped)
 packages/cloud-executor test:  ↓ tests/sandbox-hardening.integration.spec.ts (1 test | 1 skipped)
-packages/cloud-executor test:  ✓ tests/cloud-executor.spec.ts (7 tests) 70ms
+packages/cloud-executor test:  ✓ tests/cloud-executor.spec.ts (7 tests) 73ms
 packages/cloud-executor test:  Test Files  1 passed | 3 skipped (4)
 packages/cloud-executor test:       Tests  7 passed | 3 skipped (10)
-packages/cloud-executor test:    Start at  03:21:46
-packages/cloud-executor test:    Duration  354ms (transform 251ms, setup 0ms, import 553ms, tests 70ms, environment 0ms)
+packages/cloud-executor test:    Start at  03:29:36
+packages/cloud-executor test:    Duration  353ms (transform 205ms, setup 0ms, import 543ms, tests 73ms, environment 0ms)
 packages/cloud-executor test: Done
 packages/kernel-acp test$ vitest run
 packages/kernel-pi test$ vitest run
@@ -140,55 +140,55 @@ packages/kernel-acp test:  RUN  v4.1.11 /root/siriusx/packages/kernel-acp
 packages/kernel-pi test:  RUN  v4.1.11 /root/siriusx/packages/kernel-pi
 packages/kernel-acp test:  ↓ tests/clone.integration.spec.ts (1 test | 1 skipped)
 packages/kernel-acp test:  ↓ tests/cloud-acp.integration.spec.ts (1 test | 1 skipped)
-packages/kernel-acp test:  ✓ tests/acp.spec.ts (1 test) 334ms
-packages/kernel-acp test:      ✓ detects, opens, prompts, maps updates and permissions  332ms
-packages/kernel-acp test:  Test Files  1 passed | 2 skipped (3)
-packages/kernel-acp test:       Tests  1 passed | 2 skipped (3)
-packages/kernel-acp test:    Start at  03:21:46
-packages/kernel-acp test:    Duration  620ms (transform 130ms, setup 0ms, import 560ms, tests 334ms, environment 0ms)
-packages/kernel-acp test: Done
-packages/executor-local test:  ✓ tests/executor.spec.ts (10 tests) 828ms
+packages/executor-local test:  ✓ tests/executor.spec.ts (10 tests) 762ms
 packages/executor-local test:  Test Files  1 passed (1)
 packages/executor-local test:       Tests  10 passed (10)
-packages/executor-local test:    Start at  03:21:46
-packages/executor-local test:    Duration  1.13s (transform 93ms, setup 0ms, import 166ms, tests 828ms, environment 0ms)
+packages/executor-local test:    Start at  03:29:36
+packages/executor-local test:    Duration  1.03s (transform 77ms, setup 0ms, import 146ms, tests 762ms, environment 0ms)
 packages/executor-local test: Done
 apps/autobot test$ vitest run
+packages/kernel-acp test:  ✓ tests/acp.spec.ts (1 test) 395ms
+packages/kernel-acp test:      ✓ detects, opens, prompts, maps updates and permissions  393ms
+packages/kernel-acp test:  Test Files  1 passed | 2 skipped (3)
+packages/kernel-acp test:       Tests  1 passed | 2 skipped (3)
+packages/kernel-acp test:    Start at  03:29:36
+packages/kernel-acp test:    Duration  689ms (transform 145ms, setup 0ms, import 582ms, tests 395ms, environment 0ms)
+packages/kernel-acp test: Done
 apps/autobot test:  RUN  v4.1.11 /root/siriusx/apps/autobot
+apps/autobot test:  ↓ tests/postgres.spec.ts (1 test | 1 skipped)
 packages/kernel-pi test:  ✓ tests/pi.spec.ts (1 test) 1006ms
 packages/kernel-pi test:      ✓ runs two turns through a real pi CLI and keeps the session  1004ms
 packages/kernel-pi test:  Test Files  1 passed (1)
 packages/kernel-pi test:       Tests  1 passed (1)
-packages/kernel-pi test:    Start at  03:21:46
-packages/kernel-pi test:    Duration  1.19s (transform 40ms, setup 0ms, import 62ms, tests 1.01s, environment 0ms)
+packages/kernel-pi test:    Start at  03:29:37
+packages/kernel-pi test:    Duration  1.19s (transform 39ms, setup 0ms, import 60ms, tests 1.01s, environment 0ms)
+apps/autobot test:  ✓ tests/scenarios.spec.ts (16 tests) 32ms
 packages/kernel-pi test: Done
-apps/autobot test:  ↓ tests/postgres.spec.ts (1 test | 1 skipped)
-apps/autobot test:  ✓ tests/scenarios.spec.ts (16 tests) 27ms
-apps/autobot test:  ✓ tests/server.spec.ts (2 tests) 334ms
-apps/autobot test:  ✓ tests/bot-service.spec.ts (7 tests) 957ms
-apps/autobot test:  ✓ tests/process-loss.spec.ts (1 test) 1118ms
-apps/autobot test:      ✓ marks a real SIGKILLed running assignment lost exactly once on restart  1116ms
+apps/autobot test:  ✓ tests/server.spec.ts (2 tests) 347ms
+apps/autobot test:  ✓ tests/bot-service.spec.ts (7 tests) 959ms
+apps/autobot test:  ✓ tests/process-loss.spec.ts (1 test) 1121ms
+apps/autobot test:      ✓ marks a real SIGKILLed running assignment lost exactly once on restart  1119ms
 apps/autobot test:  Test Files  4 passed | 1 skipped (5)
 apps/autobot test:       Tests  26 passed | 1 skipped (27)
-apps/autobot test:    Start at  03:21:47
-apps/autobot test:    Duration  1.44s (transform 366ms, setup 0ms, import 956ms, tests 2.44s, environment 1ms)
+apps/autobot test:    Start at  03:29:37
+apps/autobot test:    Duration  1.43s (transform 388ms, setup 0ms, import 909ms, tests 2.46s, environment 0ms)
 apps/autobot test: Done
 apps/control-plane test$ vitest run
 apps/control-plane test:  RUN  v4.1.11 /root/siriusx/apps/control-plane
-apps/control-plane test:  ✓ tests/control-plane.spec.ts (42 tests | 13 skipped) 427ms
+apps/control-plane test:  ✓ tests/control-plane.spec.ts (42 tests | 13 skipped) 426ms
 apps/control-plane test:  Test Files  1 passed (1)
 apps/control-plane test:       Tests  29 passed | 13 skipped (42)
-apps/control-plane test:    Start at  03:21:49
-apps/control-plane test:    Duration  1.01s (transform 256ms, setup 0ms, import 463ms, tests 427ms, environment 0ms)
+apps/control-plane test:    Start at  03:29:39
+apps/control-plane test:    Duration  1.01s (transform 253ms, setup 0ms, import 466ms, tests 426ms, environment 0ms)
 apps/control-plane test: Done
 apps/device-agent test$ vitest run
 apps/device-agent test:  RUN  v4.1.11 /root/siriusx/apps/device-agent
-apps/device-agent test:  ✓ tests/device-agent.spec.ts (5 tests) 11544ms
-apps/device-agent test:      ✓ cancels a running device ticket through the gateway  11072ms
+apps/device-agent test:  ✓ tests/device-agent.spec.ts (5 tests) 11597ms
+apps/device-agent test:      ✓ cancels a running device ticket through the gateway  11078ms
 apps/device-agent test:  Test Files  1 passed (1)
 apps/device-agent test:       Tests  5 passed (5)
-apps/device-agent test:    Start at  03:21:50
-apps/device-agent test:    Duration  12.06s (transform 215ms, setup 0ms, import 408ms, tests 11.54s, environment 0ms)
+apps/device-agent test:    Start at  03:29:40
+apps/device-agent test:    Duration  12.17s (transform 236ms, setup 0ms, import 447ms, tests 11.60s, environment 0ms)
 apps/device-agent test: Done
 == fork discipline
 base=siriusx-s1-base head=8fc7084af9 files=9
@@ -219,7 +219,7 @@ OK offline package cloud-executor
 OK offline package kernel-acp
 OK native reaper timer
 install coverage OK
-script portability OK: 84 shell, 53 ESM
+script portability OK: 84 shell, 54 ESM
 {
   "files": 14,
   "documents": 37,
@@ -282,7 +282,7 @@ ok  	github.com/Mieluoxxx/lite-cpa/internal/translator	(cached)
 $ node build.mjs
 {"built":"/root/siriusx/apps/admin-web/dist"}
 == plugin bundle
-wrote /tmp/tmp.FUpaGduRvd/siriusx-plugins.tar.gz
+wrote /tmp/tmp.ZWwrIdXmZu/siriusx-plugins.tar.gz
 == update feed syntax
 == sbom
 {
@@ -297,7 +297,7 @@ wrote /tmp/tmp.FUpaGduRvd/siriusx-plugins.tar.gz
 }
 {
   "manifest": "/root/siriusx/artifacts/release/manifest.json",
-  "siriusx": "01cf01a331d15ea413a4665b40e827b81d33fea4",
+  "siriusx": "5f51aa2419baf0cce75a1bc4e045354d70b2b800",
   "dsh": "8fc7084af9dcbb0a3b0ea76368b1842a651795cf"
 }
 release checks OK
