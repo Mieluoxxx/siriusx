@@ -562,6 +562,16 @@ function closeTenantEditor(): void {
   tenantEditRoot = undefined
 }
 
+function setQuotaUsage(key: string, used: number, limit: number): void {
+  const text = document.getElementById(`detail-q-${key}`)
+  if (text !== null) text.textContent = `${used} / ${limit}`
+  const progress = document.getElementById(`progress-q-${key}`) as HTMLProgressElement | null
+  if (progress !== null) {
+    progress.max = Math.max(limit, 1)
+    progress.value = Math.min(used, Math.max(limit, 1))
+  }
+}
+
 function kpiItem(value: string, label: string, detail: string): HTMLElement {
   const item = node('div', undefined, 'tenant-kpi')
   item.append(node('strong', value), node('span', label), node('small', detail))
@@ -627,27 +637,30 @@ async function openTenant(tenantId: string): Promise<void> {
           <button class="tenant-tab" type="button" role="tab" data-tenant-tab="audit" aria-selected="false">Audit</button>
         </nav>
         <section class="tenant-panel active" data-tenant-panel="overview">
-          <div class="overview-grid">
-            <section class="detail-panel">
-              <div class="detail-panel-head"><h3>Quota</h3><button id="edit-quota" class="button small" type="button">Edit</button></div>
-              <dl class="info-list">
-                <div><dt>Users</dt><dd id="detail-q-users"></dd></div>
-                <div><dt>Devices</dt><dd id="detail-q-devices"></dd></div>
-                <div><dt>Cloud tickets / day</dt><dd id="detail-q-cloud"></dd></div>
-                <div><dt>Device tickets / day</dt><dd id="detail-q-device"></dd></div>
-              </dl>
-            </section>
-            <section class="detail-panel">
-              <div class="detail-panel-head"><h3>Billing</h3><button id="edit-billing" class="button small" type="button">Edit</button></div>
-              <dl class="info-list">
-                <div><dt>Currency</dt><dd id="detail-b-currency"></dd></div>
-                <div><dt>Cloud ticket</dt><dd id="detail-b-cloud"></dd></div>
-                <div><dt>Device ticket</dt><dd id="detail-b-device"></dd></div>
-                <div><dt>Monthly budget</dt><dd id="detail-b-budget"></dd></div>
-                <div><dt>Current estimate</dt><dd id="detail-estimate"></dd></div>
-              </dl>
-            </section>
-          </div>
+          <section class="detail-panel limits-panel">
+            <div class="detail-panel-head">
+              <div><h3>Limits &amp; billing</h3><p class="panel-subtitle">Usage against plan limits and current cost estimate.</p></div>
+            </div>
+            <div class="limits-section">
+              <div class="limits-section-head"><h4>Quota</h4><button id="edit-quota" class="button small" type="button">Edit quota</button></div>
+              <div class="quota-grid">
+                <div class="quota-item"><div class="quota-meta"><span>Users</span><strong id="detail-q-users"></strong></div><progress id="progress-q-users" max="1" value="0" aria-label="Users quota usage"></progress></div>
+                <div class="quota-item"><div class="quota-meta"><span>Devices</span><strong id="detail-q-devices"></strong></div><progress id="progress-q-devices" max="1" value="0" aria-label="Devices quota usage"></progress></div>
+                <div class="quota-item"><div class="quota-meta"><span>Cloud tickets</span><strong id="detail-q-cloud"></strong></div><progress id="progress-q-cloud" max="1" value="0" aria-label="Cloud ticket quota usage"></progress></div>
+                <div class="quota-item"><div class="quota-meta"><span>Device tickets</span><strong id="detail-q-device"></strong></div><progress id="progress-q-device" max="1" value="0" aria-label="Device ticket quota usage"></progress></div>
+              </div>
+            </div>
+            <div class="limits-section">
+              <div class="limits-section-head"><h4>Billing</h4><button id="edit-billing" class="button small" type="button">Edit billing</button></div>
+              <div class="billing-grid">
+                <div><span>Currency</span><strong id="detail-b-currency"></strong></div>
+                <div><span>Cloud ticket</span><strong id="detail-b-cloud"></strong></div>
+                <div><span>Device ticket</span><strong id="detail-b-device"></strong></div>
+                <div><span>Monthly budget</span><strong id="detail-b-budget"></strong></div>
+                <div><span>Current estimate</span><strong id="detail-estimate"></strong></div>
+              </div>
+            </div>
+          </section>
         </section>
         <section class="tenant-panel" data-tenant-panel="users">
           <div class="section-heading"><h3>Users</h3><button id="add-user" class="button small" type="button">Add user</button></div>
@@ -685,10 +698,10 @@ async function openTenant(tenantId: string): Promise<void> {
   document.getElementById('detail-status')!.replaceChildren(pill(tenant.status))
   ;(document.getElementById('detail-issuer') as HTMLElement).textContent = tenant.idpIssuer
   ;(document.getElementById('detail-created') as HTMLElement).textContent = new Date(tenant.createdAt).toLocaleString()
-  ;(document.getElementById('detail-q-users') as HTMLElement).textContent = String(quotaResult.quota.maxUsers)
-  ;(document.getElementById('detail-q-devices') as HTMLElement).textContent = String(quotaResult.quota.maxDevices)
-  ;(document.getElementById('detail-q-cloud') as HTMLElement).textContent = String(quotaResult.quota.maxCloudTicketsPerDay)
-  ;(document.getElementById('detail-q-device') as HTMLElement).textContent = String(quotaResult.quota.maxDeviceTicketsPerDay)
+  setQuotaUsage('users', tenant.usage.users, quotaResult.quota.maxUsers)
+  setQuotaUsage('devices', tenant.usage.devices, quotaResult.quota.maxDevices)
+  setQuotaUsage('cloud', tenant.usage.cloudTickets, quotaResult.quota.maxCloudTicketsPerDay)
+  setQuotaUsage('device', tenant.usage.deviceTickets, quotaResult.quota.maxDeviceTicketsPerDay)
   ;(document.getElementById('detail-b-currency') as HTMLElement).textContent = billingResult.billing.currency
   ;(document.getElementById('detail-b-cloud') as HTMLElement).textContent = String(billingResult.billing.cloudTicketCents)
   ;(document.getElementById('detail-b-device') as HTMLElement).textContent = String(billingResult.billing.deviceTicketCents)
