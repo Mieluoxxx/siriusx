@@ -26,6 +26,10 @@ deepseek-harness/
 
 # Plugin/client build outputs (rebuilt by package scripts)
 plugins/*/lib/
+plugins/*/dist/
 packages/*/lib/
 apps/*/lib/
 artifacts/**/*.tar
+
+# Local tool caches
+.codegraph/

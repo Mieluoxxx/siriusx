@@ -44,6 +44,28 @@ interface StoredGrant {
   readonly accessToken: string
   readonly idToken: string
   readonly claims: SsoClaims
+  /**
+   * Offline refresh credential. Absent for grants written before the scope
+   * asked for `offline_access`, which is also why every reader tolerates it:
+   * a grant without one keeps working until its access token expires, then
+   * surfaces a re-sign-in instead of failing silently.
+   */
+  readonly refreshToken?: string
+}
+
+/**
+ * Whether a stored grant's id_token is expired or close enough to it that the
+ * next exchange would fail.
+ *
+ * The headroom keeps clock skew from producing a 401 the user cannot explain,
+ * and keeps a healthy grant from being refreshed on every read.
+ * @param expSeconds - `exp` claim in seconds; absent means it cannot be trusted.
+ * @param nowMs - current wall-clock time in milliseconds.
+ * @returns `true` when the credential should be refreshed before use.
+ */
+export function idTokenExpiring(expSeconds: number | undefined, nowMs: number): boolean {
+  if (typeof expSeconds !== 'number') return true
+  return expSeconds * 1000 - nowMs < 60_000
 }
 
 interface ControlPlaneModel {
@@ -147,6 +169,12 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
   private readonly watchers = new Set<(view: AccountView) => void>()
   private attempt: AttemptState | undefined
   private controlSession: ControlPlaneSession | undefined
+  /**
+   * Why the last control-plane exchange failed, when it did. Exposed through
+   * the loopback probes so a signed-in-but-useless desktop is diagnosable
+   * instead of merely empty.
+   */
+  private controlSessionError: string | undefined
   private loaded: Promise<StoredGrant | undefined> | undefined
 
   constructor(ctx: Context) {
@@ -181,12 +209,17 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
             body,
           })
           if (!tokenResponse.ok) throw new Error(`OIDC token exchange failed: HTTP ${tokenResponse.status}`)
-          const token = await tokenResponse.json() as { id_token?: unknown; access_token?: unknown }
+          const token = await tokenResponse.json() as { id_token?: unknown; access_token?: unknown; refresh_token?: unknown }
           if (typeof token.id_token !== 'string' || typeof token.access_token !== 'string') throw new Error('OIDC token response lacks id_token/access_token')
           const claims = await verifyIdToken(token.id_token)
           if (claims.nonce !== attempt.nonce) throw new Error('OIDC nonce mismatch')
           if (tenantOf(claims) === undefined) throw new Error(`OIDC token has no ${TENANT} claim`)
-          const grant: StoredGrant = { version: 1, issuer, accessToken: token.access_token, idToken: token.id_token, claims }
+          const grant: StoredGrant = {
+            version: 1, issuer, accessToken: token.access_token, idToken: token.id_token, claims,
+            // A realm that does not grant `offline_access` stays usable until
+            // this token expires; the refresh path then reports re-sign-in.
+            ...(typeof token.refresh_token === 'string' && token.refresh_token !== '' ? { refreshToken: token.refresh_token } : {}),
+          }
           await this.ctx.credentials.modifyRecord(KEY, async () => ({ kind: 'grant', payload: grant }))
           this.tenant.update(claims)
           await this.exchangeControlPlane(grant)
@@ -222,9 +255,11 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
           authenticated: this.tenant.authenticated,
           tenantId: this.tenant.tenantId ?? null,
           subjectId: this.tenant.subjectId ?? null,
-          roles: this.tenant.roles,
+          role: this.tenant.roles,
           model: this.tenant.model,
           controlPlaneUrl: this.tenant.controlPlaneUrl ?? null,
+          hasControlPlaneSession: this.controlSession !== undefined,
+          controlPlaneError: this.controlSessionError ?? null,
         }))
       },
     }), 'siriusx-account-sso: tenant probe')
@@ -236,7 +271,10 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
         if (remote !== '127.0.0.1' && remote !== '::1' && remote !== '::ffff:127.0.0.1') { response.writeHead(403).end(); return }
         const session = this.controlSession
         response.writeHead(session === undefined ? 404 : 200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
-        response.end(JSON.stringify(session === undefined ? { error: 'control-plane session unavailable' } : {
+        response.end(JSON.stringify(session === undefined ? {
+          error: 'control-plane session unavailable',
+          ...(this.controlSessionError === undefined ? {} : { detail: this.controlSessionError }),
+        } : {
           baseUrl: session.baseUrl, token: session.token, tenantId: session.tenantId, role: session.role,
           model: session.model, ...(session.modelGatewayUrl === undefined ? {} : { modelGatewayUrl: session.modelGatewayUrl }),
         }))
@@ -247,12 +285,20 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
   private async exchangeControlPlane(grant: StoredGrant): Promise<void> {
     const baseUrl = process.env.SIRIUSX_CONTROL_PLANE_URL?.trim()
     if (baseUrl === undefined || baseUrl === '') return
+    const endpoint = baseUrl.replace(/\/$/u, '')
     try {
-      const response = await fetch(`${baseUrl.replace(/\/$/u, '')}/v1/sso/desktop/exchange`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ idToken: grant.idToken }),
-      })
+      let active = grant
+      let response = await this.postExchange(endpoint, active)
+      // An id_token lives far shorter than a control-plane session. Retrying
+      // once through the offline refresh credential is what makes a sign-in
+      // outlive the id_token instead of dying with it.
+      if (response.status === 401) {
+        const refreshed = await this.refreshGrant(active)
+        if (refreshed !== undefined) {
+          active = refreshed
+          response = await this.postExchange(endpoint, active)
+        }
+      }
       if (!response.ok) throw new Error(`control-plane SSO exchange failed: HTTP ${response.status}`)
       const body = await response.json() as { token?: unknown; tenantId?: unknown; role?: unknown; model?: unknown; modelGatewayUrl?: unknown }
       if (typeof body.token !== 'string' || typeof body.tenantId !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('control-plane SSO exchange returned an invalid session')
@@ -260,14 +306,70 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
         ? { id: (body.model as Record<string, unknown>).id as string, provider: (body.model as Record<string, unknown>).provider as string, model: (body.model as Record<string, unknown>).model as string }
         : null
       this.controlSession = {
-        baseUrl: baseUrl.replace(/\/$/u, ''), token: body.token, tenantId: body.tenantId, role: body.role,
+        baseUrl: endpoint, token: body.token, tenantId: body.tenantId, role: body.role,
         model, ...(typeof body.modelGatewayUrl === 'string' ? { modelGatewayUrl: body.modelGatewayUrl } : {}),
       }
       this.tenant.controlPlaneUrl = this.controlSession.baseUrl
       this.tenant.controlPlaneToken = this.controlSession.token
       this.tenant.model = model
+      this.controlSessionError = undefined
     } catch (error) {
+      // Record why the session is missing. This used to be swallowed entirely,
+      // which is how a desktop could report "signed in" while every tenant
+      // feature stayed empty.
+      this.controlSessionError = error instanceof Error ? error.message : String(error)
+      console.warn(`siriusx-account-sso: control-plane session unavailable (${this.controlSessionError})`)
       if (process.env.SIRIUSX_CONTROL_PLANE_REQUIRED === '1') throw error
+    }
+  }
+
+  private async postExchange(endpoint: string, grant: StoredGrant): Promise<Response> {
+    return await fetch(`${endpoint}/v1/sso/desktop/exchange`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ idToken: grant.idToken }),
+    })
+  }
+
+  /**
+   * Trade the stored refresh credential for a fresh grant.
+   *
+   * Failure is reported by return value, not thrown: every caller has a
+   * working fallback (the current access token, or a re-sign-in prompt), and
+   * none of them is improved by propagating this.
+   * @param grant - grant carrying the refresh credential.
+   * @returns the persisted new grant, or `undefined` when refresh is impossible.
+   */
+  private async refreshGrant(grant: StoredGrant): Promise<StoredGrant | undefined> {
+    if (grant.refreshToken === undefined || grant.refreshToken === '') return undefined
+    try {
+      const tokenUrl = new URL(process.env.SIRIUSX_SSO_TOKEN_PATH ?? '/oauth/token', grant.issuer)
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: grant.refreshToken,
+          client_id: env('SIRIUSX_SSO_CLIENT_ID'),
+        }),
+      })
+      if (!response.ok) throw new Error(`refresh failed: HTTP ${response.status}`)
+      const token = await response.json() as { id_token?: unknown; access_token?: unknown; refresh_token?: unknown }
+      if (typeof token.id_token !== 'string' || typeof token.access_token !== 'string') throw new Error('refresh response lacks id_token/access_token')
+      // A refresh response carries no nonce, so only issuer/audience/expiry are
+      // verified here; the nonce binding was established at sign-in.
+      const claims = await verifyIdToken(token.id_token)
+      if (tenantOf(claims) === undefined) throw new Error(`refreshed token has no ${TENANT} claim`)
+      const next: StoredGrant = {
+        version: 1, issuer: grant.issuer, accessToken: token.access_token, idToken: token.id_token, claims,
+        refreshToken: typeof token.refresh_token === 'string' && token.refresh_token !== '' ? token.refresh_token : grant.refreshToken,
+      }
+      await this.ctx.credentials.modifyRecord(KEY, async () => ({ kind: 'grant', payload: next }))
+      this.tenant.update(claims)
+      return next
+    } catch (error) {
+      console.warn(`siriusx-account-sso: token refresh failed (${error instanceof Error ? error.message : String(error)}); sign in again`)
+      return undefined
     }
   }
 
@@ -277,17 +379,26 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
   }
 
   private async grant(): Promise<StoredGrant | undefined> {
-    this.loaded ??= this.ctx.credentials.readRecord(KEY).then(record => {
+    this.loaded ??= this.ctx.credentials.readRecord(KEY).then(async record => {
       if (record === undefined) return undefined
       if (record.kind !== 'grant') throw new Error('siriusx-account-sso: credential record is not a grant')
-      const grant = record.payload as unknown as StoredGrant
+      let grant = record.payload as unknown as StoredGrant
       if (grant.version !== 1) throw new Error('siriusx-account-sso: unsupported grant')
       this.tenant.update(grant.claims)
+      // A stored id_token outlives its own validity across restarts, so the
+      // exchange below would fail on its first attempt every time. Refresh
+      // first when the credential is already past (or near) expiry.
+      const exp = grant.claims.exp
+      if (idTokenExpiring(typeof exp === 'number' ? exp : undefined, Date.now())) {
+        grant = await this.refreshGrant(grant) ?? grant
+      }
       if (this.controlSession === undefined) void this.exchangeControlPlane(grant)
       return grant
     })
     return this.loaded
   }
+
+
 
   async getState(): Promise<AccountView> {
     const grant = await this.grant()
@@ -329,7 +440,10 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
       response_type: 'code',
       client_id: clientId,
       redirect_uri: callbackUri,
-      scope: process.env.SIRIUSX_SSO_SCOPE ?? 'openid profile email',
+      // `offline_access` is what makes the issuer hand back a refresh token, and
+      // the control-plane session is refreshed from it: without this scope every
+      // exchange more than one id_token lifetime after sign-in fails.
+      scope: process.env.SIRIUSX_SSO_SCOPE ?? 'openid profile email offline_access',
       state,
       nonce,
       code_challenge: s256(verifier),

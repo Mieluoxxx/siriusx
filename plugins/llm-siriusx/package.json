@@ -1,0 +1,36 @@
+{
+  "name": "@siriusx/dsh-llm-siriusx",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The siriusx LLM route: tenant Messages traffic through the SiriusX Model Gateway.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "exports": "./dist/index.js",
+  "files": [
+    "dist/index.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:@deepseek-ai/*",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-llm-deepseek": "0.2.2-rc.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "6.0.3"
+  }
+}

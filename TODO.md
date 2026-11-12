@@ -104,7 +104,8 @@
 - [x] Desktop Enterprise SSO → control-plane session exchange
 - [x] Team Panel 自动 bootstrap control-plane session
 - [x] SSO tenant model metadata 注入与本地 Executor model provider 注入
-- [ ] Desktop SSO token refresh / control-plane logout revocation
+- [x] Desktop SSO token refresh（offline_access + refresh_token 主动刷新）
+- [ ] control-plane logout revocation
 - [x] Web Gateway 支持 X-Forwarded-Proto/Host 的 HTTPS Origin
 - [x] Trusted proxy 下的登录限流按 X-Forwarded-For 区分客户端
 - [x] HTTPS 下返回 HSTS
@@ -155,7 +156,11 @@
 - [x] API Key AES-GCM 加密、列表只返回掩码
 - [x] Model Gateway 按租户和模型转发 lite-cpa
 - [x] 本地 mock upstream 端到端验证
+- [x] `siriusx` LLM provider（Model Gateway + control session token）
+- [x] enterprise.json `bundles` 接线（profile 自动挂载）
 - [ ] 真实企业上游 URL / API Key 联调
+
+服务端对齐清单见 `docs/server-alignment.md`。
 - [x] 管理面 upstream 配置 + 多上游 fallback + 本地 mock 端到端
 - [ ] 管理面 upstream 连通性测试按钮
 - [ ] 每 upstream 超时 / 权重 / 健康检查

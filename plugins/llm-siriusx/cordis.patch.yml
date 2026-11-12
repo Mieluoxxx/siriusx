@@ -1,0 +1,6 @@
+# Mount the tenant Model Gateway route next to the official LLM providers.
+# The route reports itself unusable until enterprise SSO delivers a session, so
+# mounting it unconditionally costs a personal build nothing.
+- insert:
+    - id: siriusx-llm
+      name: '@siriusx/dsh-llm-siriusx'

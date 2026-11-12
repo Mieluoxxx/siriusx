@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="${OUT:-$ROOT/artifacts/release}"
 STAGE="$OUT/plugin-bundle"
 rm -rf "$STAGE"; mkdir -p "$STAGE/plugins"
-PLUGINS=(telemetry-off telemetry-off-desktop executor-local client-ui-team client-ui-bots client-ui-tickets client-ui-sessions client-ui-approvals brand-siriusx account-sso)
+PLUGINS=(telemetry-off telemetry-off-desktop executor-local client-ui-team client-ui-bots client-ui-tickets client-ui-sessions client-ui-approvals brand-siriusx account-sso llm-siriusx)
 for name in "${PLUGINS[@]}"; do
   cp -a "$ROOT/plugins/$name" "$STAGE/plugins/"
 done
