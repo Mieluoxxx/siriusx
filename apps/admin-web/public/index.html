@@ -19,11 +19,17 @@
         <span>Platform administration</span>
       </div>
     </div>
-    <form class="auth" id="auth-form">
-      <label for="token">Platform token</label>
-      <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Platform admin token">
-      <button id="load" class="button primary" type="submit">Connect</button>
-    </form>
+    <div class="header-actions">
+      <button id="notification-button" class="icon-button" type="button" popovertarget="notification-panel" aria-label="Notifications" aria-expanded="false">
+        <span aria-hidden="true">Notifications</span><span id="notification-count" class="count" hidden>0</span>
+      </button>
+      <form class="auth" id="auth-form">
+        <label for="token">Platform token</label>
+        <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Platform admin token">
+        <p id="auth-error" class="form-error" role="alert" hidden></p>
+        <button id="load" class="button primary" type="submit">Connect</button>
+      </form>
+    </div>
   </header>
   <main id="app" tabindex="-1">
     <section class="empty-state">
@@ -32,6 +38,11 @@
       <p>Enter the platform admin token to load tenants, models, sources, and audit data.</p>
     </section>
   </main>
+  <div id="notification-panel" class="notification-panel" popover="auto" role="region" aria-labelledby="notification-title">
+    <div class="notification-head"><h2 id="notification-title">Notifications</h2><button id="notification-view" class="button small" type="button">View support</button></div>
+    <div id="notification-list"></div>
+  </div>
+  <div id="toast-region" class="toast-region" role="region" aria-label="Notifications"></div>
   <div id="error" class="alert" role="alert" aria-live="assertive"></div>
 </body>
 </html>

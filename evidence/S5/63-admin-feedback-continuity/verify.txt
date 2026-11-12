@@ -1,0 +1,16 @@
+{
+  "authError": {
+    "hidden": false,
+    "text": "platform admin token required"
+  },
+  "notificationOpen": true,
+  "indicator": "198px",
+  "toastVisible": 1,
+  "toastText": "✓\nTenant suspended\nUndo\nClose",
+  "restored": true,
+  "dialogOpen": true,
+  "confirmOpen": true,
+  "confirmClosed": 0,
+  "dialogClosed": true,
+  "errors": []
+}

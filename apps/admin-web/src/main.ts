@@ -1,6 +1,11 @@
 /** Standalone SiriusX platform administration SPA. */
 
 type Json = Record<string, unknown>
+
+class ApiError extends Error {
+  readonly status: number
+  constructor(status: number, message: string) { super(message); this.status = status }
+}
 type Tenant = { id: string; name: string; idpIssuer: string; createdAt: number; status: 'active' | 'suspended'; usage: { users: number; devices: number; deviceTickets: number; cloudTickets: number } }
 type Model = { id: string; name: string; provider: string; model: string; enabled: boolean }
 type Binding = { id: string; provider: string; externalId: string; tenantId: string; botId: string | null; repoUrl: string | null; baseRef: string | null; autoDispatch: boolean }
@@ -18,13 +23,100 @@ const errorBox = document.getElementById('error')!
 let selectedTenant: string | undefined
 let tenantQuery = ''
 let tenantStatus = ''
+let supportRequests: SupportRequest[] = []
+let toastSerial = 0
+let tenantDialogSource: DOMRect | undefined
 
 function showError(error: unknown): void {
-  errorBox.textContent = error instanceof Error ? error.message : String(error)
+  const message = error instanceof Error ? error.message : String(error)
+  errorBox.replaceChildren(node('span', message))
+  const close = node('button', 'Dismiss', 'button small')
+  close.type = 'button'
+  close.addEventListener('click', clearError)
+  errorBox.append(close)
   errorBox.classList.add('visible')
 }
 
-function clearError(): void { errorBox.textContent = ''; errorBox.classList.remove('visible') }
+function clearError(): void { errorBox.replaceChildren(); errorBox.classList.remove('visible') }
+
+function showAuthError(error: unknown): void {
+  const box = document.getElementById('auth-error')!
+  box.textContent = error instanceof Error ? error.message : String(error)
+  box.hidden = false
+}
+
+function clearAuthError(): void { const box = document.getElementById('auth-error')!; box.textContent = ''; box.hidden = true }
+
+function notify(message: string, action?: { label: string; run: () => void | Promise<void> }): void {
+  const id = `siriusx-toast-${++toastSerial}`
+  const toast = node('div', undefined, 'toast')
+  toast.id = id
+  toast.setAttribute('popover', 'manual')
+  toast.setAttribute('role', 'status')
+  toast.append(node('span', '✓', 'toast-icon'), node('span', message, 'toast-text'))
+  if (action !== undefined) {
+    const actionButton = node('button', action.label, 'toast-action')
+    actionButton.type = 'button'
+    actionButton.addEventListener('click', () => {
+      toast.hidePopover()
+      void Promise.resolve(action.run()).catch(showError)
+    })
+    toast.append(actionButton)
+  }
+  const close = node('button', 'Close', 'toast-close')
+  close.type = 'button'
+  close.setAttribute('popovertarget', id)
+  close.setAttribute('popovertargetaction', 'hide')
+  close.setAttribute('aria-label', 'Dismiss notification')
+  toast.append(close)
+  const region = document.getElementById('toast-region')!
+  region.append(toast)
+  toast.showPopover()
+  ;(document as Document & { ariaNotify?: (text: string) => void }).ariaNotify?.(message)
+  let timer: number | undefined
+  let remaining = action === undefined ? 4000 : 6000
+  let started = Date.now()
+  const hide = (): void => { if (toast.matches(':popover-open')) toast.hidePopover(); toast.remove() }
+  const schedule = (): void => { started = Date.now(); timer = window.setTimeout(hide, remaining) }
+  schedule()
+  const pause = (): void => { if (timer !== undefined) { window.clearTimeout(timer); timer = undefined; remaining -= Date.now() - started } }
+  const resume = (): void => { if (!toast.matches(':popover-open')) return; schedule() }
+  toast.addEventListener('pointerenter', pause)
+  toast.addEventListener('pointerleave', resume)
+  toast.addEventListener('focusin', pause)
+  toast.addEventListener('focusout', resume)
+  toast.addEventListener('toggle', event => { if ((event as ToggleEvent).newState === 'closed') toast.remove() })
+}
+
+function renderNotifications(requests: SupportRequest[]): void {
+  supportRequests = requests
+  const pending = requests.filter(request => request.status === 'pending')
+  const count = document.getElementById('notification-count')!
+  count.textContent = String(pending.length)
+  count.hidden = pending.length === 0
+  const list = document.getElementById('notification-list')!
+  if (pending.length === 0) {
+    list.replaceChildren(node('div', 'No pending notifications.', 'notification-empty'))
+    return
+  }
+  list.replaceChildren(...pending.map(request => {
+    const item = node('div', undefined, 'notification-item')
+    item.append(node('strong', `Support request · ${request.tenantId}`), node('p', request.reason), node('p', `Requested by ${request.requestedBy}`))
+    const open = node('button', 'View support', 'button small')
+    open.type = 'button'
+    open.addEventListener('click', () => { document.getElementById('notification-panel')?.hidePopover(); showView('support') })
+    item.append(open)
+    return item
+  }))
+}
+
+function initHeader(): void {
+  const button = document.getElementById('notification-button') as HTMLButtonElement
+  const panel = document.getElementById('notification-panel')!
+  panel.addEventListener('toggle', event => button.setAttribute('aria-expanded', String((event as ToggleEvent).newState === 'open')))
+  document.getElementById('notification-view')!.addEventListener('click', () => { panel.hidePopover(); showView('support') })
+  document.getElementById('notification-list')!.replaceChildren(node('div', 'No pending notifications.', 'notification-empty'))
+}
 
 function token(): string { return sessionStorage.getItem('siriusx.platformToken') ?? '' }
 
@@ -40,7 +132,7 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const text = await response.text()
   let value: unknown = undefined
   try { value = text === '' ? undefined : JSON.parse(text) } catch { value = text }
-  if (!response.ok) throw new Error(typeof value === 'object' && value !== null && 'error' in value ? String((value as Json).error) : `HTTP ${response.status}`)
+  if (!response.ok) throw new ApiError(response.status, typeof value === 'object' && value !== null && 'error' in value ? String((value as Json).error) : `HTTP ${response.status}`)
   return value as T
 }
 
@@ -109,6 +201,7 @@ function renderShell(): void {
       <aside class="sidenav">
         <div class="nav-label">Workspace</div>
         <nav aria-label="Platform administration" id="admin-nav">
+          <span class="nav-indicator" aria-hidden="true"></span>
           <button class="nav-button" type="button" data-view="overview" aria-current="page"><span class="dot"></span>Overview</button>
           <button class="nav-button" type="button" data-view="tenants"><span class="dot"></span>Tenants</button>
           <button class="nav-button" type="button" data-view="models"><span class="dot"></span>Models</button>
@@ -179,6 +272,17 @@ function renderShell(): void {
     </div>
     <dialog id="tenant-dialog" aria-labelledby="detail-title"><div id="tenant-detail"></div></dialog>`
   addHandlers()
+  requestAnimationFrame(moveNavIndicator)
+}
+
+function moveNavIndicator(): void {
+  const nav = document.getElementById('admin-nav')
+  const active = nav?.querySelector<HTMLButtonElement>('.nav-button[aria-current="page"]')
+  const indicator = nav?.querySelector<HTMLElement>('.nav-indicator')
+  if (nav === null || nav === undefined || active === null || active === undefined || indicator === null || indicator === undefined) return
+  indicator.style.width = `${active.offsetWidth}px`
+  indicator.style.height = `${active.offsetHeight}px`
+  indicator.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`
 }
 
 function showView(view: string): void {
@@ -186,7 +290,8 @@ function showView(view: string): void {
   for (const element of document.querySelectorAll<HTMLButtonElement>('.nav-button')) element.setAttribute('aria-current', element.dataset.view === view ? 'page' : 'false')
   const nav = document.getElementById('admin-nav')
   if (nav?.matches(':popover-open')) nav.hidePopover()
-  document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, behavior: 'smooth' })
+  document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  requestAnimationFrame(moveNavIndicator)
 }
 
 let tenants: Tenant[] = []
@@ -201,8 +306,8 @@ function addHandlers(): void {
   for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
     item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
   }
-  document.getElementById('tenant-filter')!.addEventListener('input', event => { tenantQuery = (event.target as HTMLInputElement).value; renderTenants() })
-  document.getElementById('tenant-status-filter')!.addEventListener('change', event => { tenantStatus = (event.target as HTMLSelectElement).value; renderTenants() })
+  document.getElementById('tenant-filter')!.addEventListener('input', event => { tenantQuery = (event.target as HTMLInputElement).value; renderTenants(true) })
+  document.getElementById('tenant-status-filter')!.addEventListener('change', event => { tenantStatus = (event.target as HTMLSelectElement).value; renderTenants(true) })
   document.getElementById('tenant-filters')!.addEventListener('submit', event => event.preventDefault())
   const density = document.getElementById('density-toggle') as HTMLButtonElement
   const applyDensity = (value: string): void => {
@@ -242,6 +347,7 @@ async function createTenant(): Promise<void> {
     ...(tenantId === '' ? {} : { tenantId }),
   }) })
   await loadAll()
+  notify('Tenant created')
 }
 
 async function createModel(): Promise<void> {
@@ -253,6 +359,7 @@ async function createModel(): Promise<void> {
     model: (document.getElementById('model-model') as HTMLInputElement).value,
   }) })
   await loadAll()
+  notify('Model added')
 }
 
 async function createBinding(): Promise<void> {
@@ -267,6 +374,7 @@ async function createBinding(): Promise<void> {
     autoDispatch: (document.getElementById('source-auto') as HTMLInputElement).checked,
   }) })
   await loadAll()
+  notify('Source binding added')
 }
 
 async function exportPlatformAudit(): Promise<void> {
@@ -279,7 +387,19 @@ async function exportPlatformAudit(): Promise<void> {
   URL.revokeObjectURL(link.href)
 }
 
-function renderTenants(): void {
+type ViewTransitionLike = { finished: Promise<void>; skipTransition: () => void }
+let activeTenantTransition: ViewTransitionLike | undefined
+
+function renderTenants(animate = false): void {
+  const doc = document as Document & { startViewTransition?: (callback: () => void) => ViewTransitionLike }
+  if (!animate || doc.startViewTransition === undefined) { renderTenantsNow(); return }
+  activeTenantTransition?.skipTransition()
+  const transition = doc.startViewTransition(() => renderTenantsNow())
+  activeTenantTransition = transition
+  void transition.finished.finally(() => { if (activeTenantTransition === transition) activeTenantTransition = undefined })
+}
+
+function renderTenantsNow(): void {
   const host = document.getElementById('tenants')!
   const query = tenantQuery.trim().toLowerCase()
   const filtered = tenants.filter(tenant => {
@@ -292,13 +412,12 @@ function renderTenants(): void {
   const rows = filtered.map(tenant => {
     const actions = node('div', undefined, 'row')
     actions.append(button('Open', () => { selectedTenant = tenant.id; void openTenant(tenant.id).catch(showError) }))
-    actions.append(button(tenant.status === 'active' ? 'Suspend' : 'Resume', async () => {
-      await api(`/v1/admin/tenants/${encodeURIComponent(tenant.id)}/status`, { method: 'POST', body: JSON.stringify({ status: tenant.status === 'active' ? 'suspended' : 'active' }) })
-      await loadAll()
-    }))
+    actions.append(button(tenant.status === 'active' ? 'Suspend' : 'Resume', () => tenant.status === 'active' ? suspendTenant(tenant.id) : resumeTenant(tenant.id)))
     return [tenant.name, tenant.id, tenant.idpIssuer, pill(tenant.status), String(tenant.usage.users), String(tenant.usage.devices), String(tenant.usage.deviceTickets), String(tenant.usage.cloudTickets), actions]
   })
-  host.replaceChildren(table(['Name', 'Tenant', 'Issuer', 'Status', 'Users', 'Devices', 'Device tickets', 'Cloud tickets', ''], rows, 'Tenants'))
+  const rendered = table(['Name', 'Tenant', 'Issuer', 'Status', 'Users', 'Devices', 'Device tickets', 'Cloud tickets', ''], rows, 'Tenants')
+  rendered.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((row, index) => { const tenantId = filtered[index]?.id ?? ''; row.setAttribute('data-tenant-id', tenantId); row.style.viewTransitionName = `tenant-${tenantId.replace(/[^a-zA-Z0-9_-]/gu, '-')}` })
+  host.replaceChildren(rendered)
 }
 
 function renderModels(): void {
@@ -353,10 +472,62 @@ async function loadAll(): Promise<void> {
   renderBindings()
   const supportHost = document.getElementById('support')!
   supportHost.replaceChildren(table(['Tenant', 'Reason', 'Status', 'Requested by'], supportResult.requests.map(request => [request.tenantId, request.reason, request.status, request.requestedBy])))
+  renderNotifications(supportResult.requests)
   const auditHost = document.getElementById('audit')!
   auditHost.replaceChildren(table(['Actor', 'Action', 'Target', 'Detail', 'At'], auditResult.audit.map(event => [event.actor, event.action, event.target, event.detail ?? '', new Date(event.createdAt).toLocaleString()]), 'Platform audit'))
   renderMetrics(supportResult.requests, auditResult.audit)
   if (selectedTenant !== undefined) await openTenant(selectedTenant)
+}
+
+async function suspendTenant(tenantId: string): Promise<void> {
+  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/status`, { method: 'POST', body: JSON.stringify({ status: 'suspended' }) })
+  await loadAll()
+  notify('Tenant suspended', { label: 'Undo', run: async () => { await resumeTenant(tenantId); notify('Tenant restored') } })
+}
+
+async function resumeTenant(tenantId: string): Promise<void> {
+  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/status`, { method: 'POST', body: JSON.stringify({ status: 'active' }) })
+  await loadAll()
+  notify('Tenant resumed')
+}
+
+function confirmAction(title: string, message: string, confirmLabel = 'Delete'): Promise<boolean> {
+  return new Promise(resolve => {
+    const dialog = node('dialog', undefined, 'confirm-dialog')
+    dialog.setAttribute('aria-labelledby', 'confirm-title')
+    const head = node('div', undefined, 'dialog-head')
+    head.append(node('h2', title))
+    const body = node('div', undefined, 'dialog-body')
+    body.append(node('p', message, 'lede'))
+    const actions = node('div', undefined, 'dialog-actions')
+    const cancel = node('button', 'Cancel', 'button')
+    const accept = node('button', confirmLabel, 'button danger')
+    cancel.type = 'button'; accept.type = 'button'
+    actions.append(cancel, accept); body.append(actions); dialog.append(head, body)
+    let settled = false
+    const finish = (value: boolean): void => { if (settled) return; settled = true; dialog.close(); dialog.remove(); resolve(value) }
+    cancel.addEventListener('click', () => finish(false))
+    accept.addEventListener('click', () => finish(true))
+    dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false) })
+    document.body.append(dialog)
+    dialog.showModal()
+    accept.focus()
+  })
+}
+
+function closeTenantDialog(dialog: HTMLDialogElement): void {
+  if (!dialog.open || dialog.dataset.closing === 'true') return
+  const source = tenantDialogSource
+  if (source === undefined || dialog.animate === undefined) { dialog.close(); return }
+  dialog.dataset.closing = 'true'
+  const target = dialog.getBoundingClientRect()
+  const dx = source.left + source.width / 2 - (target.left + target.width / 2)
+  const dy = source.top + source.height / 2 - (target.top + target.height / 2)
+  const animation = dialog.animate([
+    { transform: 'none', opacity: 1, clipPath: 'inset(0 round 18px)' },
+    { transform: `translate(${dx}px, ${dy}px) scale(0.82)`, opacity: 0.3, clipPath: 'inset(0 round 16px)' },
+  ], { duration: 320, easing: 'cubic-bezier(.4,0,1,1)' })
+  void animation.finished.finally(() => { dialog.close(); dialog.dataset.closing = 'false' })
 }
 
 async function openTenant(tenantId: string): Promise<void> {
@@ -389,9 +560,24 @@ async function openTenant(tenantId: string): Promise<void> {
       <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>
     </div>`
   ;(document.getElementById('detail-title') as HTMLElement).textContent = `${tenant.name} · ${tenant.id}`
-  document.getElementById('close-detail')!.addEventListener('click', () => { dialog.close() })
-  dialog.addEventListener('close', () => { selectedTenant = undefined }, { once: true })
-  if (!dialog.open) dialog.showModal()
+  document.getElementById('close-detail')!.addEventListener('click', () => { closeTenantDialog(dialog) })
+  dialog.addEventListener('cancel', event => { if (dialog.dataset.closing !== 'true') { event.preventDefault(); closeTenantDialog(dialog) } })
+  dialog.addEventListener('close', () => { selectedTenant = undefined; tenantDialogSource = undefined }, { once: true })
+  if (!dialog.open) {
+    const source = document.querySelector<HTMLElement>(`[data-tenant-id="${CSS.escape(tenantId)}"]`)
+    const sourceRect = source?.getBoundingClientRect()
+    tenantDialogSource = sourceRect
+    dialog.showModal()
+    if (sourceRect !== undefined && dialog.animate !== undefined) {
+      const target = dialog.getBoundingClientRect()
+      const dx = sourceRect.left + sourceRect.width / 2 - (target.left + target.width / 2)
+      const dy = sourceRect.top + sourceRect.height / 2 - (target.top + target.height / 2)
+      dialog.animate([
+        { transform: `translate(${dx}px, ${dy}px) scale(0.82)`, opacity: 0.35, clipPath: 'inset(0 round 16px)' },
+        { transform: 'none', opacity: 1, clipPath: 'inset(0 round 18px)' },
+      ], { duration: 420, easing: 'cubic-bezier(.32,.72,0,1)' })
+    }
+  }
   ;(document.getElementById('detail-name') as HTMLInputElement).value = tenant.name
   ;(document.getElementById('detail-issuer') as HTMLInputElement).value = tenant.idpIssuer
   document.getElementById('save-tenant')!.addEventListener('click', () => { void saveTenant(tenantId).catch(showError) })
@@ -414,7 +600,15 @@ async function openTenant(tenantId: string): Promise<void> {
   document.getElementById('add-upstream')!.addEventListener('click', () => { void addUpstream(tenantId).catch(showError) })
   const upstreamHost = document.getElementById('detail-upstreams')!
   upstreamHost.replaceChildren(table(['Model', 'Name', 'Protocol', 'URL', 'Upstream model', 'Priority', 'Enabled', 'Key', ''], upstreamResult.upstreams.map(upstream => {
-    const remove = button('Delete', async () => { await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models/${encodeURIComponent(upstream.modelId)}/upstreams/${encodeURIComponent(upstream.id)}`, { method: 'DELETE' }); await openTenant(tenantId) })
+    const remove = button('Delete', async () => {
+      if (!await confirmAction('Delete upstream?', `Delete ${upstream.name} from ${upstream.modelId}? This cannot be undone.`)) return
+      const row = remove.closest('tr')
+      row?.classList.add('row-leaving')
+      await new Promise(resolve => setTimeout(resolve, 180))
+      await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models/${encodeURIComponent(upstream.modelId)}/upstreams/${encodeURIComponent(upstream.id)}`, { method: 'DELETE' })
+      await openTenant(tenantId)
+      notify('Upstream deleted')
+    })
     return [upstream.modelId, upstream.name, upstream.protocol, upstream.baseUrl, upstream.upstreamModel, String(upstream.priority), String(upstream.enabled), upstream.hasApiKey ? 'configured' : '—', remove]
   })))
   const bound = new Map(tenantModelResult.models.map(model => [model.id, model]))
@@ -422,6 +616,7 @@ async function openTenant(tenantId: string): Promise<void> {
     const action = button(bound.has(model.id) ? 'Set default' : 'Bind', async () => {
       await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models/${encodeURIComponent(model.id)}`, { method: 'PUT', body: JSON.stringify({ isDefault: bound.get(model.id)?.isDefault === true }) })
       await openTenant(tenantId)
+      notify('Model binding updated')
     })
     return [model.id, model.name, String(bound.get(model.id)?.isDefault === true), action]
   })))
@@ -444,6 +639,7 @@ async function addUpstream(tenantId: string): Promise<void> {
     enabled: (document.getElementById('up-enabled') as HTMLInputElement).checked,
   }) })
   await openTenant(tenantId)
+  notify('Upstream added')
 }
 
 async function saveTenant(tenantId: string): Promise<void> {
@@ -452,6 +648,7 @@ async function saveTenant(tenantId: string): Promise<void> {
     idpIssuer: (document.getElementById('detail-issuer') as HTMLInputElement).value,
   }) })
   await loadAll(); await openTenant(tenantId)
+  notify('Tenant updated')
 }
 
 async function saveQuota(tenantId: string): Promise<void> {
@@ -462,6 +659,7 @@ async function saveQuota(tenantId: string): Promise<void> {
     maxDeviceTicketsPerDay: Number((document.getElementById('q-device-tickets') as HTMLInputElement).value),
   }) })
   await openTenant(tenantId)
+  notify('Quota saved')
 }
 
 async function saveBilling(tenantId: string): Promise<void> {
@@ -473,6 +671,7 @@ async function saveBilling(tenantId: string): Promise<void> {
     monthlyBudgetCents: budget === '' ? null : Number(budget),
   }) })
   await openTenant(tenantId)
+  notify('Billing saved')
 }
 
 async function addUser(tenantId: string): Promise<void> {
@@ -480,20 +679,28 @@ async function addUser(tenantId: string): Promise<void> {
   const role = (document.getElementById('new-user-role') as HTMLSelectElement).value
   await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/users`, { method: 'POST', body: JSON.stringify({ email, role }) })
   await openTenant(tenantId)
+  notify('User added')
 }
 
 async function requestSupport(tenantId: string): Promise<void> {
   const reason = (document.getElementById('support-reason') as HTMLInputElement).value
   await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/support-requests`, { method: 'POST', body: JSON.stringify({ reason }) })
   await loadAll(); await openTenant(tenantId)
+  notify('Support request sent')
 }
+
+initHeader()
 
 document.getElementById('auth-form')!.addEventListener('submit', event => {
   event.preventDefault()
   sessionStorage.setItem('siriusx.platformToken', tokenInput.value)
   selectedTenant = undefined
+  clearAuthError()
   renderShell()
-  void loadAll().catch(showError)
+  void loadAll().catch(error => {
+    if (error instanceof ApiError && error.status === 401) showAuthError(error)
+    else showError(error)
+  })
 })
 
-if (token() !== '') { tokenInput.value = token(); renderShell(); void loadAll().catch(showError) }
+if (token() !== '') { tokenInput.value = token(); renderShell(); void loadAll().catch(error => { if (error instanceof ApiError && error.status === 401) showAuthError(error); else showError(error) }) }

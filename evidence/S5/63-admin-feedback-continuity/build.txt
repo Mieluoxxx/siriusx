@@ -1,0 +1,6 @@
+$ node build.mjs
+
+  dist/admin.js  30.0kb
+
+⚡ Done in 4ms
+{"built":"/root/siriusx/apps/admin-web/dist"}
