@@ -514,3 +514,4 @@ table { font-size: var(--table-font); }
 }
 
 tr.row-leaving { opacity: 0; transform: translateX(10px); transition: opacity 180ms ease-in, transform 180ms ease-in; }
+.auth-form-root { min-inline-size: min(360px, 100%); }

@@ -48,7 +48,57 @@
     "version": "0.0.0",
     "path": "/root/siriusx/apps/admin-web",
     "private": true,
+    "dependencies": {
+      "@base-ui-components/react": {
+        "from": "@base-ui-components/react",
+        "version": "1.0.0-rc.0",
+        "resolved": "https://registry.npmjs.org/@base-ui-components/react/-/react-1.0.0-rc.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@base-ui-components+react@1.0.0-rc.0_@types+react@19.3.0_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/@base-ui-components/react"
+      },
+      "@stylexjs/stylex": {
+        "from": "@stylexjs/stylex",
+        "version": "0.19.2",
+        "resolved": "https://registry.npmjs.org/@stylexjs/stylex/-/stylex-0.19.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@stylexjs+stylex@0.19.2/node_modules/@stylexjs/stylex"
+      },
+      "react": {
+        "from": "react",
+        "version": "19.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react@19.3.1/node_modules/react"
+      },
+      "react-dom": {
+        "from": "react-dom",
+        "version": "19.3.1",
+        "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/react-dom@19.3.1_react@19.3.1/node_modules/react-dom"
+      }
+    },
     "devDependencies": {
+      "@stylexjs/esbuild-plugin": {
+        "from": "@stylexjs/esbuild-plugin",
+        "version": "0.11.1",
+        "resolved": "https://registry.npmjs.org/@stylexjs/esbuild-plugin/-/esbuild-plugin-0.11.1.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@stylexjs+esbuild-plugin@0.11.1/node_modules/@stylexjs/esbuild-plugin"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "19.3.0",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react@19.3.0/node_modules/@types/react"
+      },
+      "@types/react-dom": {
+        "from": "@types/react-dom",
+        "version": "19.3.0",
+        "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/@types+react-dom@19.3.0_@types+react@19.3.0/node_modules/@types/react-dom"
+      },
+      "esbuild": {
+        "from": "esbuild",
+        "version": "0.28.2",
+        "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "path": "/root/siriusx/node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild"
+      },
       "typescript": {
         "from": "typescript",
         "version": "6.0.3",

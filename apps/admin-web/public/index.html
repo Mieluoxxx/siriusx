@@ -7,6 +7,7 @@
   <title>SiriusX Platform Admin</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/stylex.css">
   <script src="/admin.js" defer></script>
 </head>
 <body>
@@ -23,12 +24,7 @@
       <button id="notification-button" class="icon-button" type="button" popovertarget="notification-panel" aria-label="Notifications" aria-expanded="false">
         <span aria-hidden="true">Notifications</span><span id="notification-count" class="count" hidden>0</span>
       </button>
-      <form class="auth" id="auth-form">
-        <label for="token">Platform token</label>
-        <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Platform admin token">
-        <p id="auth-error" class="form-error" role="alert" hidden></p>
-        <button id="load" class="button primary" type="submit">Connect</button>
-      </form>
+      <div id="auth-form-root" class="auth-form-root"></div>
     </div>
   </header>
   <main id="app" tabindex="-1">

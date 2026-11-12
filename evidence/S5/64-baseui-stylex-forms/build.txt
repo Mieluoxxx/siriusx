@@ -1,0 +1,2 @@
+$ node build.mjs
+{"built":"/root/siriusx/apps/admin-web/dist"}

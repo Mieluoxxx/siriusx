@@ -9,8 +9,9 @@
     "noUnusedParameters": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": [],
+    "jsx": "react-jsx",
+    "types": ["react", "react-dom"],
     "exactOptionalPropertyTypes": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

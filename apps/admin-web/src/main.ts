@@ -1,4 +1,7 @@
 /** Standalone SiriusX platform administration SPA. */
+import { createElement } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { AuthForm, CreateBindingForm, CreateModelForm, CreateTenantForm, TenantFilters, TenantForms, numberValue, valueOf } from './forms'
 
 type Json = Record<string, unknown>
 
@@ -17,13 +20,12 @@ type Quota = { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: numb
 type Billing = { currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }
 
 const app = document.getElementById('app')!
-const tokenInput = document.getElementById('token') as HTMLInputElement
-const loadButton = document.getElementById('load') as HTMLButtonElement
 const errorBox = document.getElementById('error')!
+const shellFormRoots: Root[] = []
+let tenantFormRoot: Root | undefined
 let selectedTenant: string | undefined
 let tenantQuery = ''
 let tenantStatus = ''
-let supportRequests: SupportRequest[] = []
 let toastSerial = 0
 let tenantDialogSource: DOMRect | undefined
 
@@ -39,13 +41,16 @@ function showError(error: unknown): void {
 
 function clearError(): void { errorBox.replaceChildren(); errorBox.classList.remove('visible') }
 
-function showAuthError(error: unknown): void {
-  const box = document.getElementById('auth-error')!
-  box.textContent = error instanceof Error ? error.message : String(error)
-  box.hidden = false
+function mountShellForm(id: string, element: ReturnType<typeof createElement>): void {
+  const host = document.getElementById(id)
+  if (host === null) return
+  const root = createRoot(host)
+  root.render(element)
+  shellFormRoots.push(root)
 }
 
-function clearAuthError(): void { const box = document.getElementById('auth-error')!; box.textContent = ''; box.hidden = true }
+function unmountShellForms(): void { while (shellFormRoots.length > 0) shellFormRoots.pop()?.unmount() }
+
 
 function notify(message: string, action?: { label: string; run: () => void | Promise<void> }): void {
   const id = `siriusx-toast-${++toastSerial}`
@@ -89,7 +94,6 @@ function notify(message: string, action?: { label: string; run: () => void | Pro
 }
 
 function renderNotifications(requests: SupportRequest[]): void {
-  supportRequests = requests
   const pending = requests.filter(request => request.status === 'pending')
   const count = document.getElementById('notification-count')!
   count.textContent = String(pending.length)
@@ -150,14 +154,6 @@ function button(label: string, onClick: () => void | Promise<void>, className = 
   return element
 }
 
-function input(placeholder: string, value = ''): HTMLInputElement {
-  const element = node('input')
-  element.placeholder = placeholder
-  element.setAttribute('aria-label', placeholder)
-  element.value = value
-  return element
-}
-
 function table(headers: readonly string[], rows: ReadonlyArray<ReadonlyArray<string | Node>>, caption?: string): HTMLElement {
   const wrapper = node('div', undefined, 'table-wrap')
   wrapper.tabIndex = 0
@@ -185,17 +181,12 @@ function table(headers: readonly string[], rows: ReadonlyArray<ReadonlyArray<str
   return wrapper
 }
 
-function section(title: string): HTMLElement {
-  const element = node('section')
-  element.append(node('h2', title))
-  return element
-}
-
 function pill(status: string, className?: string): HTMLElement {
   return node('span', status, `pill ${className ?? (status === 'active' ? 'active' : status === 'suspended' ? 'suspended' : '')}`.trim())
 }
 
 function renderShell(): void {
+  unmountShellForms()
   app.innerHTML = `
     <div class="workspace">
       <aside class="sidenav">
@@ -220,44 +211,18 @@ function renderShell(): void {
         </section>
         <section class="view" data-view="tenants" id="view-tenants">
           <div class="page-head"><div><p class="eyebrow">Directory</p><h1>Tenants</h1><p class="lede">Provision tenants, manage status, and inspect usage.</p></div></div>
-          <search class="toolbar" aria-label="Filter tenants">
-            <form id="tenant-filters" class="form">
-              <div class="form-field"><label for="tenant-filter">Search tenants</label><input id="tenant-filter" type="search" placeholder="Name, ID, or issuer" autocomplete="off"></div>
-              <div class="form-field compact-field"><label for="tenant-status-filter">Status</label><select id="tenant-status-filter"><option value="">All</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
-              <output id="tenant-count" class="muted" for="tenant-filter tenant-status-filter"></output>
-            </form>
-          </search>
-          <section id="create-tenant" class="card form-card"><div class="section-heading"><div><h2>Create tenant</h2><p class="muted">The tenant ID must match the IdP tenant claim.</p></div></div><div class="form">
-            <div class="form-field"><label for="tenant-name">Name</label><input id="tenant-name" placeholder="Acme"></div>
-            <div class="form-field"><label for="tenant-issuer">IdP issuer</label><input id="tenant-issuer" placeholder="https://idp.example/realms/siriusx"></div>
-            <div class="form-field"><label for="tenant-email">Admin email</label><input id="tenant-email" type="email" placeholder="admin@example.com"></div>
-            <div class="form-field"><label for="tenant-id">Tenant ID <span class="muted">(optional)</span></label><input id="tenant-id" placeholder="tenant-acme"></div>
-            <div class="form-actions"><button id="create-tenant-button" class="button primary" type="button">Create tenant</button></div>
-          </div></section>
+          <div id="tenant-filter-root" class="toolbar"></div>
+          <section id="create-tenant" class="card form-card"><div id="create-tenant-form-root"></div></section>
           <div id="tenants"></div>
         </section>
         <section class="view" data-view="models" id="view-models">
           <div class="page-head"><div><p class="eyebrow">Routing</p><h1>Models</h1><p class="lede">Catalog models and connect each tenant to one or more upstream providers.</p></div></div>
-          <section class="card form-card"><div class="section-heading"><div><h2>Add model</h2><p class="muted">Model IDs are the alias clients request.</p></div></div><div class="form">
-            <div class="form-field"><label for="model-id">Model ID <span class="muted">(optional)</span></label><input id="model-id" placeholder="acme-default"></div>
-            <div class="form-field"><label for="model-name">Display name</label><input id="model-name" placeholder="Acme default"></div>
-            <div class="form-field"><label for="model-provider">Provider</label><input id="model-provider" placeholder="openai"></div>
-            <div class="form-field"><label for="model-model">Provider model ID</label><input id="model-model" placeholder="gpt-4.1"></div>
-            <div class="form-actions"><button id="create-model-button" class="button primary" type="button">Add model</button></div>
-          </div></section>
+          <section class="card form-card"><div id="create-model-form-root"></div></section>
           <div id="models"></div>
         </section>
         <section class="view" data-view="sources" id="view-sources">
           <div class="page-head"><div><p class="eyebrow">Integrations</p><h1>Sources</h1><p class="lede">Map Git repositories and messaging channels to tenant workspaces.</p></div></div>
-          <section class="card form-card"><div class="section-heading"><div><h2>Add source binding</h2><p class="muted">Bind an external repository or channel to a tenant.</p></div></div><div class="form">
-            <div class="form-field"><label for="source-provider">Provider</label><input id="source-provider" placeholder="gitlab"></div>
-            <div class="form-field"><label for="source-external">External ID</label><input id="source-external" placeholder="group/project"></div>
-            <div class="form-field"><label for="source-tenant">Tenant ID</label><input id="source-tenant" placeholder="tenant-acme"></div>
-            <div class="form-field"><label for="source-repo">Repository URL <span class="muted">(optional)</span></label><input id="source-repo" type="url" placeholder="https://github.com/acme/repo.git"></div>
-            <div class="form-field"><label for="source-base">Base ref <span class="muted">(optional)</span></label><input id="source-base" placeholder="main"></div>
-            <label class="row"><input id="source-auto" type="checkbox"> Auto-dispatch incoming events</label>
-            <div class="form-actions"><button id="create-source-button" class="button primary" type="button">Add binding</button></div>
-          </div></section>
+          <section class="card form-card"><div id="create-binding-form-root"></div></section>
           <div id="bindings"></div>
         </section>
         <section class="view" data-view="support" id="view-support">
@@ -272,7 +237,18 @@ function renderShell(): void {
     </div>
     <dialog id="tenant-dialog" aria-labelledby="detail-title"><div id="tenant-detail"></div></dialog>`
   addHandlers()
+  mountShellForms()
   requestAnimationFrame(moveNavIndicator)
+}
+
+function mountShellForms(): void {
+  mountShellForm('create-tenant-form-root', createElement(CreateTenantForm, { onSubmit: values => createTenant(values) }))
+  mountShellForm('create-model-form-root', createElement(CreateModelForm, { onSubmit: values => createModel(values) }))
+  mountShellForm('create-binding-form-root', createElement(CreateBindingForm, { onSubmit: values => createBinding(values) }))
+  mountShellForm('tenant-filter-root', createElement(TenantFilters, {
+    total: tenants.length,
+    onChange: (query, status) => { tenantQuery = query; tenantStatus = status; renderTenants(true) },
+  }))
 }
 
 function moveNavIndicator(): void {
@@ -299,16 +275,10 @@ let models: Model[] = []
 let bindings: Binding[] = []
 
 function addHandlers(): void {
-  document.getElementById('create-tenant-button')!.addEventListener('click', () => { void createTenant().catch(showError) })
-  document.getElementById('create-model-button')!.addEventListener('click', () => { void createModel().catch(showError) })
-  document.getElementById('create-source-button')!.addEventListener('click', () => { void createBinding().catch(showError) })
   document.getElementById('export-audit')!.addEventListener('click', () => { void exportPlatformAudit().catch(showError) })
   for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
     item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
   }
-  document.getElementById('tenant-filter')!.addEventListener('input', event => { tenantQuery = (event.target as HTMLInputElement).value; renderTenants(true) })
-  document.getElementById('tenant-status-filter')!.addEventListener('change', event => { tenantStatus = (event.target as HTMLSelectElement).value; renderTenants(true) })
-  document.getElementById('tenant-filters')!.addEventListener('submit', event => event.preventDefault())
   const density = document.getElementById('density-toggle') as HTMLButtonElement
   const applyDensity = (value: string): void => {
     const normalized = value === 'compact' ? 'compact' : 'comfortable'
@@ -338,40 +308,40 @@ function setupMobileNav(): void {
   sync()
 }
 
-async function createTenant(): Promise<void> {
-  const tenantId = (document.getElementById('tenant-id') as HTMLInputElement).value.trim()
+async function createTenant(values: Record<string, unknown>): Promise<void> {
+  const tenantId = valueOf(values, 'tenantId').trim()
   await api('/v1/admin/tenants', { method: 'POST', body: JSON.stringify({
-    name: (document.getElementById('tenant-name') as HTMLInputElement).value,
-    idpIssuer: (document.getElementById('tenant-issuer') as HTMLInputElement).value,
-    adminEmail: (document.getElementById('tenant-email') as HTMLInputElement).value,
+    name: valueOf(values, 'name'),
+    idpIssuer: valueOf(values, 'idpIssuer'),
+    adminEmail: valueOf(values, 'adminEmail'),
     ...(tenantId === '' ? {} : { tenantId }),
   }) })
   await loadAll()
   notify('Tenant created')
 }
 
-async function createModel(): Promise<void> {
-  const id = (document.getElementById('model-id') as HTMLInputElement).value.trim()
+async function createModel(values: Record<string, unknown>): Promise<void> {
+  const id = valueOf(values, 'id').trim()
   await api('/v1/admin/models', { method: 'POST', body: JSON.stringify({
     ...(id === '' ? {} : { id }),
-    name: (document.getElementById('model-name') as HTMLInputElement).value,
-    provider: (document.getElementById('model-provider') as HTMLInputElement).value,
-    model: (document.getElementById('model-model') as HTMLInputElement).value,
+    name: valueOf(values, 'name'),
+    provider: valueOf(values, 'provider'),
+    model: valueOf(values, 'model'),
   }) })
   await loadAll()
   notify('Model added')
 }
 
-async function createBinding(): Promise<void> {
-  const repo = (document.getElementById('source-repo') as HTMLInputElement).value.trim()
-  const base = (document.getElementById('source-base') as HTMLInputElement).value.trim()
+async function createBinding(values: Record<string, unknown>): Promise<void> {
+  const repo = valueOf(values, 'repoUrl').trim()
+  const base = valueOf(values, 'baseRef').trim()
   await api('/v1/admin/source-bindings', { method: 'POST', body: JSON.stringify({
-    provider: (document.getElementById('source-provider') as HTMLInputElement).value,
-    externalId: (document.getElementById('source-external') as HTMLInputElement).value,
-    tenantId: (document.getElementById('source-tenant') as HTMLInputElement).value,
+    provider: valueOf(values, 'provider'),
+    externalId: valueOf(values, 'externalId'),
+    tenantId: valueOf(values, 'tenantId'),
     ...(repo === '' ? {} : { repoUrl: repo }),
     ...(base === '' ? {} : { baseRef: base }),
-    autoDispatch: (document.getElementById('source-auto') as HTMLInputElement).checked,
+    autoDispatch: values.autoDispatch === true || values.autoDispatch === 'on',
   }) })
   await loadAll()
   notify('Source binding added')
@@ -545,24 +515,22 @@ async function openTenant(tenantId: string): Promise<void> {
   ])
   const host = document.getElementById('tenant-detail')!
   const dialog = document.getElementById('tenant-dialog') as HTMLDialogElement
+  tenantFormRoot?.unmount()
+  tenantFormRoot = undefined
   host.innerHTML = `
     <div class="card detail"><div class="row"><h2 id="detail-title"></h2><button id="close-detail" class="right">Close</button></div>
-      <div class="grid">
-        <div><h4>Tenant config</h4><div class="form"><input id="detail-name" placeholder="Tenant name"><input id="detail-issuer" placeholder="IdP issuer"><button id="save-tenant">Save</button></div></div>
-        <div><h4>Quota</h4><div class="grid"><input id="q-users" placeholder="Max users"><input id="q-devices" placeholder="Max devices"><input id="q-cloud" placeholder="Max cloud/day"><input id="q-device-tickets" placeholder="Max device tickets/day"></div><button id="save-quota">Save quota</button></div>
-        <div><h4>Billing</h4><div class="grid"><input id="b-currency" placeholder="Currency"><input id="b-cloud" placeholder="Cloud ticket cents"><input id="b-device" placeholder="Device ticket cents"><input id="b-budget" placeholder="Monthly budget (blank = none)"></div><button id="save-billing">Save billing</button><div class="muted" id="b-estimate"></div></div>
-      </div>
-      <h3>Users</h3><div class="form"><input id="new-user-email" placeholder="User email"><select id="new-user-role"><option value="member">member</option><option value="admin">admin</option></select><button id="add-user">Add user</button></div><div id="detail-users"></div>
+      <div id="tenant-forms-root"></div>
+      <h3>Users</h3><div id="detail-users"></div>
       <h3>Models</h3><div id="detail-models"></div>
-      <h3>Model upstreams</h3><div class="form"><select id="up-model"></select><input id="up-name" placeholder="Upstream name"><select id="up-protocol"><option value="chat">chat</option><option value="responses">responses</option><option value="claude">claude</option></select><input id="up-url" placeholder="https://upstream/v1 (base URL)"><input id="up-remote-model" placeholder="Upstream model"><input id="up-key" type="password" placeholder="API key (leave blank to keep)"><input id="up-priority" type="number" placeholder="Priority" value="0"><label><input id="up-enabled" type="checkbox" checked> enabled</label><button id="add-upstream" class="primary">Add upstream</button></div><div id="detail-upstreams"></div>
-      <h3>Support access</h3><div class="form"><input id="support-reason" placeholder="Support reason"><button id="request-support">Request support</button></div><div id="detail-support"></div>
+      <h3>Model upstreams</h3><div id="detail-upstreams"></div>
+      <h3>Support access</h3><div id="detail-support"></div>
       <h3>Usage (14d)</h3><div id="detail-usage"></div>
       <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>
     </div>`
   ;(document.getElementById('detail-title') as HTMLElement).textContent = `${tenant.name} · ${tenant.id}`
   document.getElementById('close-detail')!.addEventListener('click', () => { closeTenantDialog(dialog) })
   dialog.addEventListener('cancel', event => { if (dialog.dataset.closing !== 'true') { event.preventDefault(); closeTenantDialog(dialog) } })
-  dialog.addEventListener('close', () => { selectedTenant = undefined; tenantDialogSource = undefined }, { once: true })
+  dialog.addEventListener('close', () => { tenantFormRoot?.unmount(); tenantFormRoot = undefined; selectedTenant = undefined; tenantDialogSource = undefined }, { once: true })
   if (!dialog.open) {
     const source = document.querySelector<HTMLElement>(`[data-tenant-id="${CSS.escape(tenantId)}"]`)
     const sourceRect = source?.getBoundingClientRect()
@@ -578,26 +546,27 @@ async function openTenant(tenantId: string): Promise<void> {
       ], { duration: 420, easing: 'cubic-bezier(.32,.72,0,1)' })
     }
   }
-  ;(document.getElementById('detail-name') as HTMLInputElement).value = tenant.name
-  ;(document.getElementById('detail-issuer') as HTMLInputElement).value = tenant.idpIssuer
-  document.getElementById('save-tenant')!.addEventListener('click', () => { void saveTenant(tenantId).catch(showError) })
-  ;(document.getElementById('q-users') as HTMLInputElement).value = String(quotaResult.quota.maxUsers)
-  ;(document.getElementById('q-devices') as HTMLInputElement).value = String(quotaResult.quota.maxDevices)
-  ;(document.getElementById('q-cloud') as HTMLInputElement).value = String(quotaResult.quota.maxCloudTicketsPerDay)
-  ;(document.getElementById('q-device-tickets') as HTMLInputElement).value = String(quotaResult.quota.maxDeviceTicketsPerDay)
-  document.getElementById('save-quota')!.addEventListener('click', () => { void saveQuota(tenantId).catch(showError) })
-  ;(document.getElementById('b-currency') as HTMLInputElement).value = billingResult.billing.currency
-  ;(document.getElementById('b-cloud') as HTMLInputElement).value = String(billingResult.billing.cloudTicketCents)
-  ;(document.getElementById('b-device') as HTMLInputElement).value = String(billingResult.billing.deviceTicketCents)
-  ;(document.getElementById('b-budget') as HTMLInputElement).value = billingResult.billing.monthlyBudgetCents === null ? '' : String(billingResult.billing.monthlyBudgetCents)
-  document.getElementById('b-estimate')!.textContent = `Estimate: ${billingResult.estimate.estimatedCents} ${billingResult.estimate.currency}`
-  document.getElementById('save-billing')!.addEventListener('click', () => { void saveBilling(tenantId).catch(showError) })
-  document.getElementById('add-user')!.addEventListener('click', () => { void addUser(tenantId).catch(showError) })
-  document.getElementById('request-support')!.addEventListener('click', () => { void requestSupport(tenantId).catch(showError) })
+  const formHost = document.getElementById('tenant-forms-root')!
+  tenantFormRoot = createRoot(formHost)
+  tenantFormRoot.render(createElement(TenantForms, {
+    initial: {
+      name: tenant.name,
+      idpIssuer: tenant.idpIssuer,
+      quota: quotaResult.quota,
+      billing: billingResult.billing,
+      models: tenantModelResult.models.map(model => model.id),
+      estimate: `${billingResult.estimate.estimatedCents} ${billingResult.estimate.currency}`,
+    },
+    handlers: {
+      onSaveTenant: values => saveTenant(tenantId, values),
+      onSaveQuota: values => saveQuota(tenantId, values),
+      onSaveBilling: values => saveBilling(tenantId, values),
+      onAddUser: values => addUser(tenantId, values),
+      onAddUpstream: values => addUpstream(tenantId, values),
+      onRequestSupport: values => requestSupport(tenantId, values),
+    },
+  }))
   ;(document.getElementById('detail-users') as HTMLElement).replaceChildren(table(['Email', 'Role', 'User ID'], userResult.users.map(user => [user.email, user.role, user.userId])))
-  const upstreamSelect = document.getElementById('up-model') as HTMLSelectElement
-  for (const model of tenantModelResult.models) upstreamSelect.append(new Option(model.id, model.id))
-  document.getElementById('add-upstream')!.addEventListener('click', () => { void addUpstream(tenantId).catch(showError) })
   const upstreamHost = document.getElementById('detail-upstreams')!
   upstreamHost.replaceChildren(table(['Model', 'Name', 'Protocol', 'URL', 'Upstream model', 'Priority', 'Enabled', 'Key', ''], upstreamResult.upstreams.map(upstream => {
     const remove = button('Delete', async () => {
@@ -625,82 +594,82 @@ async function openTenant(tenantId: string): Promise<void> {
   document.getElementById('detail-support')!.replaceChildren(table(['Reason', 'Status', 'Requested by'], supportResult.requests.filter(request => request.tenantId === tenantId).map(request => [request.reason, request.status, request.requestedBy])))
 }
 
-async function addUpstream(tenantId: string): Promise<void> {
-  const modelId = (document.getElementById('up-model') as HTMLSelectElement).value
+function checked(values: Record<string, unknown>, key: string): boolean {
+  return values[key] === true || values[key] === 'on' || values[key] === 'true'
+}
+
+async function addUpstream(tenantId: string, values: Record<string, unknown>): Promise<void> {
+  const modelId = valueOf(values, 'modelId')
   if (modelId === '') throw new Error('bind a model to the tenant first')
-  const key = (document.getElementById('up-key') as HTMLInputElement).value
+  const key = valueOf(values, 'apiKey')
   await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/models/${encodeURIComponent(modelId)}/upstreams`, { method: 'POST', body: JSON.stringify({
-    name: (document.getElementById('up-name') as HTMLInputElement).value,
-    protocol: (document.getElementById('up-protocol') as HTMLSelectElement).value,
-    baseUrl: (document.getElementById('up-url') as HTMLInputElement).value,
-    upstreamModel: (document.getElementById('up-remote-model') as HTMLInputElement).value,
+    name: valueOf(values, 'name'),
+    protocol: valueOf(values, 'protocol'),
+    baseUrl: valueOf(values, 'baseUrl'),
+    upstreamModel: valueOf(values, 'upstreamModel'),
     ...(key === '' ? {} : { apiKey: key }),
-    priority: Number((document.getElementById('up-priority') as HTMLInputElement).value || '0'),
-    enabled: (document.getElementById('up-enabled') as HTMLInputElement).checked,
+    priority: numberValue(values, 'priority'),
+    enabled: checked(values, 'enabled'),
   }) })
   await openTenant(tenantId)
   notify('Upstream added')
 }
 
-async function saveTenant(tenantId: string): Promise<void> {
+async function saveTenant(tenantId: string, values: Record<string, unknown>): Promise<void> {
   await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}`, { method: 'PUT', body: JSON.stringify({
-    name: (document.getElementById('detail-name') as HTMLInputElement).value,
-    idpIssuer: (document.getElementById('detail-issuer') as HTMLInputElement).value,
+    name: valueOf(values, 'name'),
+    idpIssuer: valueOf(values, 'idpIssuer'),
   }) })
   await loadAll(); await openTenant(tenantId)
   notify('Tenant updated')
 }
 
-async function saveQuota(tenantId: string): Promise<void> {
+async function saveQuota(tenantId: string, values: Record<string, unknown>): Promise<void> {
   await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/quota`, { method: 'PUT', body: JSON.stringify({
-    maxUsers: Number((document.getElementById('q-users') as HTMLInputElement).value),
-    maxDevices: Number((document.getElementById('q-devices') as HTMLInputElement).value),
-    maxCloudTicketsPerDay: Number((document.getElementById('q-cloud') as HTMLInputElement).value),
-    maxDeviceTicketsPerDay: Number((document.getElementById('q-device-tickets') as HTMLInputElement).value),
+    maxUsers: numberValue(values, 'maxUsers'),
+    maxDevices: numberValue(values, 'maxDevices'),
+    maxCloudTicketsPerDay: numberValue(values, 'maxCloudTicketsPerDay'),
+    maxDeviceTicketsPerDay: numberValue(values, 'maxDeviceTicketsPerDay'),
   }) })
   await openTenant(tenantId)
   notify('Quota saved')
 }
 
-async function saveBilling(tenantId: string): Promise<void> {
-  const budget = (document.getElementById('b-budget') as HTMLInputElement).value.trim()
+async function saveBilling(tenantId: string, values: Record<string, unknown>): Promise<void> {
+  const budget = valueOf(values, 'monthlyBudgetCents').trim()
   await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/billing`, { method: 'PUT', body: JSON.stringify({
-    currency: (document.getElementById('b-currency') as HTMLInputElement).value,
-    cloudTicketCents: Number((document.getElementById('b-cloud') as HTMLInputElement).value),
-    deviceTicketCents: Number((document.getElementById('b-device') as HTMLInputElement).value),
+    currency: valueOf(values, 'currency'),
+    cloudTicketCents: numberValue(values, 'cloudTicketCents'),
+    deviceTicketCents: numberValue(values, 'deviceTicketCents'),
     monthlyBudgetCents: budget === '' ? null : Number(budget),
   }) })
   await openTenant(tenantId)
   notify('Billing saved')
 }
 
-async function addUser(tenantId: string): Promise<void> {
-  const email = (document.getElementById('new-user-email') as HTMLInputElement).value
-  const role = (document.getElementById('new-user-role') as HTMLSelectElement).value
-  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/users`, { method: 'POST', body: JSON.stringify({ email, role }) })
+async function addUser(tenantId: string, values: Record<string, unknown>): Promise<void> {
+  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/users`, { method: 'POST', body: JSON.stringify({ email: valueOf(values, 'email'), role: valueOf(values, 'role') }) })
   await openTenant(tenantId)
   notify('User added')
 }
 
-async function requestSupport(tenantId: string): Promise<void> {
-  const reason = (document.getElementById('support-reason') as HTMLInputElement).value
-  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/support-requests`, { method: 'POST', body: JSON.stringify({ reason }) })
+async function requestSupport(tenantId: string, values: Record<string, unknown>): Promise<void> {
+  await api(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/support-requests`, { method: 'POST', body: JSON.stringify({ reason: valueOf(values, 'reason') }) })
   await loadAll(); await openTenant(tenantId)
   notify('Support request sent')
 }
 
 initHeader()
 
-document.getElementById('auth-form')!.addEventListener('submit', event => {
-  event.preventDefault()
-  sessionStorage.setItem('siriusx.platformToken', tokenInput.value)
-  selectedTenant = undefined
-  clearAuthError()
-  renderShell()
-  void loadAll().catch(error => {
-    if (error instanceof ApiError && error.status === 401) showAuthError(error)
-    else showError(error)
-  })
-})
+const authHost = document.getElementById('auth-form-root')!
+createRoot(authHost).render(createElement(AuthForm, {
+  initialToken: token(),
+  onConnect: async value => {
+    sessionStorage.setItem('siriusx.platformToken', value)
+    selectedTenant = undefined
+    renderShell()
+    await loadAll()
+  },
+}))
 
-if (token() !== '') { tokenInput.value = token(); renderShell(); void loadAll().catch(error => { if (error instanceof ApiError && error.status === 401) showAuthError(error); else showError(error) }) }
+if (token() !== '') { renderShell(); void loadAll().catch(showError) }

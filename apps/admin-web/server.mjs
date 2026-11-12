@@ -12,7 +12,7 @@ const host = process.env.HOST ?? '0.0.0.0'
 const MAX_BODY = 1024 * 1024
 
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' }
-const files = { '/': join(dist, 'index.html'), '/admin.js': join(dist, 'admin.js'), '/style.css': join(dist, 'style.css') }
+const files = { '/': join(dist, 'index.html'), '/admin.js': join(dist, 'admin.js'), '/style.css': join(dist, 'style.css'), '/stylex.css': join(dist, 'stylex.css') }
 
 function headers(path) {
   return {
@@ -21,7 +21,7 @@ function headers(path) {
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'no-referrer',
     'x-frame-options': 'DENY',
-    ...(path === '/' ? { 'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" } : {}),
+    ...(path === '/' ? { 'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" } : {}),
   }
 }
 
