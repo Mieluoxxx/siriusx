@@ -1,0 +1,13 @@
+{
+  "overview": {
+    "nav": 6,
+    "metrics": 5,
+    "heading": 1
+  },
+  "tenantDialogClosed": true,
+  "dialogOpen": true,
+  "detail": true,
+  "escaped": true,
+  "mobileOverflow": false,
+  "errors": []
+}

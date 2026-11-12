@@ -59,28 +59,36 @@ function button(label: string, onClick: () => void | Promise<void>, className = 
 function input(placeholder: string, value = ''): HTMLInputElement {
   const element = node('input')
   element.placeholder = placeholder
+  element.setAttribute('aria-label', placeholder)
   element.value = value
   return element
 }
 
-function table(headers: readonly string[], rows: ReadonlyArray<ReadonlyArray<string | Node>>): HTMLTableElement {
+function table(headers: readonly string[], rows: ReadonlyArray<ReadonlyArray<string | Node>>, caption?: string): HTMLElement {
+  const wrapper = node('div', undefined, 'table-wrap')
+  wrapper.tabIndex = 0
+  wrapper.setAttribute('role', 'region')
+  wrapper.setAttribute('aria-label', caption ?? 'Data table')
   const element = node('table')
+  if (caption !== undefined) element.append(node('caption', caption))
   const head = node('tr')
   for (const header of headers) head.append(node('th', header))
   const thead = node('thead'); thead.append(head); element.append(thead)
   const body = node('tbody')
   for (const values of rows) {
     const tr = node('tr')
-    for (const value of values) {
+    values.forEach((value, index) => {
       const td = node('td')
+      td.dataset.label = headers[index] ?? ''
       if (value instanceof Node) td.append(value)
       else td.textContent = value
       tr.append(td)
-    }
+    })
     body.append(tr)
   }
   element.append(body)
-  return element
+  wrapper.append(element)
+  return wrapper
 }
 
 function section(title: string): HTMLElement {
@@ -95,33 +103,78 @@ function pill(status: string, className?: string): HTMLElement {
 
 function renderShell(): void {
   app.innerHTML = `
-    <section id="create-tenant"><h2>Tenants</h2><div class="form">
-      <input id="tenant-name" placeholder="Name">
-      <input id="tenant-issuer" placeholder="IdP issuer">
-      <input id="tenant-email" placeholder="Admin email">
-      <input id="tenant-id" placeholder="Tenant id (optional)">
-      <button id="create-tenant-button" class="primary">Create tenant</button>
-    </div><div id="tenants"></div></section>
-    <section><h2>Model catalog</h2><div class="form">
-      <input id="model-id" placeholder="Model id (optional)">
-      <input id="model-name" placeholder="Display name">
-      <input id="model-provider" placeholder="Provider">
-      <input id="model-model" placeholder="Provider model id">
-      <button id="create-model-button" class="primary">Add model</button>
-    </div><div id="models"></div></section>
-    <section><h2>Source bindings</h2><div class="form">
-      <input id="source-provider" placeholder="provider">
-      <input id="source-external" placeholder="external id">
-      <input id="source-tenant" placeholder="tenant id">
-      <input id="source-repo" placeholder="repo URL (optional)">
-      <input id="source-base" placeholder="base ref (optional)">
-      <label class="row"><input id="source-auto" type="checkbox"> auto dispatch</label>
-      <button id="create-source-button" class="primary">Add binding</button>
-    </div><div id="bindings"></div></section>
-    <section><h2>Support requests</h2><div id="support"></div></section>
-    <section><div class="row"><h2>Platform audit</h2><button id="export-audit" class="right">Export CSV</button></div><div id="audit"></div></section>
-    <section id="tenant-detail"></section>`
+    <div class="workspace">
+      <aside class="sidenav">
+        <div class="nav-label">Workspace</div>
+        <nav aria-label="Platform administration">
+          <button class="nav-button" type="button" data-view="overview" aria-current="page"><span class="dot"></span>Overview</button>
+          <button class="nav-button" type="button" data-view="tenants"><span class="dot"></span>Tenants</button>
+          <button class="nav-button" type="button" data-view="models"><span class="dot"></span>Models</button>
+          <button class="nav-button" type="button" data-view="sources"><span class="dot"></span>Sources</button>
+          <button class="nav-button" type="button" data-view="support"><span class="dot"></span>Support</button>
+          <button class="nav-button" type="button" data-view="audit"><span class="dot"></span>Audit</button>
+        </nav>
+        <div class="nav-foot">Connected to<br><strong>Control Plane</strong></div>
+      </aside>
+      <div class="content">
+        <section class="view active" data-view="overview" id="view-overview">
+          <div class="page-head"><div><p class="eyebrow">Platform</p><h1>Overview</h1><p class="lede">Tenants, model routing, source integrations, and audit activity in one place.</p></div><button class="button primary" type="button" data-go="tenants">Manage tenants</button></div>
+          <div class="metric-grid" id="metrics"></div>
+          <div class="card"><div class="card-head"><h2>Recent tenants</h2><button class="button small" type="button" data-go="tenants">View all</button></div><div id="overview-tenants"></div></div>
+        </section>
+        <section class="view" data-view="tenants" id="view-tenants">
+          <div class="page-head"><div><p class="eyebrow">Directory</p><h1>Tenants</h1><p class="lede">Provision tenants, manage status, and inspect usage.</p></div></div>
+          <section id="create-tenant" class="card form-card"><div class="section-heading"><div><h2>Create tenant</h2><p class="muted">The tenant ID must match the IdP tenant claim.</p></div></div><div class="form">
+            <div class="form-field"><label for="tenant-name">Name</label><input id="tenant-name" placeholder="Acme"></div>
+            <div class="form-field"><label for="tenant-issuer">IdP issuer</label><input id="tenant-issuer" placeholder="https://idp.example/realms/siriusx"></div>
+            <div class="form-field"><label for="tenant-email">Admin email</label><input id="tenant-email" type="email" placeholder="admin@example.com"></div>
+            <div class="form-field"><label for="tenant-id">Tenant ID <span class="muted">(optional)</span></label><input id="tenant-id" placeholder="tenant-acme"></div>
+            <div class="form-actions"><button id="create-tenant-button" class="button primary" type="button">Create tenant</button></div>
+          </div></section>
+          <div id="tenants"></div>
+        </section>
+        <section class="view" data-view="models" id="view-models">
+          <div class="page-head"><div><p class="eyebrow">Routing</p><h1>Models</h1><p class="lede">Catalog models and connect each tenant to one or more upstream providers.</p></div></div>
+          <section class="card form-card"><div class="section-heading"><div><h2>Add model</h2><p class="muted">Model IDs are the alias clients request.</p></div></div><div class="form">
+            <div class="form-field"><label for="model-id">Model ID <span class="muted">(optional)</span></label><input id="model-id" placeholder="acme-default"></div>
+            <div class="form-field"><label for="model-name">Display name</label><input id="model-name" placeholder="Acme default"></div>
+            <div class="form-field"><label for="model-provider">Provider</label><input id="model-provider" placeholder="openai"></div>
+            <div class="form-field"><label for="model-model">Provider model ID</label><input id="model-model" placeholder="gpt-4.1"></div>
+            <div class="form-actions"><button id="create-model-button" class="button primary" type="button">Add model</button></div>
+          </div></section>
+          <div id="models"></div>
+        </section>
+        <section class="view" data-view="sources" id="view-sources">
+          <div class="page-head"><div><p class="eyebrow">Integrations</p><h1>Sources</h1><p class="lede">Map Git repositories and messaging channels to tenant workspaces.</p></div></div>
+          <section class="card form-card"><div class="section-heading"><div><h2>Add source binding</h2><p class="muted">Bind an external repository or channel to a tenant.</p></div></div><div class="form">
+            <div class="form-field"><label for="source-provider">Provider</label><input id="source-provider" placeholder="gitlab"></div>
+            <div class="form-field"><label for="source-external">External ID</label><input id="source-external" placeholder="group/project"></div>
+            <div class="form-field"><label for="source-tenant">Tenant ID</label><input id="source-tenant" placeholder="tenant-acme"></div>
+            <div class="form-field"><label for="source-repo">Repository URL <span class="muted">(optional)</span></label><input id="source-repo" type="url" placeholder="https://github.com/acme/repo.git"></div>
+            <div class="form-field"><label for="source-base">Base ref <span class="muted">(optional)</span></label><input id="source-base" placeholder="main"></div>
+            <label class="row"><input id="source-auto" type="checkbox"> Auto-dispatch incoming events</label>
+            <div class="form-actions"><button id="create-source-button" class="button primary" type="button">Add binding</button></div>
+          </div></section>
+          <div id="bindings"></div>
+        </section>
+        <section class="view" data-view="support" id="view-support">
+          <div class="page-head"><div><p class="eyebrow">Operations</p><h1>Support requests</h1><p class="lede">Tenant-approved emergency access requests.</p></div></div>
+          <div id="support"></div>
+        </section>
+        <section class="view" data-view="audit" id="view-audit">
+          <div class="page-head"><div><p class="eyebrow">Governance</p><h1>Platform audit</h1><p class="lede">Administrative changes across tenants, models, sources, and quotas.</p></div><button id="export-audit" class="button" type="button">Export CSV</button></div>
+          <div id="audit"></div>
+        </section>
+      </div>
+    </div>
+    <dialog id="tenant-dialog" aria-labelledby="detail-title"><div id="tenant-detail"></div></dialog>`
   addHandlers()
+}
+
+function showView(view: string): void {
+  for (const element of document.querySelectorAll<HTMLElement>('.view')) element.classList.toggle('active', element.dataset.view === view)
+  for (const element of document.querySelectorAll<HTMLButtonElement>('.nav-button')) element.setAttribute('aria-current', element.dataset.view === view ? 'page' : 'false')
+  document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 let tenants: Tenant[] = []
@@ -133,6 +186,9 @@ function addHandlers(): void {
   document.getElementById('create-model-button')!.addEventListener('click', () => { void createModel().catch(showError) })
   document.getElementById('create-source-button')!.addEventListener('click', () => { void createBinding().catch(showError) })
   document.getElementById('export-audit')!.addEventListener('click', () => { void exportPlatformAudit().catch(showError) })
+  for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
+    item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
+  }
 }
 
 async function createTenant(): Promise<void> {
@@ -192,17 +248,40 @@ function renderTenants(): void {
     }))
     return [tenant.name, tenant.id, tenant.idpIssuer, pill(tenant.status), String(tenant.usage.users), String(tenant.usage.devices), String(tenant.usage.deviceTickets), String(tenant.usage.cloudTickets), actions]
   })
-  host.replaceChildren(table(['Name', 'Tenant', 'Issuer', 'Status', 'Users', 'Devices', 'Device tickets', 'Cloud tickets', ''], rows))
+  host.replaceChildren(table(['Name', 'Tenant', 'Issuer', 'Status', 'Users', 'Devices', 'Device tickets', 'Cloud tickets', ''], rows, 'Tenants'))
 }
 
 function renderModels(): void {
   const host = document.getElementById('models')!
-  host.replaceChildren(table(['ID', 'Name', 'Provider', 'Model', 'Enabled'], models.map(model => [model.id, model.name, model.provider, model.model, String(model.enabled)])))
+  host.replaceChildren(table(['ID', 'Name', 'Provider', 'Model', 'Enabled'], models.map(model => [model.id, model.name, model.provider, model.model, String(model.enabled)]), 'Model catalog'))
 }
 
 function renderBindings(): void {
   const host = document.getElementById('bindings')!
-  host.replaceChildren(table(['ID', 'Provider', 'External', 'Tenant', 'Repo', 'Base', 'Auto'], bindings.map(binding => [binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '', String(binding.autoDispatch)])))
+  host.replaceChildren(table(['ID', 'Provider', 'External', 'Tenant', 'Repo', 'Base', 'Auto'], bindings.map(binding => [binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '', String(binding.autoDispatch)]), 'Source bindings'))
+}
+
+function renderMetrics(support: SupportRequest[], audit: Audit[]): void {
+  const active = tenants.filter(tenant => tenant.status === 'active').length
+  const totalUsers = tenants.reduce((total, tenant) => total + tenant.usage.users, 0)
+  const totalDevices = tenants.reduce((total, tenant) => total + tenant.usage.devices, 0)
+  const pendingSupport = support.filter(request => request.status === 'pending').length
+  const metricsHost = document.getElementById('metrics')!
+  metricsHost.replaceChildren(
+    metricCard(String(tenants.length), 'tenants', `${active} active`, true),
+    metricCard(String(totalUsers), 'users', 'across tenants'),
+    metricCard(String(totalDevices), 'devices', 'paired'),
+    metricCard(String(models.length), 'models', `${bindings.length} source bindings`),
+    metricCard(String(pendingSupport), 'pending support', `${audit.length} audit events`),
+  )
+  const overview = document.getElementById('overview-tenants')!
+  overview.replaceChildren(table(['Name', 'Tenant', 'Status', 'Users'], tenants.slice(0, 5).map(tenant => [tenant.name, tenant.id, pill(tenant.status), String(tenant.usage.users)]), 'Recent tenants'))
+}
+
+function metricCard(value: string, label: string, detail: string, accent = false): HTMLElement {
+  const card = node('div', undefined, `card metric${accent ? ' accent' : ''}`)
+  card.append(node('strong', value), node('span', label), node('span', detail, 'muted'))
+  return card
 }
 
 async function loadAll(): Promise<void> {
@@ -225,7 +304,8 @@ async function loadAll(): Promise<void> {
   const supportHost = document.getElementById('support')!
   supportHost.replaceChildren(table(['Tenant', 'Reason', 'Status', 'Requested by'], supportResult.requests.map(request => [request.tenantId, request.reason, request.status, request.requestedBy])))
   const auditHost = document.getElementById('audit')!
-  auditHost.replaceChildren(table(['Actor', 'Action', 'Target', 'Detail', 'At'], auditResult.audit.map(event => [event.actor, event.action, event.target, event.detail ?? '', new Date(event.createdAt).toLocaleString()])))
+  auditHost.replaceChildren(table(['Actor', 'Action', 'Target', 'Detail', 'At'], auditResult.audit.map(event => [event.actor, event.action, event.target, event.detail ?? '', new Date(event.createdAt).toLocaleString()]), 'Platform audit'))
+  renderMetrics(supportResult.requests, auditResult.audit)
   if (selectedTenant !== undefined) await openTenant(selectedTenant)
 }
 
@@ -243,6 +323,7 @@ async function openTenant(tenantId: string): Promise<void> {
     api<{ upstreams: Upstream[] }>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}/model-upstreams`).catch(() => ({ upstreams: [] })),
   ])
   const host = document.getElementById('tenant-detail')!
+  const dialog = document.getElementById('tenant-dialog') as HTMLDialogElement
   host.innerHTML = `
     <div class="card detail"><div class="row"><h2 id="detail-title"></h2><button id="close-detail" class="right">Close</button></div>
       <div class="grid">
@@ -258,7 +339,9 @@ async function openTenant(tenantId: string): Promise<void> {
       <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>
     </div>`
   ;(document.getElementById('detail-title') as HTMLElement).textContent = `${tenant.name} · ${tenant.id}`
-  document.getElementById('close-detail')!.addEventListener('click', () => { host.replaceChildren() })
+  document.getElementById('close-detail')!.addEventListener('click', () => { dialog.close() })
+  dialog.addEventListener('close', () => { selectedTenant = undefined }, { once: true })
+  if (!dialog.open) dialog.showModal()
   ;(document.getElementById('detail-name') as HTMLInputElement).value = tenant.name
   ;(document.getElementById('detail-issuer') as HTMLInputElement).value = tenant.idpIssuer
   document.getElementById('save-tenant')!.addEventListener('click', () => { void saveTenant(tenantId).catch(showError) })
@@ -355,7 +438,8 @@ async function requestSupport(tenantId: string): Promise<void> {
   await loadAll(); await openTenant(tenantId)
 }
 
-loadButton.addEventListener('click', () => {
+document.getElementById('auth-form')!.addEventListener('submit', event => {
+  event.preventDefault()
   sessionStorage.setItem('siriusx.platformToken', tokenInput.value)
   selectedTenant = undefined
   renderShell()

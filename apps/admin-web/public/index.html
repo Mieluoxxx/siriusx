@@ -3,22 +3,35 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
   <title>SiriusX Platform Admin</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/style.css">
   <script src="/admin.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <div><strong>SiriusX</strong> Platform Admin</div>
-    <div class="auth">
-      <input id="token" type="password" autocomplete="off" placeholder="X-SiriusX-Platform-Token">
-      <button id="load">Load</button>
+  <a class="skip-link" href="#app">Skip to content</a>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <div>
+        <strong>SiriusX</strong>
+        <span>Platform administration</span>
+      </div>
     </div>
+    <form class="auth" id="auth-form">
+      <label for="token">Platform token</label>
+      <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Platform admin token">
+      <button id="load" class="button primary" type="submit">Connect</button>
+    </form>
   </header>
-  <main id="app">
-    <section class="empty">Enter the platform admin token to load tenants.</section>
+  <main id="app" tabindex="-1">
+    <section class="empty-state">
+      <p class="eyebrow">Not connected</p>
+      <h1>Platform administration</h1>
+      <p>Enter the platform admin token to load tenants, models, sources, and audit data.</p>
+    </section>
   </main>
-  <div id="error" class="error" role="alert"></div>
+  <div id="error" class="alert" role="alert" aria-live="assertive"></div>
 </body>
 </html>
