@@ -1,0 +1,9 @@
+{
+  "editable": 0,
+  "readonly": true,
+  "editOpen": true,
+  "editInputs": 2,
+  "editClosed": true,
+  "addUserOpen": true,
+  "errors": []
+}

@@ -849,3 +849,49 @@ caption { white-space: nowrap; }
     padding: 0 !important;
   }
 }
+
+/* Read-only tenant detail */
+.tenant-hero {
+  position: sticky;
+  inset-block-start: -20px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin: -20px -22px 16px;
+  padding: 18px 22px 14px;
+  background: rgb(255 255 255 / 96%);
+  border-block-end: 1px solid #ebeef5;
+  backdrop-filter: blur(8px);
+}
+.tenant-hero > div:first-child { display: grid; gap: 4px; min-inline-size: 0; }
+.tenant-hero h2 { font-size: 22px; font-weight: 600; }
+.tenant-meta { display: flex; align-items: center; gap: 10px; color: #909399; font-size: 12px; }
+.detail-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.detail-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-inline-size: 0;
+  padding: 16px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  background: #ffffff;
+}
+.detail-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.detail-panel-head h3, .section-heading h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.info-list { display: grid; gap: 9px; margin: 0; }
+.info-list > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.info-list dt { color: #909399; font-size: 12px; }
+.info-list dd { margin: 0; color: #303133; font-size: 13px; overflow-wrap: anywhere; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block-start: 18px; }
+#tenant-detail > .detail { padding-block-end: 24px; }
+#tenant-edit-dialog { inline-size: min(720px, calc(100vw - 36px)); }
+#tenant-edit-dialog .dialog-body { padding: 20px 22px 24px; }
+@media (max-width: 560px) {
+  .tenant-hero { display: grid; margin: -16px -16px 14px; padding: 16px; }
+  .detail-actions { justify-content: flex-start; }
+  .info-list > div { grid-template-columns: 100px minmax(0, 1fr); }
+  #tenant-edit-dialog .dialog-body { padding: 16px; }
+}

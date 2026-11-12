@@ -1,7 +1,7 @@
 /** Standalone SiriusX platform administration SPA. */
 import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { AuthForm, CreateBindingForm, CreateModelForm, CreateTenantForm, TenantFilters, TenantForms, numberValue, valueOf } from './forms'
+import { AddTenantUserForm, AddUpstreamForm, AuthForm, CreateBindingForm, CreateModelForm, CreateTenantForm, RequestSupportForm, TenantBillingForm, TenantFilters, TenantInitialValues, TenantProfileForm, TenantQuotaForm, numberValue, valueOf } from './forms'
 
 type Json = Record<string, unknown>
 
@@ -22,7 +22,7 @@ type Billing = { currency: string; cloudTicketCents: number; deviceTicketCents: 
 const app = document.getElementById('app')!
 const errorBox = document.getElementById('error')!
 const shellFormRoots: Root[] = []
-let tenantFormRoot: Root | undefined
+let tenantEditRoot: Root | undefined
 let selectedTenant: string | undefined
 let tenantQuery = ''
 let tenantStatus = ''
@@ -248,7 +248,8 @@ function renderShell(): void {
         </section>
       </div>
     </div>
-    <dialog id="tenant-dialog" aria-labelledby="detail-title"><div id="tenant-detail"></div></dialog>`
+    <dialog id="tenant-dialog" aria-labelledby="detail-title"><div id="tenant-detail"></div></dialog>
+    <dialog id="tenant-edit-dialog" aria-labelledby="tenant-edit-title"><div class="dialog-head"><h2 id="tenant-edit-title"></h2><button id="tenant-edit-close" class="button" type="button">Close</button></div><div class="dialog-body" id="tenant-edit-form-root"></div></dialog>`
   addHandlers()
   mountShellForms()
   requestAnimationFrame(moveNavIndicator)
@@ -293,6 +294,8 @@ let bindings: Binding[] = []
 
 function addHandlers(): void {
   document.getElementById('export-audit')!.addEventListener('click', () => { void exportPlatformAudit().catch(showError) })
+  document.getElementById('tenant-edit-close')!.addEventListener('click', closeTenantEditor)
+  document.getElementById('tenant-edit-dialog')!.addEventListener('close', () => { tenantEditRoot?.unmount(); tenantEditRoot = undefined })
   for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
     item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
   }
@@ -503,6 +506,7 @@ function confirmAction(title: string, message: string, confirmLabel = 'Delete'):
 }
 
 function closeTenantDialog(dialog: HTMLDialogElement): void {
+  closeTenantEditor()
   if (!dialog.open || dialog.dataset.closing === 'true') return
   const source = tenantDialogSource
   if (source === undefined || dialog.animate === undefined) { dialog.close(); return }
@@ -515,6 +519,22 @@ function closeTenantDialog(dialog: HTMLDialogElement): void {
     { transform: `translate(${dx}px, ${dy}px) scale(0.82)`, opacity: 0.3, clipPath: 'inset(0 round 16px)' },
   ], { duration: 320, easing: 'cubic-bezier(.4,0,1,1)' })
   void animation.finished.finally(() => { dialog.close(); dialog.dataset.closing = 'false' })
+}
+
+function openTenantEditor(title: string, element: ReturnType<typeof createElement>): void {
+  const dialog = document.getElementById('tenant-edit-dialog') as HTMLDialogElement
+  tenantEditRoot?.unmount()
+  tenantEditRoot = createRoot(document.getElementById('tenant-edit-form-root')!)
+  document.getElementById('tenant-edit-title')!.textContent = title
+  tenantEditRoot.render(element)
+  if (!dialog.open) dialog.showModal()
+}
+
+function closeTenantEditor(): void {
+  const dialog = document.getElementById('tenant-edit-dialog') as HTMLDialogElement
+  if (dialog.open) dialog.close()
+  tenantEditRoot?.unmount()
+  tenantEditRoot = undefined
 }
 
 async function openTenant(tenantId: string): Promise<void> {
@@ -532,22 +552,61 @@ async function openTenant(tenantId: string): Promise<void> {
   ])
   const host = document.getElementById('tenant-detail')!
   const dialog = document.getElementById('tenant-dialog') as HTMLDialogElement
-  tenantFormRoot?.unmount()
-  tenantFormRoot = undefined
+  closeTenantEditor()
   host.innerHTML = `
-    <div class="card detail"><div class="row"><h2 id="detail-title"></h2><button id="close-detail" class="right">Close</button></div>
-      <div id="tenant-forms-root"></div>
-      <h3>Users</h3><div id="detail-users"></div>
-      <h3>Models</h3><div id="detail-models"></div>
-      <h3>Model upstreams</h3><div id="detail-upstreams"></div>
-      <h3>Support access</h3><div id="detail-support"></div>
+    <div class="card detail">
+      <div class="tenant-hero">
+        <div>
+          <p class="eyebrow">Tenant</p>
+          <h2 id="detail-title"></h2>
+          <div class="tenant-meta"><span id="detail-id" class="mono"></span><span id="detail-status"></span></div>
+        </div>
+        <div class="detail-actions">
+          <button id="edit-tenant" class="button" type="button">Edit profile</button>
+          <button id="detail-status-button" class="button" type="button"></button>
+          <button id="close-detail" class="button" type="button">Close</button>
+        </div>
+      </div>
+      <div class="metric-grid" id="detail-metrics"></div>
+      <div class="detail-grid">
+        <section class="detail-panel">
+          <div class="detail-panel-head"><h3>Tenant profile</h3><button id="edit-tenant-panel" class="button small" type="button">Edit</button></div>
+          <dl class="info-list">
+            <div><dt>IdP issuer</dt><dd id="detail-issuer"></dd></div>
+            <div><dt>Created</dt><dd id="detail-created"></dd></div>
+          </dl>
+        </section>
+        <section class="detail-panel">
+          <div class="detail-panel-head"><h3>Quota</h3><button id="edit-quota" class="button small" type="button">Edit</button></div>
+          <dl class="info-list">
+            <div><dt>Users</dt><dd id="detail-q-users"></dd></div>
+            <div><dt>Devices</dt><dd id="detail-q-devices"></dd></div>
+            <div><dt>Cloud tickets / day</dt><dd id="detail-q-cloud"></dd></div>
+            <div><dt>Device tickets / day</dt><dd id="detail-q-device"></dd></div>
+          </dl>
+        </section>
+        <section class="detail-panel">
+          <div class="detail-panel-head"><h3>Billing</h3><button id="edit-billing" class="button small" type="button">Edit</button></div>
+          <dl class="info-list">
+            <div><dt>Currency</dt><dd id="detail-b-currency"></dd></div>
+            <div><dt>Cloud ticket</dt><dd id="detail-b-cloud"></dd></div>
+            <div><dt>Device ticket</dt><dd id="detail-b-device"></dd></div>
+            <div><dt>Monthly budget</dt><dd id="detail-b-budget"></dd></div>
+            <div><dt>Current estimate</dt><dd id="detail-estimate"></dd></div>
+          </dl>
+        </section>
+      </div>
+      <div class="section-heading"><h3>Users</h3><button id="add-user" class="button small" type="button">Add user</button></div><div id="detail-users"></div>
+      <div class="section-heading"><h3>Models</h3></div><div id="detail-models"></div>
+      <div class="section-heading"><h3>Model upstreams</h3><button id="add-upstream" class="button small" type="button">Add upstream</button></div><div id="detail-upstreams"></div>
+      <div class="section-heading"><h3>Support access</h3><button id="request-support" class="button small" type="button">Request support</button></div><div id="detail-support"></div>
       <h3>Usage (14d)</h3><div id="detail-usage"></div>
       <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>
     </div>`
   ;(document.getElementById('detail-title') as HTMLElement).textContent = `${tenant.name} · ${tenant.id}`
   document.getElementById('close-detail')!.addEventListener('click', () => { closeTenantDialog(dialog) })
   dialog.addEventListener('cancel', event => { if (dialog.dataset.closing !== 'true') { event.preventDefault(); closeTenantDialog(dialog) } })
-  dialog.addEventListener('close', () => { tenantFormRoot?.unmount(); tenantFormRoot = undefined; selectedTenant = undefined; tenantDialogSource = undefined }, { once: true })
+  dialog.addEventListener('close', () => { closeTenantEditor(); selectedTenant = undefined; tenantDialogSource = undefined }, { once: true })
   if (!dialog.open) {
     const source = document.querySelector<HTMLElement>(`[data-tenant-id="${CSS.escape(tenantId)}"]`)
     const sourceRect = source?.getBoundingClientRect()
@@ -563,26 +622,43 @@ async function openTenant(tenantId: string): Promise<void> {
       ], { duration: 420, easing: 'cubic-bezier(.32,.72,0,1)' })
     }
   }
-  const formHost = document.getElementById('tenant-forms-root')!
-  tenantFormRoot = createRoot(formHost)
-  tenantFormRoot.render(createElement(TenantForms, {
-    initial: {
-      name: tenant.name,
-      idpIssuer: tenant.idpIssuer,
-      quota: quotaResult.quota,
-      billing: billingResult.billing,
-      models: tenantModelResult.models.map(model => model.id),
-      estimate: `${billingResult.estimate.estimatedCents} ${billingResult.estimate.currency}`,
-    },
-    handlers: {
-      onSaveTenant: values => saveTenant(tenantId, values),
-      onSaveQuota: values => saveQuota(tenantId, values),
-      onSaveBilling: values => saveBilling(tenantId, values),
-      onAddUser: values => addUser(tenantId, values),
-      onAddUpstream: values => addUpstream(tenantId, values),
-      onRequestSupport: values => requestSupport(tenantId, values),
-    },
-  }))
+  ;(document.getElementById('detail-title') as HTMLElement).textContent = tenant.name
+  ;(document.getElementById('detail-id') as HTMLElement).textContent = tenant.id
+  document.getElementById('detail-status')!.replaceChildren(pill(tenant.status))
+  ;(document.getElementById('detail-issuer') as HTMLElement).textContent = tenant.idpIssuer
+  ;(document.getElementById('detail-created') as HTMLElement).textContent = new Date(tenant.createdAt).toLocaleString()
+  ;(document.getElementById('detail-q-users') as HTMLElement).textContent = String(quotaResult.quota.maxUsers)
+  ;(document.getElementById('detail-q-devices') as HTMLElement).textContent = String(quotaResult.quota.maxDevices)
+  ;(document.getElementById('detail-q-cloud') as HTMLElement).textContent = String(quotaResult.quota.maxCloudTicketsPerDay)
+  ;(document.getElementById('detail-q-device') as HTMLElement).textContent = String(quotaResult.quota.maxDeviceTicketsPerDay)
+  ;(document.getElementById('detail-b-currency') as HTMLElement).textContent = billingResult.billing.currency
+  ;(document.getElementById('detail-b-cloud') as HTMLElement).textContent = String(billingResult.billing.cloudTicketCents)
+  ;(document.getElementById('detail-b-device') as HTMLElement).textContent = String(billingResult.billing.deviceTicketCents)
+  ;(document.getElementById('detail-b-budget') as HTMLElement).textContent = billingResult.billing.monthlyBudgetCents === null ? 'No budget' : String(billingResult.billing.monthlyBudgetCents)
+  ;(document.getElementById('detail-estimate') as HTMLElement).textContent = `${billingResult.estimate.estimatedCents} ${billingResult.estimate.currency}`
+  ;(document.getElementById('detail-metrics') as HTMLElement).replaceChildren(
+    metricCard(String(tenant.usage.users), 'users', 'in tenant'),
+    metricCard(String(tenant.usage.devices), 'devices', 'paired'),
+    metricCard(String(tenant.usage.cloudTickets), 'cloud tickets', 'this period'),
+    metricCard(String(tenant.usage.deviceTickets), 'device tickets', 'this period'),
+  )
+  const statusButton = document.getElementById('detail-status-button') as HTMLButtonElement
+  statusButton.textContent = tenant.status === 'active' ? 'Suspend' : 'Resume'
+  statusButton.addEventListener('click', () => { void (tenant.status === 'active' ? suspendTenant(tenant.id) : resumeTenant(tenant.id)).catch(showError) })
+  const initial: TenantInitialValues = {
+    name: tenant.name,
+    idpIssuer: tenant.idpIssuer,
+    quota: quotaResult.quota,
+    billing: billingResult.billing,
+    models: tenantModelResult.models.map(model => model.id),
+  }
+  document.getElementById('edit-tenant')!.addEventListener('click', () => openTenantEditor('Edit tenant profile', createElement(TenantProfileForm, { initial, onSubmit: async values => { await saveTenant(tenant.id, values); closeTenantEditor() } })))
+  document.getElementById('edit-tenant-panel')!.addEventListener('click', () => openTenantEditor('Edit tenant profile', createElement(TenantProfileForm, { initial, onSubmit: async values => { await saveTenant(tenant.id, values); closeTenantEditor() } })))
+  document.getElementById('edit-quota')!.addEventListener('click', () => openTenantEditor('Edit tenant quota', createElement(TenantQuotaForm, { initial, onSubmit: async values => { await saveQuota(tenant.id, values); closeTenantEditor() } })))
+  document.getElementById('edit-billing')!.addEventListener('click', () => openTenantEditor('Edit tenant billing', createElement(TenantBillingForm, { initial, onSubmit: async values => { await saveBilling(tenant.id, values); closeTenantEditor() } })))
+  document.getElementById('add-user')!.addEventListener('click', () => openTenantEditor('Add tenant user', createElement(AddTenantUserForm, { onSubmit: async values => { await addUser(tenant.id, values); closeTenantEditor() } })))
+  document.getElementById('add-upstream')!.addEventListener('click', () => openTenantEditor('Add model upstream', createElement(AddUpstreamForm, { models: initial.models, onSubmit: async values => { await addUpstream(tenant.id, values); closeTenantEditor() } })))
+  document.getElementById('request-support')!.addEventListener('click', () => openTenantEditor('Request support access', createElement(RequestSupportForm, { onSubmit: async values => { await requestSupport(tenant.id, values); closeTenantEditor() } })))
   ;(document.getElementById('detail-users') as HTMLElement).replaceChildren(table(['Email', 'Role', 'User ID'], userResult.users.map(user => [user.email, user.role, user.userId])))
   const upstreamHost = document.getElementById('detail-upstreams')!
   upstreamHost.replaceChildren(table(['Model', 'Name', 'Protocol', 'URL', 'Upstream model', 'Priority', 'Enabled', 'Key', ''], upstreamResult.upstreams.map(upstream => {

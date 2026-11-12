@@ -588,3 +588,93 @@ export function TenantForms({ initial, handlers }: { initial: TenantInitialValue
 }
 
 export { valueOf, numberValue }
+
+export function TenantProfileForm({ initial, onSubmit }: { initial: TenantInitialValues; onSubmit: FormSubmit }): React.ReactElement {
+  const form = useSubmit(onSubmit, false)
+  return (
+    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+      <TextField name="name" label="Tenant name" defaultValue={initial.name} required />
+      <TextField name="idpIssuer" label="IdP issuer" defaultValue={initial.idpIssuer} required />
+      <ErrorMessage message={form.error} />
+      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save profile</SubmitButton></div>
+    </Form>
+  )
+}
+
+export function TenantQuotaForm({ initial, onSubmit }: { initial: TenantInitialValues; onSubmit: FormSubmit }): React.ReactElement {
+  const form = useSubmit(onSubmit, false)
+  return (
+    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+      <div className={cls(styles.formGrid)}>
+        <TextField name="maxUsers" label="Max users" type="number" defaultValue={String(initial.quota.maxUsers)} required />
+        <TextField name="maxDevices" label="Max devices" type="number" defaultValue={String(initial.quota.maxDevices)} required />
+        <TextField name="maxCloudTicketsPerDay" label="Cloud tickets / day" type="number" defaultValue={String(initial.quota.maxCloudTicketsPerDay)} required />
+        <TextField name="maxDeviceTicketsPerDay" label="Device tickets / day" type="number" defaultValue={String(initial.quota.maxDeviceTicketsPerDay)} required />
+      </div>
+      <ErrorMessage message={form.error} />
+      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save quota</SubmitButton></div>
+    </Form>
+  )
+}
+
+export function TenantBillingForm({ initial, onSubmit }: { initial: TenantInitialValues; onSubmit: FormSubmit }): React.ReactElement {
+  const form = useSubmit(onSubmit, false)
+  return (
+    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+      <div className={cls(styles.formGrid)}>
+        <TextField name="currency" label="Currency" defaultValue={initial.billing.currency} required />
+        <TextField name="cloudTicketCents" label="Cloud ticket cents" type="number" defaultValue={String(initial.billing.cloudTicketCents)} required />
+        <TextField name="deviceTicketCents" label="Device ticket cents" type="number" defaultValue={String(initial.billing.deviceTicketCents)} required />
+        <TextField name="monthlyBudgetCents" label="Monthly budget cents" type="number" hint="Leave blank for no budget." defaultValue={initial.billing.monthlyBudgetCents === null ? '' : String(initial.billing.monthlyBudgetCents)} />
+      </div>
+      <ErrorMessage message={form.error} />
+      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save billing</SubmitButton></div>
+    </Form>
+  )
+}
+
+export function AddTenantUserForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
+  const form = useSubmit(onSubmit, true)
+  return (
+    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+      <div className={cls(styles.formGrid)}>
+        <TextField name="email" label="User email" type="email" required placeholder="user@example.com" />
+        <SelectField name="role" label="Role" options={[{ value: 'member', label: 'Member' }, { value: 'admin', label: 'Admin' }]} />
+      </div>
+      <ErrorMessage message={form.error} />
+      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Add user</SubmitButton></div>
+    </Form>
+  )
+}
+
+export function AddUpstreamForm({ models, onSubmit }: { models: string[]; onSubmit: FormSubmit }): React.ReactElement {
+  const form = useSubmit(onSubmit, true)
+  const options = models.length === 0 ? [{ value: '', label: 'Bind a model first' }] : models.map(model => ({ value: model, label: model }))
+  return (
+    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+      <div className={cls(styles.formGrid)}>
+        <SelectField name="modelId" label="Model" options={options} disabled={models.length === 0} />
+        <TextField name="name" label="Upstream name" required placeholder="openai-primary" />
+        <SelectField name="protocol" label="Protocol" options={[{ value: 'chat', label: 'Chat Completions' }, { value: 'responses', label: 'OpenAI Responses' }, { value: 'claude', label: 'Anthropic Messages' }]} />
+        <TextField name="baseUrl" label="Base URL" type="url" required placeholder="https://api.openai.com/v1" />
+        <TextField name="upstreamModel" label="Upstream model" required placeholder="gpt-4.1" />
+        <TextField name="apiKey" label="API key" type="password" placeholder="Leave blank to keep" />
+        <TextField name="priority" label="Priority" type="number" defaultValue="0" hint="Lower number runs first." />
+        <CheckboxField name="enabled" label="Enabled" defaultChecked />
+      </div>
+      <ErrorMessage message={form.error} />
+      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Add upstream</SubmitButton></div>
+    </Form>
+  )
+}
+
+export function RequestSupportForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
+  const form = useSubmit(onSubmit, true)
+  return (
+    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+      <TextField name="reason" label="Support reason" required placeholder="Why do you need temporary access?" />
+      <ErrorMessage message={form.error} />
+      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Request support</SubmitButton></div>
+    </Form>
+  )
+}
