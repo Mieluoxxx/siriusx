@@ -1,0 +1,11 @@
+{
+  "tenantUrl": "/tenants/tenant-acme",
+  "tenantActive": true,
+  "reloadUrl": "/tenants/tenant-acme",
+  "reloadTenant": true,
+  "modelsUrl": "/models",
+  "modelsActive": true,
+  "backUrl": "/tenants/tenant-acme",
+  "backTenant": true,
+  "errors": []
+}

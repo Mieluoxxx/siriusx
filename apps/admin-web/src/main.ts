@@ -307,7 +307,7 @@ function showView(view: string, mode: HistoryMode = 'push'): void {
   for (const element of document.querySelectorAll<HTMLButtonElement>('.nav-button')) element.setAttribute('aria-current', element.dataset.view === navView ? 'page' : 'false')
   const nav = document.getElementById('admin-nav')
   if (nav?.matches(':popover-open')) nav.hidePopover()
-  document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  window.scrollTo({ top: 0, behavior: 'auto' })
   requestAnimationFrame(moveNavIndicator)
   writeRoute(view, mode)
 }
@@ -563,6 +563,27 @@ function closeTenantEditor(): void {
   tenantEditRoot = undefined
 }
 
+function kpiItem(value: string, label: string, detail: string): HTMLElement {
+  const item = node('div', undefined, 'tenant-kpi')
+  item.append(node('strong', value), node('span', label), node('small', detail))
+  return item
+}
+
+function setTenantTab(tab: string, updateUrl = true): void {
+  const valid = new Set(['overview', 'users', 'models', 'upstreams', 'support', 'usage', 'audit'])
+  const next = valid.has(tab) ? tab : 'overview'
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-tenant-tab]')) {
+    const selected = button.dataset.tenantTab === next
+    button.setAttribute('aria-selected', String(selected))
+  }
+  for (const panel of document.querySelectorAll<HTMLElement>('[data-tenant-panel]')) panel.classList.toggle('active', panel.dataset.tenantPanel === next)
+  if (!updateUrl) return
+  const url = new URL(location.href)
+  if (next === 'overview') url.searchParams.delete('tab')
+  else url.searchParams.set('tab', next)
+  history.replaceState({}, '', `${url.pathname}${url.search}`)
+}
+
 async function openTenant(tenantId: string): Promise<void> {
   const tenant = tenants.find(item => item.id === tenantId)
   if (tenant === undefined) return
@@ -579,45 +600,82 @@ async function openTenant(tenantId: string): Promise<void> {
   const host = document.getElementById('tenant-page')!
   closeTenantEditor()
   host.innerHTML = `
-    <div class="tenant-page-head">
-      <div class="tenant-heading"><p class="eyebrow">Tenant detail</p><h1 id="detail-title"></h1><p class="lede"><span id="detail-id" class="mono"></span> <span id="detail-status"></span></p></div>
-      <div class="tenant-actions" aria-label="Tenant actions"><button id="back-tenants" class="button" type="button">Back to tenants</button><button id="edit-tenant" class="button" type="button">Edit profile</button><button id="detail-status-button" class="button" type="button"></button></div>
-    </div>
-    <div class="metric-grid" id="detail-metrics"></div>
-    <div class="detail-grid">
-      <section class="detail-panel">
-        <div class="detail-panel-head"><h3>Tenant profile</h3><button id="edit-tenant-panel" class="button small" type="button">Edit</button></div>
-        <dl class="info-list">
+    <div class="tenant-layout">
+      <aside class="tenant-summary">
+        <div class="summary-identity">
+          <div class="summary-avatar" aria-hidden="true">${tenant.name.slice(0, 1).toUpperCase()}</div>
+          <div><p class="eyebrow">Tenant</p><h1 id="detail-title"></h1><div class="tenant-meta"><span id="detail-id" class="mono"></span><span id="detail-status"></span></div></div>
+        </div>
+        <dl class="summary-list">
           <div><dt>IdP issuer</dt><dd id="detail-issuer"></dd></div>
           <div><dt>Created</dt><dd id="detail-created"></dd></div>
         </dl>
-      </section>
-      <section class="detail-panel">
-        <div class="detail-panel-head"><h3>Quota</h3><button id="edit-quota" class="button small" type="button">Edit</button></div>
-        <dl class="info-list">
-          <div><dt>Users</dt><dd id="detail-q-users"></dd></div>
-          <div><dt>Devices</dt><dd id="detail-q-devices"></dd></div>
-          <div><dt>Cloud tickets / day</dt><dd id="detail-q-cloud"></dd></div>
-          <div><dt>Device tickets / day</dt><dd id="detail-q-device"></dd></div>
-        </dl>
-      </section>
-      <section class="detail-panel">
-        <div class="detail-panel-head"><h3>Billing</h3><button id="edit-billing" class="button small" type="button">Edit</button></div>
-        <dl class="info-list">
-          <div><dt>Currency</dt><dd id="detail-b-currency"></dd></div>
-          <div><dt>Cloud ticket</dt><dd id="detail-b-cloud"></dd></div>
-          <div><dt>Device ticket</dt><dd id="detail-b-device"></dd></div>
-          <div><dt>Monthly budget</dt><dd id="detail-b-budget"></dd></div>
-          <div><dt>Current estimate</dt><dd id="detail-estimate"></dd></div>
-        </dl>
-      </section>
-    </div>
-    <div class="section-heading"><h3>Users</h3><button id="add-user" class="button small" type="button">Add user</button></div><div id="detail-users"></div>
-    <div class="section-heading"><h3>Models</h3></div><div id="detail-models"></div>
-    <div class="section-heading"><h3>Model upstreams</h3><button id="add-upstream" class="button small" type="button">Add upstream</button></div><div id="detail-upstreams"></div>
-    <div class="section-heading"><h3>Support access</h3><button id="request-support" class="button small" type="button">Request support</button></div><div id="detail-support"></div>
-    <h3>Usage (14d)</h3><div id="detail-usage"></div>
-    <h3>Audit summary</h3><div class="pre" id="detail-audit"></div>`
+        <div class="summary-actions">
+          <button id="edit-tenant" class="button primary" type="button">Edit profile</button>
+          <button id="detail-status-button" class="button" type="button"></button>
+          <button id="back-tenants" class="button" type="button">Back to tenants</button>
+        </div>
+      </aside>
+      <div class="tenant-main">
+        <div class="tenant-kpis" id="detail-metrics"></div>
+        <nav class="tenant-tabs" role="tablist" aria-label="Tenant sections">
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="overview" aria-selected="true">Overview</button>
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="users" aria-selected="false">Users</button>
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="models" aria-selected="false">Models</button>
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="upstreams" aria-selected="false">Upstreams</button>
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="support" aria-selected="false">Support</button>
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="usage" aria-selected="false">Usage</button>
+          <button class="tenant-tab" type="button" role="tab" data-tenant-tab="audit" aria-selected="false">Audit</button>
+        </nav>
+        <section class="tenant-panel active" data-tenant-panel="overview">
+          <div class="overview-grid">
+            <section class="detail-panel">
+              <div class="detail-panel-head"><h3>Quota</h3><button id="edit-quota" class="button small" type="button">Edit</button></div>
+              <dl class="info-list">
+                <div><dt>Users</dt><dd id="detail-q-users"></dd></div>
+                <div><dt>Devices</dt><dd id="detail-q-devices"></dd></div>
+                <div><dt>Cloud tickets / day</dt><dd id="detail-q-cloud"></dd></div>
+                <div><dt>Device tickets / day</dt><dd id="detail-q-device"></dd></div>
+              </dl>
+            </section>
+            <section class="detail-panel">
+              <div class="detail-panel-head"><h3>Billing</h3><button id="edit-billing" class="button small" type="button">Edit</button></div>
+              <dl class="info-list">
+                <div><dt>Currency</dt><dd id="detail-b-currency"></dd></div>
+                <div><dt>Cloud ticket</dt><dd id="detail-b-cloud"></dd></div>
+                <div><dt>Device ticket</dt><dd id="detail-b-device"></dd></div>
+                <div><dt>Monthly budget</dt><dd id="detail-b-budget"></dd></div>
+                <div><dt>Current estimate</dt><dd id="detail-estimate"></dd></div>
+              </dl>
+            </section>
+          </div>
+        </section>
+        <section class="tenant-panel" data-tenant-panel="users">
+          <div class="section-heading"><h3>Users</h3><button id="add-user" class="button small" type="button">Add user</button></div>
+          <div id="detail-users"></div>
+        </section>
+        <section class="tenant-panel" data-tenant-panel="models">
+          <div class="section-heading"><h3>Models</h3></div>
+          <div id="detail-models"></div>
+        </section>
+        <section class="tenant-panel" data-tenant-panel="upstreams">
+          <div class="section-heading"><h3>Model upstreams</h3><button id="add-upstream" class="button small" type="button">Add upstream</button></div>
+          <div id="detail-upstreams"></div>
+        </section>
+        <section class="tenant-panel" data-tenant-panel="support">
+          <div class="section-heading"><h3>Support access</h3><button id="request-support" class="button small" type="button">Request support</button></div>
+          <div id="detail-support"></div>
+        </section>
+        <section class="tenant-panel" data-tenant-panel="usage">
+          <div class="section-heading"><h3>Usage (14d)</h3></div>
+          <div id="detail-usage"></div>
+        </section>
+        <section class="tenant-panel" data-tenant-panel="audit">
+          <div class="section-heading"><h3>Audit summary</h3></div>
+          <div class="pre" id="detail-audit"></div>
+        </section>
+      </div>
+    </div>`
   showView('tenant', 'none')
   const breadcrumb = document.getElementById('breadcrumb')
   if (breadcrumb !== null) breadcrumb.replaceChildren('Platform', ' / ', 'Tenants', ' / ', tenant.name)
@@ -638,23 +696,25 @@ async function openTenant(tenantId: string): Promise<void> {
   ;(document.getElementById('detail-b-budget') as HTMLElement).textContent = billingResult.billing.monthlyBudgetCents === null ? 'No budget' : String(billingResult.billing.monthlyBudgetCents)
   ;(document.getElementById('detail-estimate') as HTMLElement).textContent = `${billingResult.estimate.estimatedCents} ${billingResult.estimate.currency}`
   ;(document.getElementById('detail-metrics') as HTMLElement).replaceChildren(
-    metricCard(String(tenant.usage.users), 'users', 'in tenant'),
-    metricCard(String(tenant.usage.devices), 'devices', 'paired'),
-    metricCard(String(tenant.usage.cloudTickets), 'cloud tickets', 'this period'),
-    metricCard(String(tenant.usage.deviceTickets), 'device tickets', 'this period'),
+    kpiItem(String(tenant.usage.users), 'Users', 'in tenant'),
+    kpiItem(String(tenant.usage.devices), 'Devices', 'paired'),
+    kpiItem(String(tenant.usage.cloudTickets), 'Cloud tickets', 'this period'),
+    kpiItem(String(tenant.usage.deviceTickets), 'Device tickets', 'this period'),
   )
   const statusButton = document.getElementById('detail-status-button') as HTMLButtonElement
   statusButton.textContent = tenant.status === 'active' ? 'Suspend' : 'Resume'
   statusButton.addEventListener('click', () => { void (tenant.status === 'active' ? suspendTenant(tenant.id) : resumeTenant(tenant.id)).catch(showError) })
   const initial: TenantInitialValues = { name: tenant.name, idpIssuer: tenant.idpIssuer, quota: quotaResult.quota, billing: billingResult.billing, models: tenantModelResult.models.map(model => model.id) }
   document.getElementById('edit-tenant')!.addEventListener('click', () => openTenantEditor('Edit tenant profile', createElement(TenantProfileForm, { initial, onSubmit: async values => { await saveTenant(tenant.id, values); closeTenantEditor() } })))
-  document.getElementById('edit-tenant-panel')!.addEventListener('click', () => openTenantEditor('Edit tenant profile', createElement(TenantProfileForm, { initial, onSubmit: async values => { await saveTenant(tenant.id, values); closeTenantEditor() } })))
   document.getElementById('edit-quota')!.addEventListener('click', () => openTenantEditor('Edit tenant quota', createElement(TenantQuotaForm, { initial, onSubmit: async values => { await saveQuota(tenant.id, values); closeTenantEditor() } })))
   document.getElementById('edit-billing')!.addEventListener('click', () => openTenantEditor('Edit tenant billing', createElement(TenantBillingForm, { initial, onSubmit: async values => { await saveBilling(tenant.id, values); closeTenantEditor() } })))
   document.getElementById('add-user')!.addEventListener('click', () => openTenantEditor('Add tenant user', createElement(AddTenantUserForm, { onSubmit: async values => { await addUser(tenant.id, values); closeTenantEditor() } })))
   document.getElementById('add-upstream')!.addEventListener('click', () => openTenantEditor('Add model upstream', createElement(AddUpstreamForm, { models: initial.models, onSubmit: async values => { await addUpstream(tenant.id, values); closeTenantEditor() } })))
   document.getElementById('request-support')!.addEventListener('click', () => openTenantEditor('Request support access', createElement(RequestSupportForm, { onSubmit: async values => { await requestSupport(tenant.id, values); closeTenantEditor() } })))
-  ;(document.getElementById('detail-users') as HTMLElement)  ;(document.getElementById('detail-users') as HTMLElement).replaceChildren(table(['Email', 'Role', 'User ID'], userResult.users.map(user => [user.email, user.role, user.userId])))
+  const initialTab = new URLSearchParams(location.search).get('tab') ?? 'overview'
+  for (const tab of document.querySelectorAll<HTMLButtonElement>('[data-tenant-tab]')) tab.addEventListener('click', () => setTenantTab(tab.dataset.tenantTab ?? 'overview'))
+  setTenantTab(initialTab, false)
+  ;(document.getElementById('detail-users') as HTMLElement).replaceChildren(table(['Email', 'Role', 'User ID'], userResult.users.map(user => [user.email, user.role, user.userId])))
   const upstreamHost = document.getElementById('detail-upstreams')!
   upstreamHost.replaceChildren(table(['Model', 'Name', 'Protocol', 'URL', 'Upstream model', 'Priority', 'Enabled', 'Key', ''], upstreamResult.upstreams.map(upstream => {
     const remove = button('Delete', async () => {
