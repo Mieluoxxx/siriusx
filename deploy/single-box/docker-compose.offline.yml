@@ -16,6 +16,7 @@ services:
       SIRIUSX_MODEL_ROUTER_URL: http://model-router:8317
       SIRIUSX_MODEL_ROUTER_CONFIG: /data/model-router/config.yaml
       SIRIUSX_MODEL_ROUTER_KEY: ${SIRIUSX_MODEL_ROUTER_KEY:-sk-siriusx-router}
+      SIRIUSX_ADMIN_WEB_URL: ${SIRIUSX_ADMIN_WEB_URL:-}
       SIRIUSX_SECRETS_KEY: ${SIRIUSX_SECRETS_KEY:-}
     ports:
       - "127.0.0.1:4320:4320"

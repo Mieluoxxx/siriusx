@@ -917,4 +917,14 @@ describe.skipIf(!postgresEnabled)('control plane PostgreSQL audit', () => {
     }
   })
 
+  it('removes the legacy embedded admin UI', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-legacy-admin-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'legacy-admin' })
+    servers.push(server)
+    const response = await fetch(`${server.url}/admin`)
+    expect(response.status).toBe(410)
+    expect(await response.json()).toMatchObject({ code: 'LEGACY_ADMIN_REMOVED' })
+  })
+
 })

@@ -27,6 +27,7 @@ export interface ControlPlaneServerOptions {
   readonly secretsKey?: string
   readonly modelRouterConfigPath?: string
   readonly modelRouterKey?: string
+  readonly adminWebUrl?: string
 }
 
 export interface ControlPlaneServer {
@@ -118,120 +119,11 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
       const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`)
       const parts = url.pathname.split('/').filter(Boolean)
       if (request.method === 'GET' && url.pathname === '/admin') {
-        response.writeHead(200, {
-          'content-type': 'text/html; charset=utf-8',
-          'cache-control': 'no-store',
-          'x-content-type-options': 'nosniff',
-          'x-frame-options': 'DENY',
-          'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
-        })
-        response.end(`<!doctype html><meta charset="utf-8"><title>SiriusX Platform Admin</title>
-<style>body{font:14px system-ui,sans-serif;margin:24px;max-width:1100px}input,button,select{padding:6px;margin:2px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left}code{background:#f4f4f4;padding:2px}</style>
-<h1>SiriusX Platform Admin</h1>
-<p>Platform admin token is kept in <code>sessionStorage</code> only.</p>
-<div><input id="token" type="password" placeholder="X-SiriusX-Platform-Token"><button id="load">Load</button></div>
-<div id="create"><h2>Create tenant</h2><input id="name" placeholder="Name"><input id="issuer" placeholder="IdP issuer"><input id="email" placeholder="Admin email"><input id="tenantId" placeholder="Tenant id (optional)"><button id="createTenant">Create</button></div>
-<div id="models"><h2>Model catalog</h2><input id="modelId" placeholder="Model id (optional)"><input id="modelName" placeholder="Display name"><input id="modelProvider" placeholder="Provider"><input id="modelNameId" placeholder="Provider model id"><button id="createModel">Add model</button><div id="modelList">Load to begin.</div></div>
-<div id="sourceBindings"><h2>Source bindings</h2><input id="sourceProvider" placeholder="provider"><input id="sourceExternal" placeholder="external id"><input id="sourceTenant" placeholder="tenant id"><input id="sourceRepo" placeholder="repo URL (optional)"><input id="sourceBase" placeholder="base ref (optional)"><button id="createSource">Add source binding</button><div id="sourceList">Load to begin.</div></div>
-<h2>Support requests</h2><div id="supportRequests">Load to begin.</div>
-<div style="display:flex;align-items:center;gap:8px"><h2>Platform audit</h2><button id="exportPlatformAudit">Export CSV</button></div><div id="platformAudit">Load to begin.</div>
-<h2>Tenants</h2><div id="tenants">Load to begin.</div>
-<h2 id="usersTitle" style="display:none">Users</h2><div id="users"></div>
-<div id="error" style="color:#b00020"></div>
-<script>
-let tenantsCache = [];
-const token = () => sessionStorage.getItem('platformToken') || '';
-const headers = () => ({'x-siriusx-platform-token': token(), 'content-type': 'application/json'});
-const err = e => document.getElementById('error').textContent = e instanceof Error ? e.message : String(e);
-async function api(path, init = {}) { const r = await fetch(path, {...init, headers: headers()}); const v = await r.json(); if (!r.ok) throw new Error(v.error || ('HTTP ' + r.status)); return v; }
-function row(text) { const tr = document.createElement('tr'); for (const value of text) { const td = document.createElement('td'); td.textContent = String(value); tr.append(td); } return tr; }
-async function loadSourceBindings() {
-  const data = await api('/v1/admin/source-bindings');
-  const host = document.getElementById('sourceList'); host.textContent = '';
-  const table = document.createElement('table'); table.append(row(['ID','Provider','External','Tenant','Repo','Base']));
-  for (const binding of data.bindings) table.append(row([binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '']));
-  host.append(table);
-}
-async function loadSupportRequests() {
-  const data = await api('/v1/admin/support-requests');
-  const host = document.getElementById('supportRequests'); host.textContent = '';
-  const table = document.createElement('table'); table.append(row(['Tenant','Reason','Status','Requested by']));
-  for (const request of data.requests) table.append(row([request.tenantId, request.reason, request.status, request.requestedBy]));
-  host.append(table);
-}
-async function loadPlatformAudit() {
-  const data = await api('/v1/admin/audit');
-  const host = document.getElementById('platformAudit'); host.textContent = '';
-  const table = document.createElement('table'); table.append(row(['Actor','Action','Target','Detail']));
-  for (const event of data.audit) table.append(row([event.actor, event.action, event.target, event.detail ?? '']));
-  host.append(table);
-}
-async function loadModels() {
-  const data = await api('/v1/admin/models');
-  const host = document.getElementById('modelList'); host.textContent = '';
-  const table = document.createElement('table'); table.append(row(['ID','Name','Provider','Model']));
-  for (const model of data.models) table.append(row([model.id, model.name, model.provider, model.model]));
-  host.append(table);
-}
-async function loadTenants() {
-  err('');
-  const data = await api('/v1/admin/tenants');
-  tenantsCache = data.tenants;
-  const host = document.getElementById('tenants'); host.textContent = '';
-  const table = document.createElement('table'); table.append(row(['Name','Tenant','Issuer','Status','Users','Devices','Device tickets','Cloud tickets','']));
-  for (const tenant of data.tenants) {
-    const tr = row([tenant.name, tenant.id, tenant.idpIssuer, tenant.status, tenant.usage.users, tenant.usage.devices, tenant.usage.deviceTickets, tenant.usage.cloudTickets]);
-    const button = document.createElement('button'); button.textContent = 'Users'; button.onclick = () => loadUsers(tenant.id); const td = document.createElement('td'); td.append(button);
-    const toggle = document.createElement('button'); toggle.textContent = tenant.status === 'active' ? 'Suspend' : 'Resume'; toggle.onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenant.id) + '/status', {method:'POST', body: JSON.stringify({status: tenant.status === 'active' ? 'suspended' : 'active'})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
-    td.append(toggle); tr.append(td); table.append(tr);
-  }
-  host.append(table);
-}
-async function loadUsers(tenantId) {
-  err(''); document.getElementById('usersTitle').style.display = 'block';
-  const data = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users');
-  const host = document.getElementById('users'); host.textContent = '';
-  const h = document.createElement('h3'); h.textContent = tenantId; host.append(h);
-  const currentTenant = tenantsCache.find(item => item.id === tenantId) || { name: '', idpIssuer: '' };
-  const config = document.createElement('div'); config.innerHTML = '<h4>Tenant config</h4><input id="tenantName" placeholder="Tenant name"><input id="tenantIssuer" placeholder="IdP issuer"><button id="saveTenant">Save tenant</button>'; host.append(config);
-  config.querySelector('#tenantName').value = currentTenant.name; config.querySelector('#tenantIssuer').value = currentTenant.idpIssuer;
-  config.querySelector('#saveTenant').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId), {method:'PUT', body: JSON.stringify({name: config.querySelector('#tenantName').value, idpIssuer: config.querySelector('#tenantIssuer').value})}); await loadTenants(); await loadUsers(tenantId); await loadPlatformAudit(); } catch (e) { err(e); } };
-  const quota = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota');
-  const q = document.createElement('div'); q.innerHTML = '<h4>Quota</h4><input id="maxUsers" placeholder="Max users"><input id="maxDevices" placeholder="Max devices"><input id="maxCloud" placeholder="Max cloud/day"><input id="maxDevice" placeholder="Max device tickets/day"><button id="saveQuota">Save quota</button>'; host.append(q);
-  q.querySelector('#maxUsers').value = quota.quota.maxUsers; q.querySelector('#maxDevices').value = quota.quota.maxDevices; q.querySelector('#maxCloud').value = quota.quota.maxCloudTicketsPerDay; q.querySelector('#maxDevice').value = quota.quota.maxDeviceTicketsPerDay;
-  q.querySelector('#saveQuota').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/quota', {method:'PUT', body: JSON.stringify({maxUsers:Number(q.querySelector('#maxUsers').value), maxDevices:Number(q.querySelector('#maxDevices').value), maxCloudTicketsPerDay:Number(q.querySelector('#maxCloud').value), maxDeviceTicketsPerDay:Number(q.querySelector('#maxDevice').value)})}); await loadUsers(tenantId); } catch (e) { err(e); } };
-  const support = document.createElement('div'); support.innerHTML = '<h4>Support access</h4><input id="supportReason" placeholder="Support reason"><button id="requestSupport">Request support</button>'; host.append(support);
-  support.querySelector('#requestSupport').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/support-requests', {method:'POST', body: JSON.stringify({reason: support.querySelector('#supportReason').value})}); await loadSupportRequests(); await loadPlatformAudit(); } catch (e) { err(e); } };
-  const billing = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/billing');
-  const bill = document.createElement('div'); bill.innerHTML = '<h4>Billing</h4><input id="currency" placeholder="Currency"><input id="cloudCents" placeholder="Cloud ticket cents"><input id="deviceCents" placeholder="Device ticket cents"><input id="budget" placeholder="Monthly budget cents (blank = none)"><button id="saveBilling">Save billing</button><div id="billEstimate"></div>'; host.append(bill);
-  bill.querySelector('#currency').value = billing.billing.currency; bill.querySelector('#cloudCents').value = billing.billing.cloudTicketCents; bill.querySelector('#deviceCents').value = billing.billing.deviceTicketCents; bill.querySelector('#budget').value = billing.billing.monthlyBudgetCents ?? '';
-  bill.querySelector('#billEstimate').textContent = 'Estimate: ' + billing.estimate.estimatedCents + ' ' + billing.estimate.currency;
-  bill.querySelector('#saveBilling').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/billing', {method:'PUT', body: JSON.stringify({currency: bill.querySelector('#currency').value, cloudTicketCents: Number(bill.querySelector('#cloudCents').value), deviceTicketCents: Number(bill.querySelector('#deviceCents').value), monthlyBudgetCents: bill.querySelector('#budget').value === '' ? null : Number(bill.querySelector('#budget').value)})}); await loadUsers(tenantId); await loadPlatformAudit(); } catch (e) { err(e); } };
-  const daily = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/usage-daily?days=14');
-  const trend = document.createElement('div'); trend.innerHTML = '<h4>Usage (14d)</h4>'; host.append(trend);
-  const ttable = document.createElement('table'); ttable.append(row(['Date','Cloud tickets','Device tickets'])); for (const day of daily.usage) ttable.append(row([day.date, day.cloudTickets, day.deviceTickets])); trend.append(ttable);
-  const tm = await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/models');
-  const catalog = await api('/v1/admin/models');
-  const bound = new Map(tm.models.map(model => [model.id, model]));
-  const modelBox = document.createElement('div'); modelBox.innerHTML = '<h4>Catalog models</h4>'; host.append(modelBox);
-  for (const model of catalog.models) { const div = document.createElement('div'); div.textContent = model.id + ' · ' + model.name + (bound.get(model.id)?.isDefault ? ' (default)' : '') + ' '; const button = document.createElement('button'); const isBound = bound.has(model.id); button.textContent = isBound ? 'Set default' : 'Bind'; button.onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/models/' + encodeURIComponent(model.id), {method:'PUT', body: JSON.stringify({isDefault: !isBound ? false : true})}); await loadUsers(tenantId); } catch (e) { err(e); } }; div.append(button); modelBox.append(div); }
-  const add = document.createElement('div'); add.innerHTML = '<input id="newEmail" placeholder="User email"><select id="newRole"><option>member</option><option>admin</option></select><button id="addUser">Add user</button>'; host.append(add);
-  add.querySelector('#addUser').onclick = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users', {method:'POST', body: JSON.stringify({email: add.querySelector('#newEmail').value, role: add.querySelector('#newRole').value})}); await loadUsers(tenantId); } catch (e) { err(e); } };
-  const table = document.createElement('table'); table.append(row(['Email','Role','User ID']));
-  for (const user of data.users) {
-    const tr = row([user.email, user.role, user.userId]);
-    const select = document.createElement('select'); select.innerHTML = '<option>member</option><option>admin</option>'; select.value = user.role;
-    select.onchange = async () => { try { await api('/v1/admin/tenants/' + encodeURIComponent(tenantId) + '/users/' + encodeURIComponent(user.userId) + '/role', {method:'PUT', body: JSON.stringify({role: select.value})}); await loadUsers(tenantId); await loadPlatformAudit(); } catch (e) { err(e); } };
-    tr.children[1].textContent = ''; tr.children[1].append(select); table.append(tr);
-  }
-  host.append(table);
-}
-document.getElementById('load').onclick = async () => { try { sessionStorage.setItem('platformToken', document.getElementById('token').value); await Promise.all([loadTenants(), loadModels(), loadPlatformAudit(), loadSupportRequests(), loadSourceBindings()]); } catch (e) { err(e); } };
-document.getElementById('exportPlatformAudit').onclick = async () => { try { const response = await fetch('/v1/admin/audit/export?format=csv', {headers: {'x-siriusx-platform-token': token()}}); if (!response.ok) throw new Error('HTTP ' + response.status); const blob = await response.blob(); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'siriusx-platform-audit.csv'; link.click(); URL.revokeObjectURL(link.href); } catch (e) { err(e); } };
-document.getElementById('createSource').onclick = async () => { try { await api('/v1/admin/source-bindings', {method:'POST', body: JSON.stringify({provider: document.getElementById('sourceProvider').value, externalId: document.getElementById('sourceExternal').value, tenantId: document.getElementById('sourceTenant').value, ...(document.getElementById('sourceRepo').value === '' ? {} : {repoUrl: document.getElementById('sourceRepo').value}), ...(document.getElementById('sourceBase').value === '' ? {} : {baseRef: document.getElementById('sourceBase').value})})}); await loadSourceBindings(); await loadPlatformAudit(); } catch (e) { err(e); } };
-document.getElementById('createModel').onclick = async () => { try { await api('/v1/admin/models', {method:'POST', body: JSON.stringify({id: document.getElementById('modelId').value || undefined, name: document.getElementById('modelName').value, provider: document.getElementById('modelProvider').value, model: document.getElementById('modelNameId').value})}); await loadModels(); } catch (e) { err(e); } };
-document.getElementById('createTenant').onclick = async () => { try { await api('/v1/admin/tenants', {method:'POST', body: JSON.stringify({name:document.getElementById('name').value, idpIssuer:document.getElementById('issuer').value, adminEmail:document.getElementById('email').value, ...(document.getElementById('tenantId').value === '' ? {} : {tenantId:document.getElementById('tenantId').value})})}); await loadTenants(); await loadPlatformAudit(); } catch (e) { err(e); } };
-</script>`)
+        if (options.adminWebUrl !== undefined && options.adminWebUrl !== '') {
+          response.writeHead(308, { location: `${options.adminWebUrl.replace(/\/$/u, '')}/`, 'cache-control': 'no-store' }).end()
+        } else {
+          write(response, 410, { error: 'legacy admin UI removed; use admin-web', code: 'LEGACY_ADMIN_REMOVED' })
+        }
         return
       }
       if (request.method === 'GET' && url.pathname === '/health') {

@@ -63,9 +63,9 @@
 - [x] Fluent Bit log collection config + optional DaemonSet
 - [x] Management plane API（platform tenants/users + tenant users/roles）
 - [x] Management plane UI（tenant settings/users/role）
-- [x] Platform admin `/admin` UI（租户列表/创建/usage/users）
+- [x] Platform admin `admin-web` UI（租户列表/创建/usage/users）
 - [x] Tenant quotas + usage enforcement（users/devices/tickets）
-- [x] Model catalog + tenant model binding（backend + /admin UI + runtime enforcement）
+- [x] Model catalog + tenant model binding（backend + admin-web + runtime enforcement）
 - [x] Tenant tool policy（backend + control-plane proxy + Admin UI）
 - [x] Tenant audit summary（tool gateway aggregate + Admin UI）
 - [x] Platform admin audit trail（tenant/model/quota/user operations）
