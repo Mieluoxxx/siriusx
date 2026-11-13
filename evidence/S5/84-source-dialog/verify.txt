@@ -1,0 +1,15 @@
+{
+  "hasAuto": true,
+  "focused": "INPUT|provider",
+  "checkbox": {
+    "x": 728,
+    "y": 505,
+    "width": 17,
+    "height": 17,
+    "top": 505,
+    "right": 745,
+    "bottom": 522,
+    "left": 728
+  },
+  "errors": []
+}

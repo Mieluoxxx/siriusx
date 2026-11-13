@@ -148,15 +148,19 @@ const styles = stylex.create({
     ':hover': { background: '#f7f7f4' },
     ':focus': { background: '#eef4ff', color: '#2563eb' },
   },
-  checkboxRow: {
-    gridColumn: '2 / 3',
-    '@media (max-width: 560px)': { gridColumn: '1' },
+  checkboxField: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '9px',
     minBlockSize: '38px',
-    color: '#6f6f6a',
+    minInlineSize: 0,
+  },
+  checkboxLabel: {
+    color: '#454540',
     fontSize: '13px',
+    fontWeight: 400,
+    lineHeight: '20px',
+    whiteSpace: 'normal',
   },
   checkbox: {
     display: 'grid',
@@ -404,11 +408,11 @@ function SelectField({ name, label, options, defaultValue, disabled = false, onV
 
 function CheckboxField({ name, label, defaultChecked = false }: { name: string; label: string; defaultChecked?: boolean }): React.ReactElement {
   return (
-    <Field.Root name={name} className={cls(styles.field)}>
-      <Field.Label className={cls(styles.label)}>{label}</Field.Label>
+    <Field.Root name={name} className={cls(styles.checkboxField)}>
       <Checkbox.Root name={name} defaultChecked={defaultChecked} className={cls(styles.checkbox)}>
         <Checkbox.Indicator className={cls(styles.checkboxIndicator)}>✓</Checkbox.Indicator>
       </Checkbox.Root>
+      <Field.Label className={cls(styles.checkboxLabel)}>{label}</Field.Label>
     </Field.Root>
   )
 }

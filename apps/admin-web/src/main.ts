@@ -694,7 +694,10 @@ function openTenantEditor(title: string, element: ReturnType<typeof createElemen
   tenantEditRoot = createRoot(document.getElementById('tenant-edit-form-root')!)
   document.getElementById('tenant-edit-title')!.textContent = title
   tenantEditRoot.render(element)
-  if (!dialog.open) dialog.showModal()
+  if (!dialog.open) {
+    dialog.showModal()
+    requestAnimationFrame(() => dialog.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea')?.focus())
+  }
 }
 
 function closeTenantEditor(): void {
