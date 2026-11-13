@@ -520,6 +520,7 @@ export function TenantFilters({ onChange, total }: TenantFiltersProps): React.Re
     setQuery(nextQuery); setStatus(nextStatus); onChange(nextQuery, nextStatus)
   }
   const statusOptions = [{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]
+  const dirty = query.trim() !== '' || status !== ''
   return (
     <form className={cls(styles.tenantFilterForm)} onSubmit={event => event.preventDefault()}>
       <Field.Root name="tenantQuery" className={cls(styles.tenantSearchField)}>
@@ -533,8 +534,8 @@ export function TenantFilters({ onChange, total }: TenantFiltersProps): React.Re
           <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{statusOptions.map(item => <Select.Item key={item.value} value={item.value} className={cls(styles.item)}>{item.label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
         </Select.Root>
       </Field.Root>
-      <button className={cls(styles.button)} type="button" onClick={() => update('', '')}>Reset</button>
-      <output id="tenant-count" className={cls(styles.tenantFilterOutput)}>{total} tenants</output>
+      {dirty ? <button className={cls(styles.button)} type="button" onClick={() => update('', '')}>Reset</button> : null}
+      {dirty ? <output id="tenant-count" className={cls(styles.tenantFilterOutput)}>{total} tenants</output> : null}
     </form>
   )
 }

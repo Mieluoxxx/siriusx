@@ -1,0 +1,11 @@
+{
+  "hasDirectory": false,
+  "hasProvisionText": false,
+  "hasCreateForm": false,
+  "tableCaption": false,
+  "rows": 1,
+  "createOpen": true,
+  "createInputs": 4,
+  "accessOpen": true,
+  "errors": []
+}

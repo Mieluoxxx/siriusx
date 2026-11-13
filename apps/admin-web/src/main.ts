@@ -101,6 +101,7 @@ function renderNotifications(requests: SupportRequest[]): void {
   const count = document.getElementById('notification-count')!
   count.textContent = String(pending.length)
   count.hidden = pending.length === 0
+  document.getElementById('notification-button')!.hidden = pending.length === 0
   const list = document.getElementById('notification-list')!
   if (pending.length === 0) {
     list.replaceChildren(node('div', 'No pending notifications.', 'notification-empty'))
@@ -228,9 +229,8 @@ function renderShell(): void {
           <div class="card"><div class="card-head"><h2>Recent tenants</h2><button class="button small" type="button" data-go="tenants">View all</button></div><div id="overview-tenants"></div></div>
         </section>
         <section class="view" data-view="tenants" id="view-tenants">
-          <div class="page-head"><div><p class="eyebrow">Directory</p><h1>Tenants</h1><p class="lede">Provision tenants, manage status, and inspect usage.</p></div></div>
+          <div class="page-head"><div><h1>Tenants</h1></div><button id="open-create-tenant" class="button primary" type="button">+ New tenant</button></div>
           <div id="tenant-filter-root" class="toolbar"></div>
-          <section id="create-tenant" class="card form-card"><div class="form-card-head"><h2>Create tenant</h2><p>Provision a tenant and its first admin.</p></div><div id="create-tenant-form-root"></div></section>
           <div id="tenants"></div>
         </section>
         <section class="view" data-view="models" id="view-models">
@@ -262,7 +262,6 @@ function renderShell(): void {
 }
 
 function mountShellForms(): void {
-  mountShellForm('create-tenant-form-root', createElement(CreateTenantForm, { onSubmit: values => createTenant(values) }))
   mountShellForm('create-model-form-root', createElement(CreateModelForm, { onSubmit: values => createModel(values) }))
   mountShellForm('create-binding-form-root', createElement(CreateBindingForm, { onSubmit: values => createBinding(values) }))
   mountShellForm('tenant-filter-root', createElement(TenantFilters, {
@@ -320,7 +319,10 @@ function showView(view: string, mode: HistoryMode = 'push'): void {
   if (view !== 'tenant') selectedTenant = undefined
   const navView = view === 'tenant' ? 'tenants' : view
   const breadcrumb = document.getElementById('breadcrumb')
-  if (breadcrumb !== null) breadcrumb.replaceChildren('Platform', ' / ', VIEW_LABELS[view] ?? 'Overview')
+  if (breadcrumb !== null) {
+    breadcrumb.hidden = view !== 'tenant'
+    if (view === 'tenant') breadcrumb.replaceChildren('Platform', ' / ', VIEW_LABELS[view] ?? 'Tenant detail')
+  }
   for (const element of document.querySelectorAll<HTMLElement>('.view')) element.classList.toggle('active', element.dataset.view === view)
   for (const element of document.querySelectorAll<HTMLButtonElement>('.nav-button')) element.setAttribute('aria-current', element.dataset.view === navView ? 'page' : 'false')
   const nav = document.getElementById('admin-nav')
@@ -354,6 +356,7 @@ let bindings: Binding[] = []
 function addHandlers(): void {
   document.getElementById('export-audit')!.addEventListener('click', () => { void exportPlatformAudit().catch(showError) })
   document.getElementById('tenant-edit-close')!.addEventListener('click', closeTenantEditor)
+  document.getElementById('open-create-tenant')!.addEventListener('click', () => openTenantEditor('Create tenant', createElement(CreateTenantForm, { onSubmit: async values => { await createTenant(values); closeTenantEditor() } })))
   document.getElementById('tenant-edit-dialog')!.addEventListener('close', () => { tenantEditRoot?.unmount(); tenantEditRoot = undefined })
   for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
     item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
@@ -460,12 +463,25 @@ function renderTenantsNow(): void {
   if (filtered.length === 0) { host.replaceChildren(node('div', 'No tenants match these filters.', 'table-empty')); return }
   const rows = filtered.map(tenant => {
     const actions = node('div', undefined, 'row')
-    actions.append(button('Open', () => { selectedTenant = tenant.id; void openTenant(tenant.id).catch(showError) }))
     actions.append(button(tenant.status === 'active' ? 'Suspend' : 'Resume', () => tenant.status === 'active' ? suspendTenant(tenant.id) : resumeTenant(tenant.id)))
-    return [tenant.name, tenant.id, tenant.idpIssuer, pill(tenant.status), String(tenant.usage.users), String(tenant.usage.devices), String(tenant.usage.deviceTickets), String(tenant.usage.cloudTickets), actions]
+    return [tenant.name, tenant.id, pill(tenant.status), String(tenant.usage.users), actions]
   })
-  const rendered = table(['Name', 'Tenant', 'Issuer', 'Status', 'Users', 'Devices', 'Device tickets', 'Cloud tickets', ''], rows, 'Tenants')
-  rendered.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((row, index) => { const tenantId = filtered[index]?.id ?? ''; row.setAttribute('data-tenant-id', tenantId); row.style.viewTransitionName = `tenant-${tenantId.replace(/[^a-zA-Z0-9_-]/gu, '-')}` })
+  const rendered = table(['Name', 'Tenant', 'Status', 'Users', 'Actions'], rows)
+  rendered.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((row, index) => {
+    const tenantId = filtered[index]?.id ?? ''
+    row.setAttribute('data-tenant-id', tenantId)
+    row.style.viewTransitionName = `tenant-${tenantId.replace(/[^a-zA-Z0-9_-]/gu, '-')}`
+    row.classList.add('clickable-row')
+    row.tabIndex = 0
+    row.addEventListener('click', event => {
+      if ((event.target as HTMLElement).closest('button, a') !== null) return
+      selectedTenant = tenantId; void openTenant(tenantId).catch(showError)
+    })
+    row.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      event.preventDefault(); selectedTenant = tenantId; void openTenant(tenantId).catch(showError)
+    })
+  })
   host.replaceChildren(rendered)
 }
 
@@ -788,7 +804,7 @@ async function openTenant(tenantId: string): Promise<void> {
     </div>`
   showView('tenant', 'none')
   const breadcrumb = document.getElementById('breadcrumb')
-  if (breadcrumb !== null) breadcrumb.replaceChildren('Platform', ' / ', 'Tenants', ' / ', tenant.name)
+  if (breadcrumb !== null) { breadcrumb.hidden = false; breadcrumb.replaceChildren('Platform', ' / ', 'Tenants', ' / ', tenant.name) }
   writeRoute('tenant', 'push', tenant.id)
   document.getElementById('back-tenants')!.addEventListener('click', () => { showView('tenants'); void loadAll().catch(showError) })
   ;(document.getElementById('detail-title') as HTMLElement).textContent = tenant.name
@@ -925,10 +941,12 @@ createRoot(authHost).render(createElement(AuthForm, {
   onConnect: async value => {
     sessionStorage.setItem('siriusx.platformToken', value)
     selectedTenant = undefined
+    document.getElementById('token-panel')?.hidePopover()
     await bootApp()
   },
 }))
 
-if (token() !== '') { void bootApp().catch(showError) }
+if (token() === '') requestAnimationFrame(() => document.getElementById('token-panel')?.showPopover())
+else void bootApp().catch(showError)
 
 window.addEventListener('popstate', () => { if (token() !== '') void applyRoute().catch(showError) })

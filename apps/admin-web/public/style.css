@@ -1343,3 +1343,24 @@ progress::-moz-progress-bar { background: #2563eb; }
   #audit table { table-layout: auto; }
   #audit .audit-time { font-size: 11px; }
 }
+
+/* Lean tenant list */
+.breadcrumb[hidden], .icon-button[hidden] { display: none !important; }
+.token-panel {
+  position: fixed;
+  inset: 64px 16px auto auto;
+  inline-size: min(390px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 16%);
+}
+.token-panel:not(:popover-open) { display: none; }
+.token-panel:popover-open { display: block; }
+.token-panel .auth-form-root { inline-size: 100%; }
+tr.clickable-row { cursor: pointer; }
+tr.clickable-row:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+@media (max-width: 820px) {
+  .token-panel { inset-block-start: 96px; }
+}

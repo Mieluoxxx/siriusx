@@ -18,7 +18,10 @@
       <button id="notification-button" class="icon-button" type="button" popovertarget="notification-panel" aria-label="Notifications" aria-expanded="false">
         <span aria-hidden="true">Notifications</span><span id="notification-count" class="count" hidden>0</span>
       </button>
-      <div id="auth-form-root" class="auth-form-root"></div>
+      <button id="access-button" class="icon-button" type="button" popovertarget="token-panel" aria-label="Platform access">Access</button>
+      <div id="token-panel" class="token-panel" popover="auto" aria-label="Platform access">
+        <div id="auth-form-root" class="auth-form-root"></div>
+      </div>
     </div>
   </header>
   <main id="app" tabindex="-1">
