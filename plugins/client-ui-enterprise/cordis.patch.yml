@@ -1,0 +1,6 @@
+# Lists the enterprise plugins in the Plugins page. The cards describe the
+# enterprise sign-in, so they only exist while the enterprise provider does.
+- insert:
+    - id: siriusx-client-ui-enterprise
+      name: '@siriusx/dsh-client-ui-enterprise'
+      disabled: !!js process.env.SIRIUSX_ENTERPRISE !== '1'

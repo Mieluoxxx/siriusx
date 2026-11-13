@@ -26,4 +26,5 @@
 | `tenant-context` | 向 Host 扩展提供租户上下文（S5） |
 | `executor-local` | 本地 Executor，实现 `local_dir`（S3） |
 | `client-ui-team` | Bot/工单/审批界面插件（S4） |
+| `client-ui-enterprise` | 把企业登录与模型网关两个插件列进预设插件页（S5） |
 | `enterprise-bundle` | 把企业插件组合成可安装 bundle |
