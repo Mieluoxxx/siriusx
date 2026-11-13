@@ -235,7 +235,13 @@ describe('SiriusXSsoAccount probe and exchange lifecycle', () => {
       const beforeSignOut = JSON.parse((await callRoute('/__siriusx/tenant')).body) as Record<string, unknown>
       expect(beforeSignOut.controlPlaneError).toContain('HTTP 403 (TENANT_SUSPENDED: tenant suspended)')
 
+      let notifications = 0
+      const tenantSvc = ctx.get('siriusxTenant') as { onChange: (fn: () => void) => () => void }
+      const stopListening = tenantSvc.onChange(() => { notifications += 1 })
+
       await account.signOut(META)
+      expect(notifications).toBe(1)
+      stopListening()
       const afterSignOut = JSON.parse((await callRoute('/__siriusx/tenant')).body) as Record<string, unknown>
       expect(afterSignOut).toEqual({
         authenticated: false,

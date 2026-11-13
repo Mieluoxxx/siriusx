@@ -139,6 +139,13 @@ export function apply(ctx: Context): void {
     },
   ])
 
+  const tenantService = ctx.get('siriusxTenant') as { onChange?: (listener: () => void) => () => void } | undefined
+  if (tenantService?.onChange !== undefined) {
+    ctx.effect(() => tenantService.onChange!(() => {
+      ctx.emit('llm/models-updated', PROVIDER)
+    }), 'llm-siriusx: tenant-models-sync')
+  }
+
   registerDeepSeekProvider(ctx, PROVIDER, {
     providerName: 'SiriusX',
     options,
@@ -150,8 +157,13 @@ export function apply(ctx: Context): void {
      */
     discoverModels: async () => {
       const ids = await boundModelIds()
-      if (ids === undefined) return []
-      return ids.map(id => listedModel(PROVIDER, id))
+      if (ids !== undefined) return ids.map(id => listedModel(PROVIDER, id))
+      const facts = tenant() as { controlPlaneToken?: string; model?: { id?: string } | null }
+      if (facts.controlPlaneToken !== undefined && facts.controlPlaneToken !== '') {
+        const fallbackId = facts.model?.id
+        if (fallbackId !== undefined && fallbackId !== '') return [listedModel(PROVIDER, fallbackId)]
+      }
+      return []
     },
   })
 

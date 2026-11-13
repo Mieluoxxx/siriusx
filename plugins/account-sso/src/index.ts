@@ -118,9 +118,19 @@ export class SiriusXTenantContext extends Service {
   controlPlaneToken: string | undefined
   model: ControlPlaneModel | null = null
   authenticated = false
+  private readonly listeners = new Set<() => void>()
 
   constructor(ctx: Context) {
     super(ctx, 'siriusxTenant')
+  }
+
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => { this.listeners.delete(listener) }
+  }
+
+  notify(): void {
+    for (const listener of this.listeners) listener()
   }
 
   update(claims: SsoClaims): void {
@@ -371,6 +381,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
         this.tenant.controlPlaneToken = this.controlSession.token
         this.tenant.model = model
         this.controlSessionError = undefined
+        this.tenant.notify()
       } catch (error) {
         if (epoch !== this.exchangeEpoch) return
         // Record why the session is missing. This used to be swallowed entirely,
@@ -544,6 +555,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
     this.tenant.clear()
     this.controlSession = undefined
     this.controlSessionError = undefined
+    this.tenant.notify()
     await this.ctx.credentials.deleteRecord(KEY)
     this.setState({ status: 'signed-out', links: this.state.links, attempt: null })
     return this.state
