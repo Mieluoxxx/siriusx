@@ -157,6 +157,23 @@ async function verifyIdToken(idToken: string): Promise<SsoClaims> {
   throw new Error('siriusx-account-sso: set SIRIUSX_SSO_JWKS_URI (or HS256 test secret); refusing unverified id_token')
 }
 
+async function readExchangeError(response: Response): Promise<string | undefined> {
+  const text = (await response.text().catch(() => '')).trim()
+  if (text === '') return undefined
+  try {
+    const parsed: unknown = JSON.parse(text)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      const { code, error } = parsed as Record<string, unknown>
+      const parts = [
+        typeof code === 'string' && code !== '' ? code : undefined,
+        typeof error === 'string' && error !== '' ? error : undefined,
+      ].filter((part): part is string => part !== undefined)
+      if (parts.length > 0) return parts.join(': ').slice(0, 200)
+    }
+  } catch { /* fall back to plain text */ }
+  return text.slice(0, 200)
+}
+
 export default class SiriusXSsoAccount extends DeepSeekAccount {
   static inject = ['credentials', 'webServer']
 
@@ -175,6 +192,9 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
    * instead of merely empty.
    */
   private controlSessionError: string | undefined
+  private exchangeEpoch = 0
+  private exchangeInFlight: Promise<void> | undefined
+  private lastExchangeAt = 0
   private loaded: Promise<StoredGrant | undefined> | undefined
 
   constructor(ctx: Context) {
@@ -221,6 +241,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
             ...(typeof token.refresh_token === 'string' && token.refresh_token !== '' ? { refreshToken: token.refresh_token } : {}),
           }
           await this.ctx.credentials.modifyRecord(KEY, async () => ({ kind: 'grant', payload: grant }))
+          this.loaded = Promise.resolve(grant)
           this.tenant.update(claims)
           await this.exchangeControlPlane(grant)
           this.setState({
@@ -244,12 +265,13 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
     ctx.effect(() => ctx.webServer.register({
       kind: 'exact',
       path: '/__siriusx/tenant',
-      handler: (request, response) => {
+      handler: async (request, response) => {
         const remote = request.socket.remoteAddress
         if (remote !== '127.0.0.1' && remote !== '::1' && remote !== '::ffff:127.0.0.1') {
           response.writeHead(403).end()
           return
         }
+        await this.ensureControlSessionForProbe()
         response.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
         response.end(JSON.stringify({
           authenticated: this.tenant.authenticated,
@@ -282,45 +304,87 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
     }), 'siriusx-account-sso: control-plane session')
   }
 
+  private async ensureControlSessionForProbe(): Promise<void> {
+    const waitShort = async (promise: Promise<unknown> | undefined): Promise<void> => {
+      if (promise === undefined) return
+      await Promise.race([promise.catch(() => {}), new Promise<void>(resolve => { setTimeout(resolve, 2000).unref?.() })])
+    }
+    await waitShort(this.grant())
+    if (this.exchangeInFlight !== undefined) {
+      await waitShort(this.exchangeInFlight)
+      return
+    }
+    if (this.controlSession !== undefined || Date.now() - this.lastExchangeAt < 5000) return
+    const current = await this.grant().catch(() => undefined)
+    if (current === undefined || this.controlSession !== undefined || this.exchangeInFlight !== undefined) return
+    const exp = current.claims.exp
+    const active = idTokenExpiring(typeof exp === 'number' ? exp : undefined, Date.now())
+      ? await this.refreshGrant(current) ?? current
+      : current
+    await waitShort(this.exchangeControlPlane(active))
+  }
+
   private async exchangeControlPlane(grant: StoredGrant): Promise<void> {
     const baseUrl = process.env.SIRIUSX_CONTROL_PLANE_URL?.trim()
     if (baseUrl === undefined || baseUrl === '') return
     const endpoint = baseUrl.replace(/\/$/u, '')
-    try {
-      let active = grant
-      let response = await this.postExchange(endpoint, active)
-      // An id_token lives far shorter than a control-plane session. Retrying
-      // once through the offline refresh credential is what makes a sign-in
-      // outlive the id_token instead of dying with it.
-      if (response.status === 401) {
-        const refreshed = await this.refreshGrant(active)
-        if (refreshed !== undefined) {
-          active = refreshed
-          response = await this.postExchange(endpoint, active)
+    const epoch = ++this.exchangeEpoch
+    this.lastExchangeAt = Date.now()
+    this.controlSession = undefined
+    this.tenant.controlPlaneUrl = endpoint
+    this.tenant.controlPlaneToken = undefined
+    this.tenant.model = null
+    this.controlSessionError = undefined
+    let run!: Promise<void>
+    run = (async () => {
+      try {
+        let active = grant
+        let response = await this.postExchange(endpoint, active)
+        if (epoch !== this.exchangeEpoch) return
+        // An id_token lives far shorter than a control-plane session. Retrying
+        // once through the offline refresh credential is what makes a sign-in
+        // outlive the id_token instead of dying with it.
+        if (response.status === 401) {
+          const refreshed = await this.refreshGrant(active)
+          if (epoch !== this.exchangeEpoch) return
+          if (refreshed !== undefined) {
+            active = refreshed
+            response = await this.postExchange(endpoint, active)
+            if (epoch !== this.exchangeEpoch) return
+          }
         }
+        if (!response.ok) {
+          const detail = await readExchangeError(response)
+          throw new Error(`control-plane SSO exchange failed: HTTP ${response.status}${detail === undefined ? '' : ` (${detail})`}`)
+        }
+        const body = await response.json() as { token?: unknown; tenantId?: unknown; role?: unknown; model?: unknown; modelGatewayUrl?: unknown }
+        if (epoch !== this.exchangeEpoch) return
+        if (typeof body.token !== 'string' || typeof body.tenantId !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('control-plane SSO exchange returned an invalid session')
+        const model = typeof body.model === 'object' && body.model !== null && typeof (body.model as Record<string, unknown>).id === 'string' && typeof (body.model as Record<string, unknown>).provider === 'string' && typeof (body.model as Record<string, unknown>).model === 'string'
+          ? { id: (body.model as Record<string, unknown>).id as string, provider: (body.model as Record<string, unknown>).provider as string, model: (body.model as Record<string, unknown>).model as string }
+          : null
+        this.controlSession = {
+          baseUrl: endpoint, token: body.token, tenantId: body.tenantId, role: body.role,
+          model, ...(typeof body.modelGatewayUrl === 'string' ? { modelGatewayUrl: body.modelGatewayUrl } : {}),
+        }
+        this.tenant.controlPlaneUrl = this.controlSession.baseUrl
+        this.tenant.controlPlaneToken = this.controlSession.token
+        this.tenant.model = model
+        this.controlSessionError = undefined
+      } catch (error) {
+        if (epoch !== this.exchangeEpoch) return
+        // Record why the session is missing. This used to be swallowed entirely,
+        // which is how a desktop could report "signed in" while every tenant
+        // feature stayed empty.
+        this.controlSessionError = error instanceof Error ? error.message : String(error)
+        console.warn(`siriusx-account-sso: control-plane session unavailable (${this.controlSessionError})`)
+        if (process.env.SIRIUSX_CONTROL_PLANE_REQUIRED === '1') throw error
+      } finally {
+        if (this.exchangeInFlight === run) this.exchangeInFlight = undefined
       }
-      if (!response.ok) throw new Error(`control-plane SSO exchange failed: HTTP ${response.status}`)
-      const body = await response.json() as { token?: unknown; tenantId?: unknown; role?: unknown; model?: unknown; modelGatewayUrl?: unknown }
-      if (typeof body.token !== 'string' || typeof body.tenantId !== 'string' || (body.role !== 'admin' && body.role !== 'member')) throw new Error('control-plane SSO exchange returned an invalid session')
-      const model = typeof body.model === 'object' && body.model !== null && typeof (body.model as Record<string, unknown>).id === 'string' && typeof (body.model as Record<string, unknown>).provider === 'string' && typeof (body.model as Record<string, unknown>).model === 'string'
-        ? { id: (body.model as Record<string, unknown>).id as string, provider: (body.model as Record<string, unknown>).provider as string, model: (body.model as Record<string, unknown>).model as string }
-        : null
-      this.controlSession = {
-        baseUrl: endpoint, token: body.token, tenantId: body.tenantId, role: body.role,
-        model, ...(typeof body.modelGatewayUrl === 'string' ? { modelGatewayUrl: body.modelGatewayUrl } : {}),
-      }
-      this.tenant.controlPlaneUrl = this.controlSession.baseUrl
-      this.tenant.controlPlaneToken = this.controlSession.token
-      this.tenant.model = model
-      this.controlSessionError = undefined
-    } catch (error) {
-      // Record why the session is missing. This used to be swallowed entirely,
-      // which is how a desktop could report "signed in" while every tenant
-      // feature stayed empty.
-      this.controlSessionError = error instanceof Error ? error.message : String(error)
-      console.warn(`siriusx-account-sso: control-plane session unavailable (${this.controlSessionError})`)
-      if (process.env.SIRIUSX_CONTROL_PLANE_REQUIRED === '1') throw error
-    }
+    })()
+    this.exchangeInFlight = run
+    await run
   }
 
   private async postExchange(endpoint: string, grant: StoredGrant): Promise<Response> {
@@ -328,6 +392,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ idToken: grant.idToken }),
+      signal: AbortSignal.timeout(10_000),
     })
   }
 
@@ -342,6 +407,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
    */
   private async refreshGrant(grant: StoredGrant): Promise<StoredGrant | undefined> {
     if (grant.refreshToken === undefined || grant.refreshToken === '') return undefined
+    const epoch = this.exchangeEpoch
     try {
       const tokenUrl = new URL(process.env.SIRIUSX_SSO_TOKEN_PATH ?? '/oauth/token', grant.issuer)
       const response = await fetch(tokenUrl, {
@@ -352,6 +418,7 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
           refresh_token: grant.refreshToken,
           client_id: env('SIRIUSX_SSO_CLIENT_ID'),
         }),
+        signal: AbortSignal.timeout(10_000),
       })
       if (!response.ok) throw new Error(`refresh failed: HTTP ${response.status}`)
       const token = await response.json() as { id_token?: unknown; access_token?: unknown; refresh_token?: unknown }
@@ -360,11 +427,14 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
       // verified here; the nonce binding was established at sign-in.
       const claims = await verifyIdToken(token.id_token)
       if (tenantOf(claims) === undefined) throw new Error(`refreshed token has no ${TENANT} claim`)
+      if (epoch !== this.exchangeEpoch) return undefined
       const next: StoredGrant = {
         version: 1, issuer: grant.issuer, accessToken: token.access_token, idToken: token.id_token, claims,
         refreshToken: typeof token.refresh_token === 'string' && token.refresh_token !== '' ? token.refresh_token : grant.refreshToken,
       }
       await this.ctx.credentials.modifyRecord(KEY, async () => ({ kind: 'grant', payload: next }))
+      if (epoch !== this.exchangeEpoch) return undefined
+      this.loaded = Promise.resolve(next)
       this.tenant.update(claims)
       return next
     } catch (error) {
@@ -379,8 +449,9 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
   }
 
   private async grant(): Promise<StoredGrant | undefined> {
+    const epoch = this.exchangeEpoch
     this.loaded ??= this.ctx.credentials.readRecord(KEY).then(async record => {
-      if (record === undefined) return undefined
+      if (record === undefined || epoch !== this.exchangeEpoch) return undefined
       if (record.kind !== 'grant') throw new Error('siriusx-account-sso: credential record is not a grant')
       let grant = record.payload as unknown as StoredGrant
       if (grant.version !== 1) throw new Error('siriusx-account-sso: unsupported grant')
@@ -392,7 +463,8 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
       if (idTokenExpiring(typeof exp === 'number' ? exp : undefined, Date.now())) {
         grant = await this.refreshGrant(grant) ?? grant
       }
-      if (this.controlSession === undefined) void this.exchangeControlPlane(grant)
+      if (epoch !== this.exchangeEpoch) return undefined
+      if (this.controlSession === undefined && this.exchangeInFlight === undefined) void this.exchangeControlPlane(grant)
       return grant
     })
     return this.loaded
@@ -464,10 +536,14 @@ export default class SiriusXSsoAccount extends DeepSeekAccount {
   }
 
   async signOut(_client: AccountClientMetadata): Promise<AccountView> {
+    this.exchangeEpoch += 1
+    this.exchangeInFlight = undefined
+    this.lastExchangeAt = 0
     this.loaded = undefined
     this.attempt = undefined
     this.tenant.clear()
     this.controlSession = undefined
+    this.controlSessionError = undefined
     await this.ctx.credentials.deleteRecord(KEY)
     this.setState({ status: 'signed-out', links: this.state.links, attempt: null })
     return this.state
