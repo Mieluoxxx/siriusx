@@ -687,9 +687,9 @@ function setQuotaUsage(key: string, used: number, limit: number): void {
   }
 }
 
-function kpiItem(value: string, label: string, detail: string): HTMLElement {
+function kpiItem(value: string, label: string): HTMLElement {
   const item = node('div', undefined, 'tenant-kpi')
-  item.append(node('strong', value), node('span', label), node('small', detail))
+  item.append(node('strong', value), node('span', label))
   return item
 }
 
@@ -823,10 +823,10 @@ async function openTenant(tenantId: string): Promise<void> {
   ;(document.getElementById('detail-b-budget') as HTMLElement).textContent = billingResult.billing.monthlyBudgetCents === null ? 'No budget' : String(billingResult.billing.monthlyBudgetCents)
   ;(document.getElementById('detail-estimate') as HTMLElement).textContent = `${billingResult.estimate.estimatedCents} ${billingResult.estimate.currency}`
   ;(document.getElementById('detail-metrics') as HTMLElement).replaceChildren(
-    kpiItem(String(tenant.usage.users), 'Users', 'in tenant'),
-    kpiItem(String(tenant.usage.devices), 'Devices', 'paired'),
-    kpiItem(String(tenant.usage.cloudTickets), 'Cloud tickets', 'this period'),
-    kpiItem(String(tenant.usage.deviceTickets), 'Device tickets', 'this period'),
+    kpiItem(String(tenant.usage.users), 'Users'),
+    kpiItem(String(tenant.usage.devices), 'Devices'),
+    kpiItem(String(tenant.usage.cloudTickets), 'Cloud tickets'),
+    kpiItem(String(tenant.usage.deviceTickets), 'Device tickets'),
   )
   const statusButton = document.getElementById('detail-status-button') as HTMLButtonElement
   statusButton.textContent = tenant.status === 'active' ? 'Suspend' : 'Resume'
