@@ -230,13 +230,6 @@ const styles = stylex.create({
     lineHeight: '16px',
     '@media (max-width: 560px)': { gridColumn: '1' },
   },
-  hint: {
-    gridColumn: '2 / 3',
-    color: '#8a8a85',
-    fontSize: '12px',
-    lineHeight: '16px',
-    '@media (max-width: 560px)': { gridColumn: '1' },
-  },
   section: {
     display: 'grid',
     gap: '10px',
@@ -253,12 +246,6 @@ const styles = stylex.create({
     fontSize: '14px',
     fontWeight: 600,
     lineHeight: '18px',
-  },
-  sectionLead: {
-    margin: 0,
-    color: '#8a8a85',
-    fontSize: '12px',
-    lineHeight: '16px',
   },
   detailGrid: {
     display: 'grid',
@@ -323,12 +310,6 @@ const styles = stylex.create({
     fontSize: '11px',
     fontWeight: 600,
   },
-  output: {
-    alignSelf: 'center',
-    color: '#61708a',
-    fontSize: '12px',
-    paddingBlockEnd: '10px',
-  },
 })
 
 function valueOf(values: Values, key: string): string {
@@ -375,15 +356,13 @@ interface TextFieldProps {
   type?: React.HTMLInputTypeAttribute
   required?: boolean
   placeholder?: string
-  hint?: string
 }
 
-function TextField({ name, label, defaultValue = '', type = 'text', required = false, placeholder, hint }: TextFieldProps): React.ReactElement {
+function TextField({ name, label, defaultValue = '', type = 'text', required = false, placeholder }: TextFieldProps): React.ReactElement {
   return (
     <Field.Root name={name} className={cls(styles.field)}>
       <Field.Label className={cls(styles.label)}>{label}</Field.Label>
       <Input className={cls(styles.input)} defaultValue={defaultValue} type={type} required={required} placeholder={placeholder} />
-      {hint === undefined ? null : <span className={cls(styles.hint)}>{hint}</span>}
       <Field.Error className={cls(styles.fieldError)} />
     </Field.Root>
   )
@@ -466,7 +445,7 @@ export function CreateTenantForm({ onSubmit }: { onSubmit: FormSubmit }): React.
         <TextField name="name" label="Name" required placeholder="Acme" />
         <TextField name="idpIssuer" label="IdP issuer" required placeholder="https://idp.example/realms/siriusx" />
         <TextField name="adminEmail" label="Admin email" type="email" required placeholder="admin@example.com" />
-        <TextField name="tenantId" label="Tenant ID" hint="Optional. Must match the tenant claim." placeholder="tenant-acme" />
+        <TextField name="tenantId" label="Tenant ID" placeholder="tenant-acme" />
       </div>
       <ErrorMessage message={error} />
       <div className={cls(styles.actions)}><SubmitButton busy={busy}>Create tenant</SubmitButton></div>
@@ -479,7 +458,7 @@ export function CreateModelForm({ onSubmit }: { onSubmit: FormSubmit }): React.R
   return (
     <Form ref={formRef} className={cls(styles.form)} onFormSubmit={values => submit(values as Values)}>
       <div className={cls(styles.formGrid)}>
-        <TextField name="id" label="Model ID" hint="Optional. This is the client-facing alias." placeholder="acme-gpt41" />
+        <TextField name="id" label="Model ID" placeholder="acme-gpt41" />
         <TextField name="name" label="Display name" required placeholder="Acme GPT-4.1" />
         <TextField name="provider" label="Provider" required placeholder="openai" />
         <TextField name="model" label="Provider model ID" required placeholder="gpt-4.1" />
@@ -549,100 +528,6 @@ export interface TenantInitialValues {
   estimate?: string
 }
 
-export interface TenantFormHandlers {
-  onSaveTenant: FormSubmit
-  onSaveQuota: FormSubmit
-  onSaveBilling: FormSubmit
-  onAddUser: FormSubmit
-  onAddUpstream: FormSubmit
-  onRequestSupport: FormSubmit
-}
-
-export function TenantForms({ initial, handlers }: { initial: TenantInitialValues; handlers: TenantFormHandlers }): React.ReactElement {
-  const tenantForm = useSubmit(handlers.onSaveTenant, false)
-  const quotaForm = useSubmit(handlers.onSaveQuota, false)
-  const billingForm = useSubmit(handlers.onSaveBilling, false)
-  const userForm = useSubmit(handlers.onAddUser, true)
-  const upstreamForm = useSubmit(handlers.onAddUpstream, true)
-  const supportForm = useSubmit(handlers.onRequestSupport, true)
-  const modelOptions = initial.models.map(model => ({ value: model, label: model }))
-  return (
-    <div className={cls(styles.detailGrid)}>
-      <section className={cls(styles.section)}>
-        <h3 className={cls(styles.sectionTitle)}>Tenant config</h3>
-        <Form ref={tenantForm.formRef} className={cls(styles.form)} onFormSubmit={values => tenantForm.submit(values as Values)}>
-          <TextField name="name" label="Name" defaultValue={initial.name} required />
-          <TextField name="idpIssuer" label="IdP issuer" defaultValue={initial.idpIssuer} required />
-          <ErrorMessage message={tenantForm.error} />
-          <div className={cls(styles.actions)}><SubmitButton busy={tenantForm.busy}>Save tenant</SubmitButton></div>
-        </Form>
-      </section>
-      <section className={cls(styles.section)}>
-        <h3 className={cls(styles.sectionTitle)}>Quota</h3>
-        <Form ref={quotaForm.formRef} className={cls(styles.form)} onFormSubmit={values => quotaForm.submit(values as Values)}>
-          <div className={cls(styles.formGrid)}>
-            <TextField name="maxUsers" label="Max users" type="number" defaultValue={String(initial.quota.maxUsers)} required />
-            <TextField name="maxDevices" label="Max devices" type="number" defaultValue={String(initial.quota.maxDevices)} required />
-            <TextField name="maxCloudTicketsPerDay" label="Cloud tickets / day" type="number" defaultValue={String(initial.quota.maxCloudTicketsPerDay)} required />
-            <TextField name="maxDeviceTicketsPerDay" label="Device tickets / day" type="number" defaultValue={String(initial.quota.maxDeviceTicketsPerDay)} required />
-          </div>
-          <ErrorMessage message={quotaForm.error} />
-          <div className={cls(styles.actions)}><SubmitButton busy={quotaForm.busy}>Save quota</SubmitButton></div>
-        </Form>
-      </section>
-      <section className={cls(styles.section)}>
-        <h3 className={cls(styles.sectionTitle)}>Billing</h3>
-        <Form ref={billingForm.formRef} className={cls(styles.form)} onFormSubmit={values => billingForm.submit(values as Values)}>
-          <div className={cls(styles.formGrid)}>
-            <TextField name="currency" label="Currency" defaultValue={initial.billing.currency} required />
-            <TextField name="cloudTicketCents" label="Cloud ticket cents" type="number" defaultValue={String(initial.billing.cloudTicketCents)} required />
-            <TextField name="deviceTicketCents" label="Device ticket cents" type="number" defaultValue={String(initial.billing.deviceTicketCents)} required />
-            <TextField name="monthlyBudgetCents" label="Monthly budget cents" type="number" hint="Leave blank for no budget." defaultValue={initial.billing.monthlyBudgetCents === null ? '' : String(initial.billing.monthlyBudgetCents)} />
-          </div>
-          <ErrorMessage message={billingForm.error} />
-          <div className={cls(styles.actions)}><SubmitButton busy={billingForm.busy}>Save billing</SubmitButton></div>
-        </Form>
-      </section>
-      <section className={cls(styles.section)}>
-        <h3 className={cls(styles.sectionTitle)}>Add user</h3>
-        <Form ref={userForm.formRef} className={cls(styles.form)} onFormSubmit={values => userForm.submit(values as Values)}>
-          <div className={cls(styles.formGrid)}>
-            <TextField name="email" label="User email" type="email" required placeholder="user@example.com" />
-            <SelectField name="role" label="Role" options={[{ value: 'member', label: 'Member' }, { value: 'admin', label: 'Admin' }]} />
-          </div>
-          <ErrorMessage message={userForm.error} />
-          <div className={cls(styles.actions)}><SubmitButton busy={userForm.busy}>Add user</SubmitButton></div>
-        </Form>
-      </section>
-      <section className={cls(styles.section)}>
-        <h3 className={cls(styles.sectionTitle)}>Model upstream</h3>
-        <p className={cls(styles.sectionLead)}>Add a provider endpoint for a bound tenant model.</p>
-        <Form ref={upstreamForm.formRef} className={cls(styles.form)} onFormSubmit={values => upstreamForm.submit(values as Values)}>
-          <div className={cls(styles.formGrid)}>
-            <SelectField name="modelId" label="Model" options={modelOptions.length === 0 ? [{ value: '', label: 'Bind a model first' }] : modelOptions} disabled={modelOptions.length === 0} />
-            <TextField name="name" label="Upstream name" required placeholder="openai-primary" />
-            <SelectField name="protocol" label="Protocol" options={[{ value: 'chat', label: 'Chat Completions' }, { value: 'responses', label: 'OpenAI Responses' }, { value: 'claude', label: 'Anthropic Messages' }]} />
-            <TextField name="baseUrl" label="Base URL" type="url" required placeholder="https://api.openai.com/v1" />
-            <TextField name="upstreamModel" label="Upstream model" required placeholder="gpt-4.1" />
-            <TextField name="apiKey" label="API key" type="password" placeholder="Leave blank to keep" />
-            <TextField name="priority" label="Priority" type="number" defaultValue="0" hint="Lower number runs first." />
-            <CheckboxField name="enabled" label="Enabled" defaultChecked />
-          </div>
-          <ErrorMessage message={upstreamForm.error} />
-          <div className={cls(styles.actions)}><SubmitButton busy={upstreamForm.busy}>Add upstream</SubmitButton></div>
-        </Form>
-      </section>
-      <section className={cls(styles.section)}>
-        <h3 className={cls(styles.sectionTitle)}>Support access</h3>
-        <Form ref={supportForm.formRef} className={cls(styles.form)} onFormSubmit={values => supportForm.submit(values as Values)}>
-          <TextField name="reason" label="Support reason" required placeholder="Why do you need temporary access?" />
-          <ErrorMessage message={supportForm.error} />
-          <div className={cls(styles.actions)}><SubmitButton busy={supportForm.busy}>Request support</SubmitButton></div>
-        </Form>
-      </section>
-    </div>
-  )
-}
 
 export { valueOf, numberValue }
 
@@ -682,7 +567,7 @@ export function TenantBillingForm({ initial, onSubmit }: { initial: TenantInitia
         <TextField name="currency" label="Currency" defaultValue={initial.billing.currency} required />
         <TextField name="cloudTicketCents" label="Cloud ticket cents" type="number" defaultValue={String(initial.billing.cloudTicketCents)} required />
         <TextField name="deviceTicketCents" label="Device ticket cents" type="number" defaultValue={String(initial.billing.deviceTicketCents)} required />
-        <TextField name="monthlyBudgetCents" label="Monthly budget cents" type="number" hint="Leave blank for no budget." defaultValue={initial.billing.monthlyBudgetCents === null ? '' : String(initial.billing.monthlyBudgetCents)} />
+        <TextField name="monthlyBudgetCents" label="Monthly budget cents" type="number" defaultValue={initial.billing.monthlyBudgetCents === null ? '' : String(initial.billing.monthlyBudgetCents)} />
       </div>
       <ErrorMessage message={form.error} />
       <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save billing</SubmitButton></div>
@@ -715,8 +600,8 @@ export function AddUpstreamForm({ models, onSubmit }: { models: string[]; onSubm
         <SelectField name="protocol" label="Protocol" options={[{ value: 'chat', label: 'Chat Completions' }, { value: 'responses', label: 'OpenAI Responses' }, { value: 'claude', label: 'Anthropic Messages' }]} />
         <TextField name="baseUrl" label="Base URL" type="url" required placeholder="https://api.openai.com/v1" />
         <TextField name="upstreamModel" label="Upstream model" required placeholder="gpt-4.1" />
-        <TextField name="apiKey" label="API key" type="password" placeholder="Leave blank to keep" />
-        <TextField name="priority" label="Priority" type="number" defaultValue="0" hint="Lower number runs first." />
+        <TextField name="apiKey" label="API key" type="password" placeholder="API key" />
+        <TextField name="priority" label="Priority" type="number" defaultValue="0" />
         <CheckboxField name="enabled" label="Enabled" defaultChecked />
       </div>
       <ErrorMessage message={form.error} />
@@ -729,7 +614,7 @@ export function RequestSupportForm({ onSubmit }: { onSubmit: FormSubmit }): Reac
   const form = useSubmit(onSubmit, true)
   return (
     <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
-      <TextField name="reason" label="Support reason" required placeholder="Why do you need temporary access?" />
+      <TextField name="reason" label="Support reason" required placeholder="Reason" />
       <ErrorMessage message={form.error} />
       <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Request support</SubmitButton></div>
     </Form>

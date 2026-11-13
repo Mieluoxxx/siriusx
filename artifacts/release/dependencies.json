@@ -112,15 +112,15 @@
         "version": "link:../../node_modules/.pnpm/pg@8.16.3/node_modules/pg",
         "path": "/root/siriusx/node_modules/.pnpm/pg@8.16.3/node_modules/pg"
       },
-      "vitest": {
-        "from": "vitest",
-        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
-        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
-      },
       "tsx": {
         "from": "tsx",
         "version": "link:../../node_modules/.pnpm/tsx@4.23.13/node_modules/tsx",
         "path": "/root/siriusx/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx"
+      },
+      "vitest": {
+        "from": "vitest",
+        "version": "link:../../node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest",
+        "path": "/root/siriusx/node_modules/.pnpm/vitest@4.1.11_@types+node@24.13.3_vite@8.3.7_@types+node@24.13.3_esbuild@0.28.2_tsx@4.23.13_/node_modules/vitest"
       },
       "@types/node": {
         "from": "@types/node",

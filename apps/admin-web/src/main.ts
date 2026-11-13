@@ -754,7 +754,7 @@ async function openTenant(tenantId: string): Promise<void> {
         <section class="tenant-panel active" data-tenant-panel="overview">
           <section class="detail-panel limits-panel">
             <div class="detail-panel-head">
-              <div><h3>Limits &amp; billing</h3><p class="panel-subtitle">Usage against plan limits and current cost estimate.</p></div>
+              <div><h3>Limits &amp; billing</h3></div>
             </div>
             <div class="limits-section">
               <div class="limits-section-head"><h4>Quota</h4><button id="edit-quota" class="button small" type="button">Edit quota</button></div>
