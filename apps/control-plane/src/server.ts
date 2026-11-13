@@ -266,16 +266,89 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
           write(response, 200, { tenant })
           return
         }
+        if (parts[2] === 'upstreams') {
+          if (request.method === 'GET' && parts[3] === undefined) {
+            write(response, 200, { upstreams: await control.listPlatformUpstreams() })
+            return
+          }
+          if (request.method === 'POST' && parts[3] === undefined) {
+            const body = await readJson(request)
+            if (typeof body.name !== 'string' || typeof body.baseUrl !== 'string') throw new Error('name and baseUrl are required')
+            if (body.protocol !== undefined && body.protocol !== 'chat' && body.protocol !== 'responses' && body.protocol !== 'claude') throw new Error('protocol must be chat, responses or claude')
+            const upstream = await control.upsertPlatformUpstream({
+              name: body.name,
+              baseUrl: body.baseUrl,
+              protocol: body.protocol === 'responses' || body.protocol === 'claude' ? body.protocol : 'chat',
+              ...(typeof body.id === 'string' ? { id: body.id } : {}),
+              ...(typeof body.apiKey === 'string' || body.apiKey === null ? { apiKey: body.apiKey } : {}),
+              ...(typeof body.enabled === 'boolean' ? { enabled: body.enabled } : {}),
+            })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'upstream.upsert', target: upstream.id, detail: `${body.protocol ?? 'chat'}:${body.baseUrl}` })
+            write(response, 201, upstream)
+            return
+          }
+          if (request.method === 'PUT' && parts[3] !== undefined && parts[4] === undefined) {
+            const body = await readJson(request)
+            if (typeof body.name !== 'string' || typeof body.baseUrl !== 'string') throw new Error('name and baseUrl are required')
+            if (body.protocol !== undefined && body.protocol !== 'chat' && body.protocol !== 'responses' && body.protocol !== 'claude') throw new Error('protocol must be chat, responses or claude')
+            const upstream = await control.upsertPlatformUpstream({
+              id: decodeURIComponent(parts[3]),
+              name: body.name,
+              baseUrl: body.baseUrl,
+              protocol: body.protocol === 'responses' || body.protocol === 'claude' ? body.protocol : 'chat',
+              ...(typeof body.apiKey === 'string' || body.apiKey === null ? { apiKey: body.apiKey } : {}),
+              ...(typeof body.enabled === 'boolean' ? { enabled: body.enabled } : {}),
+            })
+            await control.recordPlatformAudit({ actor: 'platform', action: 'upstream.upsert', target: upstream.id, detail: `${body.protocol ?? 'chat'}:${body.baseUrl}` })
+            write(response, 200, upstream)
+            return
+          }
+          if (request.method === 'DELETE' && parts[3] !== undefined && parts[4] === undefined) {
+            const upstreamId = decodeURIComponent(parts[3])
+            await control.deletePlatformUpstream(upstreamId)
+            await control.recordPlatformAudit({ actor: 'platform', action: 'upstream.delete', target: upstreamId })
+            write(response, 204, {})
+            return
+          }
+          if (request.method === 'POST' && parts[3] !== undefined && parts[4] === 'fetch-models' && parts[5] === undefined) {
+            const models = await control.fetchPlatformUpstreamModels(decodeURIComponent(parts[3]))
+            write(response, 200, { models })
+            return
+          }
+          if (request.method === 'POST' && parts[3] !== undefined && parts[4] === 'models' && parts[5] === undefined) {
+            const upstreamId = decodeURIComponent(parts[3])
+            const body = await readJson(request)
+            if (!Array.isArray(body.models)) throw new Error('models array is required')
+            const items = body.models.filter((item): item is { id?: string; name?: string; model: string } => typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).model === 'string')
+            const result = await control.importPlatformUpstreamModels(upstreamId, items)
+            await control.recordPlatformAudit({ actor: 'platform', action: 'model.import', target: upstreamId, detail: JSON.stringify({ added: result.added.length }) })
+            write(response, 201, result)
+            return
+          }
+        }
         if (parts[2] === 'models' && parts[3] === undefined) {
           if (request.method === 'GET') { write(response, 200, { models: await control.listModelCatalog() }); return }
           if (request.method === 'POST') {
             const body = await readJson(request)
             if (typeof body.name !== 'string' || typeof body.provider !== 'string' || typeof body.model !== 'string') throw new Error('name, provider and model are required')
-            const model = await control.addModel({ name: body.name, provider: body.provider, model: body.model, ...(typeof body.id === 'string' ? { id: body.id } : {}) })
+            const model = await control.addModel({
+              name: body.name,
+              provider: body.provider,
+              model: body.model,
+              ...(typeof body.id === 'string' ? { id: body.id } : {}),
+              ...(typeof body.upstreamId === 'string' || body.upstreamId === null ? { upstreamId: body.upstreamId } : {}),
+            })
             await control.recordPlatformAudit({ actor: 'platform', action: 'model.create', target: model.id, detail: body.model })
             write(response, 201, model)
             return
           }
+        }
+        if (request.method === 'DELETE' && parts[2] === 'models' && parts[3] !== undefined && parts[4] === undefined) {
+          const modelId = decodeURIComponent(parts[3])
+          await control.deleteModel(modelId)
+          await control.recordPlatformAudit({ actor: 'platform', action: 'model.delete', target: modelId })
+          write(response, 204, {})
+          return
         }
         if (request.method === 'GET' && parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'model-upstreams') {
           write(response, 200, { upstreams: await control.listTenantModelUpstreams(parts[3]) })
@@ -311,11 +384,17 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
         }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'models') {
           if (request.method === 'GET' && parts[5] === undefined) { write(response, 200, { models: await control.listTenantModels(parts[3]) }); return }
-          if (request.method === 'PUT' && parts[5] !== undefined) {
+          if (request.method === 'PUT' && parts[5] !== undefined && parts[6] === undefined) {
             const body = await readJson(request)
             await control.bindTenantModel(parts[3], parts[5], body.isDefault === true)
             await control.recordPlatformAudit({ actor: 'platform', action: 'model.bind', target: `${parts[3]}/${parts[5]}`, detail: body.isDefault === true ? 'default' : 'bound' })
             write(response, 200, { models: await control.listTenantModels(parts[3]) })
+            return
+          }
+          if (request.method === 'DELETE' && parts[5] !== undefined && parts[6] === undefined) {
+            await control.unbindTenantModel(parts[3], parts[5])
+            await control.recordPlatformAudit({ actor: 'platform', action: 'model.unbind', target: `${parts[3]}/${parts[5]}` })
+            write(response, 204, {})
             return
           }
         }

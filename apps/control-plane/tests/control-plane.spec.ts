@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -448,6 +448,22 @@ describe('control plane', () => {
     expect(member.role).toBe('member')
   })
 
+  it('unbinds a tenant model through the platform admin API', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-admin-model-'))
+    roots.push(root)
+    const server = await startControlPlaneServer({ dbPath: join(root, 'control.sqlite'), dataDir: join(root, 'data'), port: 0, sessionSecret: 'admin-model', platformAdminToken: 'platform-secret' })
+    servers.push(server)
+    const platform = { 'x-siriusx-platform-token': 'platform-secret', 'content-type': 'application/json' }
+    const tenant = await server.control.provisionTenant({ tenantId: 'tenant-admin-model', name: 'Admin Model', idpIssuer: 'https://idp.example', adminEmail: 'admin@admin-model.example' })
+    await server.control.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-x' })
+    await server.control.bindTenantModel(tenant.id, 'model-a')
+    const removed = await fetch(`${server.url}/v1/admin/tenants/${tenant.id}/models/model-a`, { method: 'DELETE', headers: platform })
+    expect(removed.status).toBe(204)
+    expect((await server.control.listTenantModels(tenant.id)).map(model => model.id)).toEqual(['tenant-default'])
+    const protectedDefault = await fetch(`${server.url}/v1/admin/tenants/${tenant.id}/models/tenant-default`, { method: 'DELETE', headers: platform })
+    expect(protectedDefault.status).toBe(409)
+  })
+
   it('enforces tenant user, device and ticket quotas', async () => {
     const { plane } = await setup()
     const tenant = await plane.provisionTenant({ tenantId: 'tenant-quota', name: 'Quota', idpIssuer: 'https://idp.example', adminEmail: 'admin@quota.example' })
@@ -472,6 +488,18 @@ describe('control plane', () => {
       expect.objectContaining({ id: 'model-a', isDefault: true }),
       expect.objectContaining({ id: 'tenant-default', isDefault: false }),
     ])
+  })
+
+  it('unbinds non-default tenant models and protects the default model', async () => {
+    const { plane } = await setup()
+    const tenant = await plane.provisionTenant({ tenantId: 'tenant-unbind', name: 'Unbind', idpIssuer: 'https://idp.example', adminEmail: 'admin@unbind.example' })
+    await plane.addModel({ id: 'model-a', name: 'Model A', provider: 'openai', model: 'gpt-x' })
+    await plane.addModel({ id: 'model-b', name: 'Model B', provider: 'openai', model: 'gpt-y' })
+    await plane.bindTenantModel(tenant.id, 'model-a', false)
+    await plane.unbindTenantModel(tenant.id, 'model-a')
+    expect((await plane.listTenantModels(tenant.id)).map(model => model.id)).toEqual(['tenant-default'])
+    await expect(plane.unbindTenantModel(tenant.id, 'tenant-default')).rejects.toMatchObject({ status: 409, code: 'MODEL_IS_DEFAULT' })
+    await expect(plane.unbindTenantModel(tenant.id, 'missing-model')).rejects.toMatchObject({ status: 404, code: 'MODEL_NOT_BOUND' })
   })
 
   it('reports daily tenant usage with zero-filled days', async () => {
@@ -586,6 +614,78 @@ describe('control plane', () => {
     const teams = { id: 'teams-1', type: 'message', conversation: { id: 'conv-1' }, text: 'hello teams' }
     const accepted = await fetch(`${server.url}/v1/sources/teams/webhook`, { method: 'POST', headers, body: JSON.stringify(teams) }).then(response => response.json()) as { accepted: boolean }
     expect(accepted.accepted).toBe(true)
+  })
+
+  it('fetches models from platform upstreams, assigns them to tenants, and protects deletions', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-platform-upstream-'))
+    roots.push(root)
+    const routerConfigPath = join(root, 'router-config.yaml')
+    const upstreamMock = createServer((request, response) => {
+      if (request.url === '/v1/models' && request.headers.authorization === 'Bearer plat-secret') {
+        const body = JSON.stringify({ data: [{ id: 'gpt-4.1', display_name: 'GPT-4.1' }, { id: 'o4-mini' }] })
+        response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) }).end(body)
+        return
+      }
+      response.writeHead(404).end()
+    })
+    await new Promise<void>((resolve, reject) => { upstreamMock.once('error', reject); upstreamMock.listen(0, '127.0.0.1', resolve) })
+    const addr = upstreamMock.address()
+    const upstreamUrl = `http://127.0.0.1:${typeof addr === 'object' && addr !== null ? addr.port : 0}/v1`
+    try {
+      const server = await startControlPlaneServer({
+        dbPath: join(root, 'control.sqlite'),
+        dataDir: join(root, 'data'),
+        port: 0,
+        sessionSecret: 'plat-upstream',
+        platformAdminToken: 'plat-token',
+        modelRouterConfigPath: routerConfigPath,
+      })
+      servers.push(server)
+      const headers = { 'content-type': 'application/json', 'x-siriusx-platform-token': 'plat-token' }
+      const tenant = await server.control.provisionTenant({ tenantId: 'tenant-plat', name: 'Plat', idpIssuer: 'https://idp.example', adminEmail: 'admin@plat.example' })
+
+      const createdUpstream = await fetch(`${server.url}/v1/admin/upstreams`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name: 'OpenAI Prod', protocol: 'chat', baseUrl: upstreamUrl, apiKey: 'plat-secret' }),
+      }).then(res => res.json()) as { id: string }
+
+      const fetched = await fetch(`${server.url}/v1/admin/upstreams/${createdUpstream.id}/fetch-models`, { method: 'POST', headers })
+        .then(res => res.json()) as { models: Array<{ model: string; name: string; alreadyAdded: boolean }> }
+      expect(fetched.models).toEqual([
+        { model: 'gpt-4.1', name: 'GPT-4.1', alreadyAdded: false },
+        { model: 'o4-mini', name: 'o4-mini', alreadyAdded: false },
+      ])
+
+      const imported = await fetch(`${server.url}/v1/admin/upstreams/${createdUpstream.id}/models`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ models: fetched.models }),
+      }).then(res => res.json()) as { added: string[] }
+      expect(imported.added).toEqual(['gpt-4.1', 'o4-mini'])
+
+      const bindRes = await fetch(`${server.url}/v1/admin/tenants/${tenant.id}/models/gpt-4.1`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ isDefault: true }),
+      })
+      expect(bindRes.status).toBe(200)
+      expect(await server.control.tenantModelUpstream(tenant.id, 'gpt-4.1')).toMatchObject({ url: upstreamUrl, key: 'plat-secret', upstreamModel: 'gpt-4.1', protocol: 'chat' })
+      const routerConfig = JSON.parse(await readFile(routerConfigPath, 'utf8')) as { 'openai-completions'?: Array<{ models: Array<{ alias: string }> }> }
+      expect(routerConfig['openai-completions']?.some(item => item.models.some(m => m.alias === 'tenant-plat/gpt-4.1'))).toBe(true)
+
+      const delUpstreamBusy = await fetch(`${server.url}/v1/admin/upstreams/${createdUpstream.id}`, { method: 'DELETE', headers })
+      expect(delUpstreamBusy.status).toBe(409)
+      const delDefaultModel = await fetch(`${server.url}/v1/admin/models/gpt-4.1`, { method: 'DELETE', headers })
+      expect(delDefaultModel.status).toBe(409)
+
+      expect((await fetch(`${server.url}/v1/admin/models/o4-mini`, { method: 'DELETE', headers })).status).toBe(204)
+      await fetch(`${server.url}/v1/admin/tenants/${tenant.id}/models/tenant-default`, { method: 'PUT', headers, body: JSON.stringify({ isDefault: true }) })
+      expect((await fetch(`${server.url}/v1/admin/models/gpt-4.1`, { method: 'DELETE', headers })).status).toBe(204)
+      expect((await fetch(`${server.url}/v1/admin/upstreams/${createdUpstream.id}`, { method: 'DELETE', headers })).status).toBe(204)
+    } finally {
+      await new Promise<void>((resolve, reject) => upstreamMock.close(error => { error === undefined ? resolve() : reject(error) }))
+    }
   })
 
 })

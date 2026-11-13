@@ -115,11 +115,23 @@ CREATE TABLE IF NOT EXISTS tenant_quotas (
   updated_at BIGINT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS platform_upstreams (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  protocol TEXT NOT NULL DEFAULT 'chat',
+  base_url TEXT NOT NULL,
+  api_key_cipher TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS model_catalog (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
+  upstream_id TEXT REFERENCES platform_upstreams(id),
   enabled INTEGER NOT NULL DEFAULT 1,
   created_at BIGINT NOT NULL
 );

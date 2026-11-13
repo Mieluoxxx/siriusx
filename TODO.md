@@ -66,6 +66,7 @@
 - [x] Platform admin `admin-web` UI（租户列表/创建/usage/users）
 - [x] Tenant quotas + usage enforcement（users/devices/tickets）
 - [x] Model catalog + tenant model binding（backend + admin-web + runtime enforcement）
+- [x] admin-web 全量 React + Base UI，单一主题；移除 StyleX 与页面级自定义 CSS
 - [x] Tenant tool policy（backend + control-plane proxy + Admin UI）
 - [x] Tenant audit summary（tool gateway aggregate + Admin UI）
 - [x] Platform admin audit trail（tenant/model/quota/user operations）
@@ -162,5 +163,6 @@
 
 服务端对齐清单见 `docs/server-alignment.md`。
 - [x] 管理面 upstream 配置 + 多上游 fallback + 本地 mock 端到端
+- [x] 租户模型页只保留开通/停用/默认；上游 Key 只在平台侧 Upstreams 页管理
 - [ ] 管理面 upstream 连通性测试按钮
 - [ ] 每 upstream 超时 / 权重 / 健康检查

@@ -12,7 +12,7 @@ const host = process.env.HOST ?? '0.0.0.0'
 const MAX_BODY = 1024 * 1024
 
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml' }
-const files = { '/': join(dist, 'index.html'), '/admin.js': join(dist, 'admin.js'), '/style.css': join(dist, 'style.css'), '/stylex.css': join(dist, 'stylex.css') }
+const files = { '/': join(dist, 'index.html'), '/admin.js': join(dist, 'admin.js'), '/style.css': join(dist, 'style.css') }
 
 function headers(path) {
   return {
@@ -65,7 +65,7 @@ createServer(async (request, response) => {
     }
     const file = files[url.pathname]
     if (file === undefined) {
-      const spaPath = url.pathname === '/tenants' || url.pathname === '/models' || url.pathname === '/sources' || url.pathname === '/support' || url.pathname === '/audit' || /^\/tenants\/[^/]+$/u.test(url.pathname)
+      const spaPath = url.pathname === '/tenants' || url.pathname === '/models' || url.pathname === '/upstreams' || url.pathname === '/sources' || url.pathname === '/support' || url.pathname === '/audit' || /^\/tenants\/[^/]+$/u.test(url.pathname)
       if (request.method !== 'GET' || !spaPath) {
         response.writeHead(404, { 'content-type': 'text/plain' }).end('not found')
         return

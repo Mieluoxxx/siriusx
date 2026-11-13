@@ -172,11 +172,22 @@ CREATE TABLE IF NOT EXISTS platform_audit (
   detail TEXT,
   created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS platform_upstreams (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  protocol TEXT NOT NULL DEFAULT 'chat',
+  base_url TEXT NOT NULL,
+  api_key_cipher TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS model_catalog (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
+  upstream_id TEXT REFERENCES platform_upstreams(id),
   enabled INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL
 );
@@ -314,6 +325,8 @@ export class ControlPlane {
     const eventColumns = this.#db.prepare('PRAGMA table_info(source_events)').all() as Array<{ name: string }>
     if (!eventColumns.some(column => column.name === 'status')) this.#db.exec("ALTER TABLE source_events ADD COLUMN status TEXT NOT NULL DEFAULT 'received'")
     if (!eventColumns.some(column => column.name === 'ticket_id')) this.#db.exec('ALTER TABLE source_events ADD COLUMN ticket_id TEXT')
+    const modelColumns = this.#db.prepare('PRAGMA table_info(model_catalog)').all() as Array<{ name: string }>
+    if (!modelColumns.some(column => column.name === 'upstream_id')) this.#db.exec('ALTER TABLE model_catalog ADD COLUMN upstream_id TEXT')
     this.#dataDir = options.dataDir
     this.#secret = options.sessionSecret ?? randomBytes(32).toString('base64url')
     this.#now = options.now ?? Date.now
@@ -618,32 +631,248 @@ export class ControlPlane {
     }>).map(row => ({ id: row.id, actor: row.actor, action: row.action, target: row.target, detail: row.detail, createdAt: row.created_at }))
   }
 
-  async listModelCatalog(): Promise<Array<{ id: string; name: string; provider: string; model: string; enabled: boolean }>> {
-    if (this.#storage !== undefined) {
-      const result = await this.#storage.query<{ id: string; name: string; provider: string; model: string; enabled: number | string }>('SELECT * FROM model_catalog ORDER BY created_at, id')
-      return result.rows.map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: Number(row.enabled) === 1 }))
+  private validateUpstreamUrl(baseUrl: string): URL {
+    let parsed: URL
+    try { parsed = new URL(baseUrl) } catch { throw new ControlPlaneError(400, 'INVALID_UPSTREAM_URL', 'baseUrl must be an absolute URL') }
+    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.username !== '' || parsed.password !== '') {
+      throw new ControlPlaneError(400, 'INVALID_UPSTREAM_URL', 'baseUrl must be http(s) without credentials')
     }
-    return (this.#db.prepare('SELECT * FROM model_catalog ORDER BY created_at, rowid').all() as Array<{
-      id: string; name: string; provider: string; model: string; enabled: number
-    }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: row.enabled === 1 }))
+    return parsed
   }
 
-  async addModel(input: { id?: string; name: string; provider: string; model: string }): Promise<{ id: string }> {
+  private async ensureUniqueModelId(rawId: string): Promise<string> {
+    const base = rawId.trim().replace(/[^a-zA-Z0-9._-]+/gu, '-').replace(/^-+|-+$/gu, '') || randomUUID()
+    const taken = new Set(
+      (this.#storage !== undefined
+        ? (await this.#storage.query<{ id: string }>('SELECT id FROM model_catalog')).rows
+        : this.#db.prepare('SELECT id FROM model_catalog').all() as Array<{ id: string }>
+      ).map(row => row.id),
+    )
+    if (!taken.has(base)) return base
+    for (let index = 2; index < 1000; index += 1) {
+      const candidate = `${base}-${index}`
+      if (!taken.has(candidate)) return candidate
+    }
+    return `${base}-${randomUUID().slice(0, 8)}`
+  }
+
+  async listPlatformUpstreams(): Promise<Array<{ id: string; name: string; protocol: string; baseUrl: string; enabled: boolean; hasApiKey: boolean; apiKeyMasked: string | null; modelCount: number; createdAt: number; updatedAt: number }>> {
+    const rows = this.#storage !== undefined
+      ? (await this.#storage.query<Record<string, unknown>>('SELECT u.*, (SELECT count(*) FROM model_catalog m WHERE m.upstream_id = u.id) AS model_count FROM platform_upstreams u ORDER BY u.created_at, u.id')).rows
+      : this.#db.prepare('SELECT u.*, (SELECT count(*) FROM model_catalog m WHERE m.upstream_id = u.id) AS model_count FROM platform_upstreams u ORDER BY u.created_at, u.rowid').all() as Array<Record<string, unknown>>
+    return rows.map(row => ({
+      id: String(row.id),
+      name: String(row.name),
+      protocol: String(row.protocol),
+      baseUrl: String(row.base_url),
+      enabled: Number(row.enabled) === 1,
+      hasApiKey: row.api_key_cipher !== null && row.api_key_cipher !== undefined,
+      apiKeyMasked: row.api_key_cipher === null || row.api_key_cipher === undefined ? null : '••••••••',
+      modelCount: Number(row.model_count ?? 0),
+      createdAt: Number(row.created_at),
+      updatedAt: Number(row.updated_at),
+    }))
+  }
+
+  async upsertPlatformUpstream(input: {
+    id?: string
+    name: string
+    protocol: 'chat' | 'responses' | 'claude'
+    baseUrl: string
+    apiKey?: string | null
+    enabled?: boolean
+  }): Promise<{ id: string }> {
+    const parsed = this.validateUpstreamUrl(input.baseUrl)
+    const name = input.name.trim()
+    if (name === '') throw new ControlPlaneError(400, 'INVALID_UPSTREAM', 'name is required')
     const id = input.id === undefined || input.id === '' ? randomUUID() : input.id
-    if (this.#storage !== undefined) await this.#storage.query('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)', [id, input.name, input.provider, input.model, this.#now()])
-    this.#db.prepare('INSERT INTO model_catalog (id, name, provider, model, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)').run(id, input.name, input.provider, input.model, this.#now())
+    if (id.includes('/')) throw new ControlPlaneError(400, 'INVALID_UPSTREAM', 'id cannot contain /')
+    const existing = this.#storage !== undefined
+      ? (await this.#storage.query<{ api_key_cipher: string | null; created_at: number | string }>('SELECT api_key_cipher, created_at FROM platform_upstreams WHERE id = ?', [id])).rows[0]
+      : this.#db.prepare('SELECT api_key_cipher, created_at FROM platform_upstreams WHERE id = ?').get(id) as { api_key_cipher: string | null; created_at: number } | undefined
+    const cipher = input.apiKey === undefined ? (existing?.api_key_cipher ?? null) : input.apiKey === null || input.apiKey === '' ? null : this.encryptSecret(input.apiKey)
+    const enabled = input.enabled === false ? 0 : 1
+    const now = this.#now()
+    const createdAt = existing === undefined ? now : Number(existing.created_at)
+    const values = [id, name, input.protocol, parsed.href, cipher, enabled, createdAt, now]
+    if (this.#storage !== undefined) {
+      await this.#storage.query(
+        'INSERT INTO platform_upstreams (id, name, protocol, base_url, api_key_cipher, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, protocol = EXCLUDED.protocol, base_url = EXCLUDED.base_url, api_key_cipher = EXCLUDED.api_key_cipher, enabled = EXCLUDED.enabled, updated_at = EXCLUDED.updated_at',
+        values,
+      )
+    }
+    this.#db.prepare(
+      'INSERT INTO platform_upstreams (id, name, protocol, base_url, api_key_cipher, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET name = excluded.name, protocol = excluded.protocol, base_url = excluded.base_url, api_key_cipher = excluded.api_key_cipher, enabled = excluded.enabled, updated_at = excluded.updated_at',
+    ).run(...values as never[])
+    await this.rebuildModelRouterConfig()
     return { id }
   }
 
-  async listTenantModels(tenantId: string): Promise<Array<{ id: string; name: string; provider: string; model: string; isDefault: boolean }>> {
-    this.tenantRow(tenantId)
-    if (this.#storage !== undefined) {
-      const result = await this.#storage.query<{ id: string; name: string; provider: string; model: string; is_default: number | string }>('SELECT c.*, tm.is_default FROM tenant_models tm JOIN model_catalog c ON c.id = tm.model_id WHERE tm.tenant_id = ? AND c.enabled = 1 ORDER BY tm.is_default DESC, c.created_at', [tenantId])
-      return result.rows.map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: Number(row.is_default) === 1 }))
+  async deletePlatformUpstream(id: string): Promise<void> {
+    const existing = this.#storage !== undefined
+      ? (await this.#storage.query('SELECT id FROM platform_upstreams WHERE id = ?', [id])).rows[0]
+      : this.#db.prepare('SELECT id FROM platform_upstreams WHERE id = ?').get(id)
+    if (existing === undefined) throw new ControlPlaneError(404, 'UPSTREAM_NOT_FOUND', id)
+    const refCount = this.#storage !== undefined
+      ? Number((await this.#storage.query<{ count: string | number }>('SELECT count(*) AS count FROM model_catalog WHERE upstream_id = ?', [id])).rows[0]?.count ?? 0)
+      : (this.#db.prepare('SELECT count(*) AS count FROM model_catalog WHERE upstream_id = ?').get(id) as { count: number }).count
+    if (refCount > 0) throw new ControlPlaneError(409, 'UPSTREAM_IN_USE', 'delete models linked to this upstream first')
+    if (this.#storage !== undefined) await this.#storage.query('DELETE FROM platform_upstreams WHERE id = ?', [id])
+    this.#db.prepare('DELETE FROM platform_upstreams WHERE id = ?').run(id)
+    await this.rebuildModelRouterConfig()
+  }
+
+  async fetchPlatformUpstreamModels(id: string): Promise<Array<{ model: string; name: string; alreadyAdded: boolean }>> {
+    const row = this.#storage !== undefined
+      ? (await this.#storage.query<{ protocol: string; base_url: string; api_key_cipher: string | null }>('SELECT protocol, base_url, api_key_cipher FROM platform_upstreams WHERE id = ?', [id])).rows[0]
+      : this.#db.prepare('SELECT protocol, base_url, api_key_cipher FROM platform_upstreams WHERE id = ?').get(id) as { protocol: string; base_url: string; api_key_cipher: string | null } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'UPSTREAM_NOT_FOUND', id)
+    const apiKey = row.api_key_cipher === null || row.api_key_cipher === undefined ? undefined : this.decryptSecret(String(row.api_key_cipher))
+    const trimmed = String(row.base_url).replace(/\/+$/u, '')
+    const candidates = trimmed.endsWith('/v1') ? [`${trimmed}/models`] : [`${trimmed}/models`, `${trimmed}/v1/models`]
+    const headers: Record<string, string> = { accept: 'application/json' }
+    if (apiKey !== undefined) {
+      if (row.protocol === 'claude') {
+        headers['x-api-key'] = apiKey
+        headers['anthropic-version'] = '2023-06-01'
+      } else {
+        headers.authorization = `Bearer ${apiKey}`
+      }
     }
-    return (this.#db.prepare('SELECT c.*, tm.is_default FROM tenant_models tm JOIN model_catalog c ON c.id = tm.model_id WHERE tm.tenant_id = ? AND c.enabled = 1 ORDER BY tm.is_default DESC, c.created_at').all(tenantId) as Array<{
-      id: string; name: string; provider: string; model: string; is_default: number
-    }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: row.is_default === 1 }))
+    let response: Response | undefined
+    for (const candidate of candidates) {
+      response = await fetch(candidate, { headers, signal: AbortSignal.timeout(15_000) })
+      if (response.status !== 404) break
+      await response.body?.cancel()
+    }
+    if (response === undefined) throw new ControlPlaneError(502, 'UPSTREAM_FETCH_FAILED', 'failed to query upstream')
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '')
+      throw new ControlPlaneError(502, 'UPSTREAM_FETCH_FAILED', `upstream returned HTTP ${response.status}${detail === '' ? '' : `: ${detail.slice(0, 160)}`}`)
+    }
+    const payload: unknown = await response.json()
+    const rawList: unknown[] = Array.isArray(payload)
+      ? payload
+      : typeof payload === 'object' && payload !== null && Array.isArray((payload as { data?: unknown[] }).data)
+        ? (payload as { data: unknown[] }).data
+        : typeof payload === 'object' && payload !== null && Array.isArray((payload as { models?: unknown[] }).models)
+          ? (payload as { models: unknown[] }).models
+          : []
+    const existingModels = new Set(
+      (this.#storage !== undefined
+        ? (await this.#storage.query<{ model: string }>('SELECT model FROM model_catalog WHERE upstream_id = ?', [id])).rows
+        : this.#db.prepare('SELECT model FROM model_catalog WHERE upstream_id = ?').all(id) as Array<{ model: string }>
+      ).map(item => item.model),
+    )
+    const seen = new Set<string>()
+    const items: Array<{ model: string; name: string; alreadyAdded: boolean }> = []
+    for (const entry of rawList) {
+      if (typeof entry !== 'object' || entry === null) continue
+      const record = entry as Record<string, unknown>
+      const rawId = typeof record.id === 'string' ? record.id : typeof record.name === 'string' ? record.name : ''
+      const model = rawId.replace(/^models\//u, '').trim()
+      if (model === '' || seen.has(model)) continue
+      seen.add(model)
+      const displayName = typeof record.display_name === 'string' && record.display_name.trim() !== ''
+        ? record.display_name.trim()
+        : typeof record.name === 'string' && record.name.trim() !== '' && record.name !== rawId
+          ? record.name.trim()
+          : model
+      items.push({ model, name: displayName, alreadyAdded: existingModels.has(model) })
+    }
+    return items.sort((left, right) => left.model.localeCompare(right.model))
+  }
+
+  async importPlatformUpstreamModels(upstreamId: string, models: Array<{ id?: string; name?: string; model: string }>): Promise<{ added: string[] }> {
+    const row = this.#storage !== undefined
+      ? (await this.#storage.query<{ protocol: string }>('SELECT protocol FROM platform_upstreams WHERE id = ?', [upstreamId])).rows[0]
+      : this.#db.prepare('SELECT protocol FROM platform_upstreams WHERE id = ?').get(upstreamId) as { protocol: string } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'UPSTREAM_NOT_FOUND', upstreamId)
+    const existing = new Set(
+      (this.#storage !== undefined
+        ? (await this.#storage.query<{ model: string }>('SELECT model FROM model_catalog WHERE upstream_id = ?', [upstreamId])).rows
+        : this.#db.prepare('SELECT model FROM model_catalog WHERE upstream_id = ?').all(upstreamId) as Array<{ model: string }>
+      ).map(item => item.model),
+    )
+    const added: string[] = []
+    for (const item of models) {
+      const model = item.model.trim()
+      if (model === '' || existing.has(model)) continue
+      const id = item.id !== undefined && item.id.trim() !== '' ? item.id.trim() : await this.ensureUniqueModelId(model)
+      if (id.includes('/')) throw new ControlPlaneError(400, 'INVALID_MODEL_ID', 'model id cannot contain /')
+      const name = item.name !== undefined && item.name.trim() !== '' ? item.name.trim() : model
+      await this.addModel({ id, name, provider: row.protocol, model, upstreamId })
+      existing.add(model)
+      added.push(id)
+    }
+    return { added }
+  }
+
+  async listModelCatalog(): Promise<Array<{ id: string; name: string; provider: string; model: string; enabled: boolean; upstreamId: string | null; upstreamName: string | null }>> {
+    const sql = 'SELECT c.*, u.name AS upstream_name FROM model_catalog c LEFT JOIN platform_upstreams u ON u.id = c.upstream_id ORDER BY c.created_at, c.id'
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query<{ id: string; name: string; provider: string; model: string; enabled: number | string; upstream_id: string | null; upstream_name: string | null }>(sql)
+      return result.rows.map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: Number(row.enabled) === 1, upstreamId: row.upstream_id ?? null, upstreamName: row.upstream_name ?? null }))
+    }
+    return (this.#db.prepare('SELECT c.*, u.name AS upstream_name FROM model_catalog c LEFT JOIN platform_upstreams u ON u.id = c.upstream_id ORDER BY c.created_at, c.rowid').all() as Array<{
+      id: string; name: string; provider: string; model: string; enabled: number; upstream_id: string | null; upstream_name: string | null
+    }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, enabled: row.enabled === 1, upstreamId: row.upstream_id ?? null, upstreamName: row.upstream_name ?? null }))
+  }
+
+  async addModel(input: { id?: string; name: string; provider: string; model: string; upstreamId?: string | null }): Promise<{ id: string }> {
+    const upstreamId = input.upstreamId === undefined || input.upstreamId === '' ? null : input.upstreamId
+    if (upstreamId !== null) {
+      const upstream = this.#storage !== undefined
+        ? (await this.#storage.query('SELECT id FROM platform_upstreams WHERE id = ?', [upstreamId])).rows[0]
+        : this.#db.prepare('SELECT id FROM platform_upstreams WHERE id = ?').get(upstreamId)
+      if (upstream === undefined) throw new ControlPlaneError(404, 'UPSTREAM_NOT_FOUND', upstreamId)
+    }
+    const id = input.id === undefined || input.id === '' ? await this.ensureUniqueModelId(input.model) : input.id.trim()
+    if (id.includes('/')) throw new ControlPlaneError(400, 'INVALID_MODEL_ID', 'model id cannot contain /')
+    const now = this.#now()
+    if (this.#storage !== undefined) await this.#storage.query('INSERT INTO model_catalog (id, name, provider, model, upstream_id, enabled, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)', [id, input.name, input.provider, input.model, upstreamId, now])
+    this.#db.prepare('INSERT INTO model_catalog (id, name, provider, model, upstream_id, enabled, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)').run(id, input.name, input.provider, input.model, upstreamId, now)
+    return { id }
+  }
+
+  async deleteModel(id: string): Promise<void> {
+    if (id === 'tenant-default') throw new ControlPlaneError(409, 'PROTECTED_MODEL', 'tenant-default cannot be deleted')
+    const existing = this.#storage !== undefined
+      ? (await this.#storage.query('SELECT id FROM model_catalog WHERE id = ?', [id])).rows[0]
+      : this.#db.prepare('SELECT id FROM model_catalog WHERE id = ?').get(id)
+    if (existing === undefined) throw new ControlPlaneError(404, 'MODEL_NOT_FOUND', id)
+    const defaultRow = this.#storage !== undefined
+      ? (await this.#storage.query<{ tenant_id: string }>('SELECT tenant_id FROM tenant_models WHERE model_id = ? AND is_default = 1 LIMIT 1', [id])).rows[0]
+      : this.#db.prepare('SELECT tenant_id FROM tenant_models WHERE model_id = ? AND is_default = 1 LIMIT 1').get(id) as { tenant_id: string } | undefined
+    if (defaultRow !== undefined) throw new ControlPlaneError(409, 'MODEL_IS_DEFAULT', `model is default for tenant ${defaultRow.tenant_id}; switch its default model first`)
+    if (this.#storage !== undefined) {
+      await this.#storage.query('DELETE FROM tenant_model_upstreams WHERE model_id = ?', [id])
+      await this.#storage.query('DELETE FROM tenant_models WHERE model_id = ?', [id])
+      await this.#storage.query('DELETE FROM model_catalog WHERE id = ?', [id])
+    }
+    this.#db.exec('BEGIN')
+    try {
+      this.#db.prepare('DELETE FROM tenant_model_upstreams WHERE model_id = ?').run(id)
+      this.#db.prepare('DELETE FROM tenant_models WHERE model_id = ?').run(id)
+      this.#db.prepare('DELETE FROM model_catalog WHERE id = ?').run(id)
+      this.#db.exec('COMMIT')
+    } catch (error) {
+      this.#db.exec('ROLLBACK')
+      throw error
+    }
+    await this.rebuildModelRouterConfig()
+  }
+
+  async listTenantModels(tenantId: string): Promise<Array<{ id: string; name: string; provider: string; model: string; isDefault: boolean; upstreamId: string | null; upstreamName: string | null }>> {
+    this.tenantRow(tenantId)
+    const sql = 'SELECT c.*, tm.is_default, u.name AS upstream_name FROM tenant_models tm JOIN model_catalog c ON c.id = tm.model_id LEFT JOIN platform_upstreams u ON u.id = c.upstream_id WHERE tm.tenant_id = ? AND c.enabled = 1 ORDER BY tm.is_default DESC, c.created_at'
+    if (this.#storage !== undefined) {
+      const result = await this.#storage.query<{ id: string; name: string; provider: string; model: string; is_default: number | string; upstream_id: string | null; upstream_name: string | null }>(sql, [tenantId])
+      return result.rows.map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: Number(row.is_default) === 1, upstreamId: row.upstream_id ?? null, upstreamName: row.upstream_name ?? null }))
+    }
+    return (this.#db.prepare(sql).all(tenantId) as Array<{
+      id: string; name: string; provider: string; model: string; is_default: number; upstream_id: string | null; upstream_name: string | null
+    }>).map(row => ({ id: row.id, name: row.name, provider: row.provider, model: row.model, isDefault: row.is_default === 1, upstreamId: row.upstream_id ?? null, upstreamName: row.upstream_name ?? null }))
   }
 
   async bindTenantModel(tenantId: string, modelId: string, isDefault = false): Promise<void> {
@@ -656,6 +885,18 @@ export class ControlPlane {
     }
     if (isDefault) this.#db.prepare('UPDATE tenant_models SET is_default = 0 WHERE tenant_id = ?').run(tenantId)
     this.#db.prepare('INSERT OR REPLACE INTO tenant_models (tenant_id, model_id, is_default) VALUES (?, ?, ?)').run(tenantId, modelId, isDefault ? 1 : 0)
+    await this.rebuildModelRouterConfig()
+  }
+
+  async unbindTenantModel(tenantId: string, modelId: string): Promise<void> {
+    this.tenantRow(tenantId)
+    const row = this.#storage !== undefined
+      ? (await this.#storage.query<{ is_default: number | string }>('SELECT is_default FROM tenant_models WHERE tenant_id = ? AND model_id = ?', [tenantId, modelId])).rows[0]
+      : this.#db.prepare('SELECT is_default FROM tenant_models WHERE tenant_id = ? AND model_id = ?').get(tenantId, modelId) as { is_default: number } | undefined
+    if (row === undefined) throw new ControlPlaneError(404, 'MODEL_NOT_BOUND', modelId)
+    if (Number(row.is_default) === 1) throw new ControlPlaneError(409, 'MODEL_IS_DEFAULT', 'set another default model first')
+    if (this.#storage !== undefined) await this.#storage.query('DELETE FROM tenant_models WHERE tenant_id = ? AND model_id = ?', [tenantId, modelId])
+    this.#db.prepare('DELETE FROM tenant_models WHERE tenant_id = ? AND model_id = ?').run(tenantId, modelId)
     await this.rebuildModelRouterConfig()
   }
 
@@ -674,9 +915,7 @@ export class ControlPlane {
       ? (await this.#storage.query('SELECT 1 FROM tenant_models WHERE tenant_id = ? AND model_id = ?', [tenantId, modelId])).rows.length > 0
       : this.#db.prepare('SELECT 1 FROM tenant_models WHERE tenant_id = ? AND model_id = ?').get(tenantId, modelId) !== undefined
     if (!bound) throw new ControlPlaneError(404, 'MODEL_NOT_BOUND', modelId)
-    let parsed: URL
-    try { parsed = new URL(input.baseUrl) } catch { throw new ControlPlaneError(400, 'INVALID_UPSTREAM_URL', 'baseUrl must be an absolute URL') }
-    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.username !== '' || parsed.password !== '') throw new ControlPlaneError(400, 'INVALID_UPSTREAM_URL', 'baseUrl must be http(s) without credentials')
+    const parsed = this.validateUpstreamUrl(input.baseUrl)
     if (input.name.trim() === '' || input.upstreamModel.trim() === '') throw new ControlPlaneError(400, 'INVALID_UPSTREAM', 'name and upstreamModel are required')
     const id = input.id === undefined || input.id === '' ? randomUUID() : input.id
     const existingCipher = this.#storage !== undefined
@@ -718,11 +957,23 @@ export class ControlPlane {
   async tenantModelUpstream(tenantId: string, modelId: string): Promise<{ url: string; key: string | undefined; upstreamModel: string; protocol: string } | undefined> {
     const rows = await this.listTenantModelUpstreams(tenantId, modelId)
     const selected = rows.find(row => row.enabled)
-    if (selected === undefined) return undefined
-    const cipher = this.#storage !== undefined
-      ? (await this.#storage.query<{ api_key_cipher: string | null }>('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?', [tenantId, modelId, selected.id])).rows[0]?.api_key_cipher
-      : (this.#db.prepare('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?').get(tenantId, modelId, selected.id) as { api_key_cipher: string | null } | undefined)?.api_key_cipher
-    return { url: selected.baseUrl, key: cipher === null || cipher === undefined ? undefined : this.decryptSecret(cipher), upstreamModel: selected.upstreamModel, protocol: selected.protocol }
+    if (selected !== undefined) {
+      const cipher = this.#storage !== undefined
+        ? (await this.#storage.query<{ api_key_cipher: string | null }>('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?', [tenantId, modelId, selected.id])).rows[0]?.api_key_cipher
+        : (this.#db.prepare('SELECT api_key_cipher FROM tenant_model_upstreams WHERE tenant_id = ? AND model_id = ? AND id = ?').get(tenantId, modelId, selected.id) as { api_key_cipher: string | null } | undefined)?.api_key_cipher
+      return { url: selected.baseUrl, key: cipher === null || cipher === undefined ? undefined : this.decryptSecret(cipher), upstreamModel: selected.upstreamModel, protocol: selected.protocol }
+    }
+    const platformSql = 'SELECT mc.model AS upstream_model, pu.protocol, pu.base_url, pu.api_key_cipher FROM tenant_models tm JOIN model_catalog mc ON mc.id = tm.model_id JOIN platform_upstreams pu ON pu.id = mc.upstream_id WHERE tm.tenant_id = ? AND tm.model_id = ? AND mc.enabled = 1 AND pu.enabled = 1'
+    const platform = this.#storage !== undefined
+      ? (await this.#storage.query<{ upstream_model: string; protocol: string; base_url: string; api_key_cipher: string | null }>(platformSql, [tenantId, modelId])).rows[0]
+      : this.#db.prepare(platformSql).get(tenantId, modelId) as { upstream_model: string; protocol: string; base_url: string; api_key_cipher: string | null } | undefined
+    if (platform === undefined) return undefined
+    return {
+      url: platform.base_url,
+      key: platform.api_key_cipher === null || platform.api_key_cipher === undefined ? undefined : this.decryptSecret(platform.api_key_cipher),
+      upstreamModel: platform.upstream_model,
+      protocol: platform.protocol,
+    }
   }
 
   private encryptSecret(value: string): string {
@@ -747,8 +998,10 @@ export class ControlPlane {
       ? (await this.#storage.query<Record<string, unknown>>('SELECT * FROM tenant_model_upstreams')).rows
       : this.#db.prepare('SELECT * FROM tenant_model_upstreams').all() as Array<Record<string, unknown>>
     const sections: Record<'chat' | 'responses' | 'claude', Array<Record<string, unknown>>> = { chat: [], responses: [], claude: [] }
+    const overridden = new Set<string>()
     for (const row of rows) {
       if (Number(row.enabled) !== 1) continue
+      overridden.add(`${String(row.tenant_id)}\0${String(row.model_id)}`)
       const protocol = row.protocol === 'responses' || row.protocol === 'claude' ? row.protocol : 'chat'
       const cipher = row.api_key_cipher
       const apiKey = cipher === null || cipher === undefined ? undefined : (() => { try { return this.decryptSecret(String(cipher)) } catch { return undefined } })()
@@ -760,6 +1013,27 @@ export class ControlPlane {
         priority: Number(row.priority),
         'failover-mode': 'provider',
         models: [{ name: String(row.upstream_model), alias: `${String(row.tenant_id)}/${String(row.model_id)}` }],
+      })
+    }
+    const platformSql = 'SELECT tm.tenant_id, mc.id AS model_id, mc.model AS upstream_model, pu.id AS upstream_id, pu.name AS upstream_name, pu.protocol, pu.base_url, pu.api_key_cipher FROM tenant_models tm JOIN model_catalog mc ON mc.id = tm.model_id JOIN platform_upstreams pu ON pu.id = mc.upstream_id WHERE mc.enabled = 1 AND pu.enabled = 1'
+    const platformRows = this.#storage !== undefined
+      ? (await this.#storage.query<Record<string, unknown>>(platformSql)).rows
+      : this.#db.prepare(platformSql).all() as Array<Record<string, unknown>>
+    for (const row of platformRows) {
+      const tenantId = String(row.tenant_id)
+      const modelId = String(row.model_id)
+      if (overridden.has(`${tenantId}\0${modelId}`)) continue
+      const protocol = row.protocol === 'responses' || row.protocol === 'claude' ? row.protocol : 'chat'
+      const cipher = row.api_key_cipher
+      const apiKey = cipher === null || cipher === undefined ? undefined : (() => { try { return this.decryptSecret(String(cipher)) } catch { return undefined } })()
+      const name = String(row.upstream_name).replace(/[^a-zA-Z0-9_.-]/gu, '-')
+      sections[protocol].push({
+        name: `siriusx-${tenantId}-${modelId}-platform-${String(row.upstream_id)}-${name}`,
+        'base-url': String(row.base_url),
+        ...(apiKey === undefined ? {} : { 'api-key': apiKey }),
+        priority: 0,
+        'failover-mode': 'provider',
+        models: [{ name: String(row.upstream_model), alias: `${tenantId}/${modelId}` }],
       })
     }
     const config = {
@@ -1458,7 +1732,14 @@ export class ControlPlane {
     this.#cacheReady = true
   }
 
-  async initialize(): Promise<void> { await this.refreshCache(); await this.rebuildModelRouterConfig() }
+  async initialize(): Promise<void> {
+    if (this.#storage !== undefined) {
+      await this.#storage.query('CREATE TABLE IF NOT EXISTS platform_upstreams (id TEXT PRIMARY KEY, name TEXT NOT NULL, protocol TEXT NOT NULL DEFAULT \'chat\', base_url TEXT NOT NULL, api_key_cipher TEXT, enabled INTEGER NOT NULL DEFAULT 1, created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL)')
+      await this.#storage.query('ALTER TABLE model_catalog ADD COLUMN IF NOT EXISTS upstream_id TEXT REFERENCES platform_upstreams(id)')
+    }
+    await this.refreshCache()
+    await this.rebuildModelRouterConfig()
+  }
 
   async startCacheInvalidation(): Promise<void> {
     if (this.#storage?.listen === undefined || this.#cacheStop !== undefined) return

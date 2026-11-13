@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import esbuild from 'esbuild'
-import stylexPlugin from '@stylexjs/esbuild-plugin'
 import { copyFileSync, mkdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
@@ -16,12 +15,6 @@ await esbuild.build({
   minify: true,
   jsx: 'automatic',
   outfile: join(out, 'admin.js'),
-  plugins: [stylexPlugin({
-    dev: false,
-    generatedCSSFileName: join(out, 'stylex.css'),
-    stylexImports: ['@stylexjs/stylex'],
-    unstable_moduleResolution: { type: 'commonJS', rootDir: root },
-  })],
 })
 copyFileSync(join(root, 'public/index.html'), join(out, 'index.html'))
 copyFileSync(join(root, 'public/style.css'), join(out, 'style.css'))

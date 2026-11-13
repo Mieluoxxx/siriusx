@@ -38,7 +38,7 @@ and uses a service-only gateway key.
 
 ## Configuration
 
-`tenant_model_upstreams` stores:
+`tenant_model_upstreams` stores platform-owned upstream connections:
 
 - tenant/model binding
 - upstream display name
@@ -76,5 +76,8 @@ tenant checks. Without it, the old direct upstream path remains as a fallback.
 - The generated router config contains plaintext upstream keys, so it is mode
   `0600` and lives on the server/private volume.
 - Upstream URLs are validated as absolute HTTP(S) URLs without credentials.
-- Tenant admins configuring arbitrary URLs can create SSRF risk; production
-  should add an allowlist or platform approval.
+- Upstream connections are managed in the platform admin `Upstreams` page,
+  not in the tenant model page. Tenant pages only enable catalog models, choose
+  the default model, and do not expose upstream URLs or keys.
+- Platform operators configuring arbitrary URLs can create SSRF risk;
+  production should add an allowlist or platform approval.

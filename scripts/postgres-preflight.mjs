@@ -10,7 +10,7 @@ if (databaseUrl === undefined) {
 const tables = [
   'tenants', 'users', 'settings', 'devices', 'pairing_codes', 'bots',
   'device_tickets', 'device_ticket_events', 'cloud_tickets', 'cloud_ticket_events',
-  'revoked_sessions', 'tenant_quotas', 'model_catalog', 'tenant_models',
+  'revoked_sessions', 'tenant_quotas', 'platform_upstreams', 'model_catalog', 'tenant_models',
   'source_bindings', 'source_events', 'tenant_billing', 'support_requests', 'platform_audit',
 ]
 const checks = {

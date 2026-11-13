@@ -3,37 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1220">
+  <meta name="theme-color" content="#111111">
   <title>SiriusX Platform Admin</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/stylex.css">
   <script src="/admin.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#app">Skip to content</a>
-  <header class="app-header">
-    <nav id="breadcrumb" class="breadcrumb" aria-label="Breadcrumb">Platform <span aria-hidden="true">/</span> Overview</nav>
-    <div class="header-actions">
-      <button id="notification-button" class="icon-button" type="button" popovertarget="notification-panel" aria-label="Notifications" aria-expanded="false">
-        <span aria-hidden="true">Notifications</span><span id="notification-count" class="count" hidden>0</span>
-      </button>
-      <button id="access-button" class="icon-button" type="button" popovertarget="token-panel" aria-label="Platform access">Access</button>
-      <div id="token-panel" class="token-panel" popover="auto" aria-label="Platform access">
-        <div id="auth-form-root" class="auth-form-root"></div>
-      </div>
-    </div>
-  </header>
-  <main id="app" tabindex="-1">
-    <section class="empty-state">
-      <h1>Platform administration</h1>
-    </section>
-  </main>
-  <div id="notification-panel" class="notification-panel" popover="auto" role="region" aria-labelledby="notification-title">
-    <div class="notification-head"><h2 id="notification-title">Notifications</h2><button id="notification-view" class="button small" type="button">View support</button></div>
-    <div id="notification-list"></div>
-  </div>
-  <div id="toast-region" class="toast-region" role="region" aria-label="Notifications"></div>
-  <div id="error" class="alert" role="alert" aria-live="assertive"></div>
+  <div id="app"></div>
 </body>
 </html>

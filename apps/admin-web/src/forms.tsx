@@ -1,483 +1,190 @@
-/** Base UI + StyleX form primitives and SiriusX admin forms. */
+/** SiriusX admin forms built only from shared Base UI primitives. */
 import * as React from 'react'
-import { Button } from '@base-ui-components/react/button'
-import { Checkbox } from '@base-ui-components/react/checkbox'
 import { Field } from '@base-ui-components/react/field'
-import { Form } from '@base-ui-components/react/form'
 import { Input } from '@base-ui-components/react/input'
-import { Select } from '@base-ui-components/react/select'
-import * as stylex from '@stylexjs/stylex'
+import { BaseForm, Button, CheckboxField, FormActions, FormError, SelectField, SubmitButton, TextField, useSubmit, valueOf, type FormSubmit, type SelectOption } from './ui'
 
-type Values = Record<string, unknown>
-type FormSubmit = (values: Values) => Promise<void> | void
-
-type StyleArg = object
-
-function cls(...values: StyleArg[]): string { return (stylex.props as unknown as (...args: StyleArg[]) => { className?: string })(...values).className ?? '' }
-
-const styles = stylex.create({
-  form: {
-    display: 'grid',
-    gap: '14px',
-    inlineSize: '100%',
-  },
-  authForm: {
-    display: 'flex',
-    flexWrap: 'nowrap',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  authField: {
-    display: 'grid',
-    gridTemplateColumns: 'auto minmax(0, 1fr)',
-    alignItems: 'center',
-    gap: '8px',
-    flex: '1 1 0',
-    minInlineSize: 0,
-  },
-  authError: {
-    gridColumn: '1 / -1',
-    color: '#f56c6c',
-    fontSize: '11px',
-    lineHeight: '14px',
-  },
-  authLabel: {
-    color: '#606266',
-    fontSize: '12px',
-    fontWeight: 400,
-    lineHeight: '20px',
-    whiteSpace: 'nowrap',
-    '@media (max-width: 980px)': { display: 'none' },
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '16px',
-    alignItems: 'start',
-  },
-  field: {
-    display: 'grid',
-    gridTemplateColumns: '128px minmax(0, 1fr)',
-    gap: '8px 12px',
-    alignItems: 'center',
-    minInlineSize: 0,
-    '@media (max-width: 560px)': { gridTemplateColumns: '1fr', gap: '4px' },
-  },
-  label: {
-    color: '#6f6f6a',
-    fontSize: '12px',
-    fontWeight: 500,
-    lineHeight: '32px',
-    textAlign: 'end',
-    whiteSpace: 'nowrap',
-    '@media (max-width: 560px)': { lineHeight: '18px', textAlign: 'start' },
-  },
-  optional: {
-    color: '#8a97aa',
-    fontWeight: 400,
-  },
-  input: {
-    boxSizing: 'border-box',
-    inlineSize: '100%',
-    minBlockSize: '38px',
-    paddingBlock: '8px',
-    paddingInline: '11px',
-    border: '1px solid #e2e2dc',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#181818',
-    fontFamily: 'inherit',
-    fontSize: '13px',
-    lineHeight: '20px',
-    transition: 'border-color 140ms ease, box-shadow 140ms ease',
-    ':focus-visible': {
-      borderColor: '#2563eb',
-      outline: '3px solid color-mix(in srgb, #2563eb 20%, transparent)',
-      outlineOffset: '1px',
-    },
-    ':user-invalid': {
-      borderColor: '#b3261e',
-    },
-  },
-  selectTrigger: {
-    boxSizing: 'border-box',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px',
-    inlineSize: '100%',
-    minBlockSize: '38px',
-    paddingBlock: '8px',
-    paddingInline: '11px',
-    border: '1px solid #e2e2dc',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#181818',
-    fontFamily: 'inherit',
-    fontSize: '13px',
-    lineHeight: '20px',
-    textAlign: 'start',
-    cursor: 'pointer',
-    ':focus-visible': {
-      borderColor: '#2563eb',
-      outline: '3px solid color-mix(in srgb, #2563eb 20%, transparent)',
-      outlineOffset: '1px',
-    },
-  },
-  selectIcon: { color: '#8a8a85', fontSize: '10px' },
-  positioner: { zIndex: 100 },
-  popup: {
-    minInlineSize: 'var(--anchor-width)',
-    maxBlockSize: '260px',
-    overflow: 'auto',
-    padding: '4px',
-    border: '1px solid #e7e7e2',
-    borderRadius: '10px',
-    background: '#ffffff',
-    boxShadow: '0 12px 32px rgb(0 0 0 / 10%)',
-  },
-  item: {
-    paddingBlock: '8px',
-    paddingInline: '10px',
-    borderRadius: '6px',
-    color: '#181818',
-    fontFamily: 'inherit',
-    fontSize: '13px',
-    cursor: 'pointer',
-    outline: 'none',
-    ':hover': { background: '#f7f7f4' },
-    ':focus': { background: '#eef4ff', color: '#2563eb' },
-  },
-  checkboxField: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '9px',
-    minBlockSize: '38px',
-    minInlineSize: 0,
-  },
-  checkboxLabel: {
-    color: '#454540',
-    fontSize: '13px',
-    fontWeight: 400,
-    lineHeight: '20px',
-    whiteSpace: 'normal',
-  },
-  checkbox: {
-    display: 'grid',
-    placeItems: 'center',
-    inlineSize: '17px',
-    blockSize: '17px',
-    padding: 0,
-    border: '1px solid #d7d7d1',
-    borderRadius: '4px',
-    background: '#ffffff',
-    color: '#ffffff',
-    cursor: 'pointer',
-    ':focus-visible': {
-      outline: '3px solid color-mix(in srgb, #2563eb 20%, transparent)',
-      outlineOffset: '2px',
-    },
-  },
-  checkboxIndicator: { fontSize: '12px', lineHeight: 1 },
-  actions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    flexWrap: 'wrap',
-    paddingBlockStart: '2px',
-  },
-  button: {
-    minBlockSize: '36px',
-    paddingBlock: '7px',
-    paddingInline: '14px',
-    border: '1px solid #e2e2dc',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#181818',
-    fontFamily: 'inherit',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    ':hover': { background: '#f7f7f4', borderColor: '#d7d7d1', color: '#181818' },
-    ':focus-visible': {
-      outline: '2px solid color-mix(in srgb, #409eff 28%, transparent)',
-      outlineOffset: '0',
-    },
-  },
-  buttonPrimary: {
-    borderColor: '#2563eb',
-    background: '#2563eb',
-    color: '#ffffff',
-    ':hover': { background: '#1d4ed8', borderColor: '#1d4ed8', color: '#ffffff' },
-  },
-  buttonDanger: {
-    borderColor: '#fecaca',
-    background: '#fef2f2',
-    color: '#dc2626',
-    ':hover': { background: '#dc2626', borderColor: '#dc2626', color: '#ffffff' },
-  },
-  error: {
-    margin: 0,
-    padding: '8px 10px',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    background: '#fef2f2',
-    color: '#dc2626',
-    fontSize: '12px',
-    lineHeight: '17px',
-  },
-  errorFull: { gridColumn: '1 / -1', flexBasis: '100%' },
-  fieldError: {
-    gridColumn: '2 / 3',
-    color: '#dc2626',
-    fontSize: '12px',
-    lineHeight: '16px',
-    '@media (max-width: 560px)': { gridColumn: '1' },
-  },
-  section: {
-    display: 'grid',
-    gap: '10px',
-    alignContent: 'start',
-    padding: '16px',
-    border: '1px solid #e7e7e2',
-    borderRadius: '10px',
-    background: '#fafaf8',
-    minInlineSize: 0,
-  },
-  sectionTitle: {
-    margin: 0,
-    color: '#181818',
-    fontSize: '14px',
-    fontWeight: 600,
-    lineHeight: '18px',
-  },
-  detailGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '12px',
-    alignItems: 'start',
-  },
-  tenantFilterForm: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'end',
-    gap: '12px',
-    inlineSize: '100%',
-    maxInlineSize: '1100px',
-  },
-  tenantSearchField: {
-    display: 'grid',
-    gridTemplateColumns: 'auto minmax(0, 1fr)',
-    alignItems: 'center',
-    gap: '8px',
-    flex: '0 1 420px',
-    minInlineSize: 0,
-    '@media (max-width: 720px)': { flexBasis: '100%' },
-  },
-  tenantStatusField: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 160px',
-    alignItems: 'center',
-    gap: '8px',
-    flex: '0 0 auto',
-    '@media (max-width: 720px)': { flexBasis: '100%', gridTemplateColumns: 'auto minmax(0, 1fr)' },
-  },
-  tenantFilterLabel: {
-    color: '#6f6f6a',
-    fontSize: '12px',
-    fontWeight: 500,
-    lineHeight: '20px',
-    whiteSpace: 'nowrap',
-  },
-  tenantFilterOutput: {
-    marginInlineStart: 'auto',
-    alignSelf: 'center',
-    color: '#8a8a85',
-    fontSize: '12px',
-    whiteSpace: 'nowrap',
-    '@media (max-width: 720px)': { marginInlineStart: 0 },
-  },
-  auditFilterForm: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(220px, 1fr) 190px 170px auto',
-    gap: '12px',
-    alignItems: 'end',
-    '@media (max-width: 760px)': { gridTemplateColumns: '1fr' },
-  },
-  filterField: {
-    display: 'grid',
-    gap: '6px',
-    minInlineSize: 0,
-  },
-  filterLabel: {
-    color: '#6f6f6a',
-    fontSize: '11px',
-    fontWeight: 600,
-  },
-})
-
-function valueOf(values: Values, key: string): string {
-  const value = values[key]
-  return value === undefined || value === null ? '' : String(value)
-}
-
-function numberValue(values: Values, key: string): number {
-  return Number(valueOf(values, key) || '0')
-}
-
-function errorText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
-function useSubmit(onSubmit: FormSubmit, resetOnSuccess: boolean): {
-  busy: boolean
-  error: string
-  formRef: React.RefObject<HTMLFormElement | null>
-  submit: (values: Values) => void
-} {
-  const [busy, setBusy] = React.useState(false)
-  const [error, setError] = React.useState('')
-  const formRef = React.useRef<HTMLFormElement>(null)
-  const submit = (values: Values): void => {
-    setBusy(true)
-    setError('')
-    void Promise.resolve(onSubmit(values))
-      .then(() => { if (resetOnSuccess) formRef.current?.reset() })
-      .catch((reason: unknown) => setError(errorText(reason)))
-      .finally(() => setBusy(false))
-  }
-  return { busy, error, formRef, submit }
-}
-
-function ErrorMessage({ message, fullWidth = false }: { message: string; fullWidth?: boolean }): React.ReactElement | null {
-  return message === '' ? null : <p className={cls(styles.error, fullWidth ? styles.errorFull : styles.error)} role="alert">{message}</p>
-}
-
-interface TextFieldProps {
-  name: string
-  label: string
-  defaultValue?: string
-  type?: React.HTMLInputTypeAttribute
-  required?: boolean
-  placeholder?: string
-}
-
-function TextField({ name, label, defaultValue = '', type = 'text', required = false, placeholder }: TextFieldProps): React.ReactElement {
-  return (
-    <Field.Root name={name} className={cls(styles.field)}>
-      <Field.Label className={cls(styles.label)}>{label}</Field.Label>
-      <Input className={cls(styles.input)} defaultValue={defaultValue} type={type} required={required} placeholder={placeholder} />
-      <Field.Error className={cls(styles.fieldError)} />
-    </Field.Root>
-  )
-}
-
-interface SelectOption { value: string; label: string }
-interface SelectFieldProps {
-  name: string
-  label: string
-  options: SelectOption[]
-  defaultValue?: string
-  disabled?: boolean
-  onValueChange?: (value: string) => void
-}
-
-function SelectField({ name, label, options, defaultValue, disabled = false, onValueChange }: SelectFieldProps): React.ReactElement {
-  const items = Object.fromEntries(options.map(option => [option.value, option.label]))
-  return (
-    <Field.Root name={name} className={cls(styles.field)}>
-      <Field.Label className={cls(styles.label)}>{label}</Field.Label>
-      <Select.Root name={name} items={items} defaultValue={defaultValue ?? options[0]?.value ?? ''} disabled={disabled} onValueChange={value => onValueChange?.(value === null ? '' : String(value))}>
-        <Select.Trigger className={cls(styles.selectTrigger)}>
-          <Select.Value />
-          <Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon>
-        </Select.Trigger>
-        <Select.Portal>
-          <Select.Positioner className={cls(styles.positioner)} sideOffset={6}>
-            <Select.Popup className={cls(styles.popup)}>
-              <Select.List>
-                {options.map(option => <Select.Item key={option.value} value={option.value} className={cls(styles.item)}>{option.label}</Select.Item>)}
-              </Select.List>
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-    </Field.Root>
-  )
-}
-
-function CheckboxField({ name, label, defaultChecked = false }: { name: string; label: string; defaultChecked?: boolean }): React.ReactElement {
-  return (
-    <Field.Root name={name} className={cls(styles.checkboxField)}>
-      <Checkbox.Root name={name} defaultChecked={defaultChecked} className={cls(styles.checkbox)}>
-        <Checkbox.Indicator className={cls(styles.checkboxIndicator)}>✓</Checkbox.Indicator>
-      </Checkbox.Root>
-      <Field.Label className={cls(styles.checkboxLabel)}>{label}</Field.Label>
-    </Field.Root>
-  )
-}
-
-function SubmitButton({ busy, children = 'Save changes' }: { busy: boolean; children?: string }): React.ReactElement {
-  return <Button type="submit" disabled={busy} className={cls(styles.button, styles.buttonPrimary)}>{busy ? 'Saving…' : children}</Button>
-}
+export { numberValue, valueOf } from './ui'
 
 export interface AuthFormProps {
   initialToken: string
   onConnect: (token: string) => Promise<void>
+  actions?: React.ReactNode
 }
 
-export function AuthForm({ initialToken, onConnect }: AuthFormProps): React.ReactElement {
+export function AuthForm({ initialToken, onConnect, actions }: AuthFormProps): React.ReactElement {
   const { busy, error, formRef, submit } = useSubmit(values => onConnect(valueOf(values, 'token')), false)
   return (
-    <Form ref={formRef} className={cls(styles.authForm)} onFormSubmit={values => submit(values as Values)}>
-      <Field.Root name="token" className={cls(styles.authField)}>
-        <Field.Label className={cls(styles.authLabel)}>Platform token</Field.Label>
-        <Input className={cls(styles.input)} defaultValue={initialToken} type="password" required autoComplete="off" spellCheck={false} placeholder="Platform admin token" />
-        <Field.Error className={cls(styles.authError)}>Platform token is required.</Field.Error>
-      </Field.Root>
-      <SubmitButton busy={busy}>Connect</SubmitButton>
-      <ErrorMessage message={error} fullWidth />
-    </Form>
+    <BaseForm formRef={formRef} onSubmit={submit}>
+      <TextField name="token" label="Platform token" defaultValue={initialToken} type="password" required autoComplete="off" spellCheck={false} placeholder="Platform admin token" />
+      <FormError message={error} />
+      <FormActions className={actions === undefined ? undefined : 'form-actions-split'}>
+        <SubmitButton busy={busy}>Connect</SubmitButton>
+        {actions}
+      </FormActions>
+    </BaseForm>
   )
 }
 
 export function CreateTenantForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
   const { busy, error, formRef, submit } = useSubmit(onSubmit, true)
   return (
-    <Form ref={formRef} className={cls(styles.form)} onFormSubmit={values => submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
+    <BaseForm formRef={formRef} onSubmit={submit}>
+      <div className="form-grid">
         <TextField name="name" label="Name" required placeholder="Acme" />
         <TextField name="idpIssuer" label="IdP issuer" required placeholder="https://idp.example/realms/siriusx" />
         <TextField name="adminEmail" label="Admin email" type="email" required placeholder="admin@example.com" />
         <TextField name="tenantId" label="Tenant ID" placeholder="tenant-acme" />
       </div>
-      <ErrorMessage message={error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={busy}>Create tenant</SubmitButton></div>
-    </Form>
+      <FormError message={error} />
+      <FormActions><SubmitButton busy={busy}>Create tenant</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
-export function CreateModelForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
+export function CreateModelForm({ upstreams, onSubmit }: { upstreams: SelectOption[]; onSubmit: FormSubmit }): React.ReactElement {
   const { busy, error, formRef, submit } = useSubmit(onSubmit, true)
+  const upstreamOptions: SelectOption[] = [{ value: '', label: 'None (manual / tenant override)' }, ...upstreams]
   return (
-    <Form ref={formRef} className={cls(styles.form)} onFormSubmit={values => submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
-        <TextField name="id" label="Model ID" placeholder="acme-gpt41" />
+    <BaseForm formRef={formRef} onSubmit={submit}>
+      <div className="form-grid">
+        <SelectField name="upstreamId" label="Platform upstream" options={upstreamOptions} />
+        <TextField name="model" label="Upstream model ID" required placeholder="gpt-4.1" />
         <TextField name="name" label="Display name" required placeholder="Acme GPT-4.1" />
-        <TextField name="provider" label="Provider" required placeholder="openai" />
-        <TextField name="model" label="Provider model ID" required placeholder="gpt-4.1" />
+        <TextField name="id" label="Catalog ID" placeholder="Auto from model ID" />
+        <TextField name="provider" label="Provider" required defaultValue="openai" placeholder="openai" />
       </div>
-      <ErrorMessage message={error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={busy}>Add model</SubmitButton></div>
-    </Form>
+      <FormError message={error} />
+      <FormActions><SubmitButton busy={busy}>Add model</SubmitButton></FormActions>
+    </BaseForm>
+  )
+}
+
+export interface PlatformUpstreamInitial {
+  name: string
+  protocol: string
+  baseUrl: string
+  hasApiKey: boolean
+  enabled: boolean
+}
+
+export function PlatformUpstreamForm({ initial, onSubmit }: { initial?: PlatformUpstreamInitial; onSubmit: FormSubmit }): React.ReactElement {
+  const { busy, error, formRef, submit } = useSubmit(onSubmit, initial === undefined)
+  return (
+    <BaseForm formRef={formRef} onSubmit={submit}>
+      <div className="form-grid">
+        <TextField name="name" label="Upstream name" defaultValue={initial?.name ?? ''} required placeholder="OpenAI Production" />
+        <SelectField
+          name="protocol"
+          label="Protocol"
+          defaultValue={initial?.protocol ?? 'chat'}
+          options={[
+            { value: 'chat', label: 'Chat Completions' },
+            { value: 'responses', label: 'OpenAI Responses' },
+            { value: 'claude', label: 'Anthropic Messages' },
+          ]}
+        />
+        <TextField name="baseUrl" label="Base URL" type="url" defaultValue={initial?.baseUrl ?? ''} required placeholder="https://api.openai.com/v1" />
+        <TextField
+          name="apiKey"
+          label="API key"
+          type="password"
+          autoComplete="off"
+          placeholder={initial?.hasApiKey ? 'Leave blank to keep existing key' : 'sk-...'}
+        />
+        <CheckboxField name="enabled" label="Enabled" defaultChecked={initial?.enabled ?? true} />
+      </div>
+      <FormError message={error} />
+      <FormActions><SubmitButton busy={busy}>{initial === undefined ? 'Add upstream' : 'Save upstream'}</SubmitButton></FormActions>
+    </BaseForm>
+  )
+}
+
+export interface FetchedUpstreamModel {
+  model: string
+  name: string
+  alreadyAdded: boolean
+}
+
+export function ImportUpstreamModelsForm({ models, onImport }: {
+  models: FetchedUpstreamModel[]
+  onImport: (selected: FetchedUpstreamModel[]) => Promise<void>
+}): React.ReactElement {
+  const [query, setQuery] = React.useState('')
+  const [selected, setSelected] = React.useState<Set<string>>(() => new Set())
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState('')
+  const available = models.filter(item => !item.alreadyAdded)
+  const normalized = query.trim().toLowerCase()
+  const filtered = models.filter(item => normalized === '' || item.model.toLowerCase().includes(normalized) || item.name.toLowerCase().includes(normalized))
+  const toggle = (model: string): void => {
+    setSelected(current => {
+      const next = new Set(current)
+      if (next.has(model)) next.delete(model)
+      else next.add(model)
+      return next
+    })
+  }
+  const selectAllAvailable = (): void => {
+    setSelected(new Set(available.filter(item => normalized === '' || item.model.toLowerCase().includes(normalized) || item.name.toLowerCase().includes(normalized)).map(item => item.model)))
+  }
+  const submit = async (event: React.FormEvent): Promise<void> => {
+    event.preventDefault()
+    if (selected.size === 0) return
+    setBusy(true)
+    setError('')
+    try {
+      await onImport(models.filter(item => selected.has(item.model)))
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <form className="form" onSubmit={event => { void submit(event) }}>
+      <div className="filter-bar">
+        <Field.Root name="fetchModelFilter" className="filter-field filter-grow">
+          <Field.Label className="filter-label">Filter fetched models</Field.Label>
+          <Input className="input" type="search" value={query} onValueChange={setQuery} placeholder="Search model ID or name" autoComplete="off" />
+        </Field.Root>
+        <Button type="button" variant="ghost" disabled={available.length === 0} onClick={selectAllAvailable}>Select new</Button>
+        <Button type="button" variant="ghost" disabled={selected.size === 0} onClick={() => setSelected(new Set())}>Clear</Button>
+      </div>
+      <div className="fetch-model-list" role="group" aria-label="Upstream models">
+        {filtered.length === 0 ? <p className="empty">No models match this filter.</p> : filtered.map(item => {
+          const checked = item.alreadyAdded || selected.has(item.model)
+          return (
+            <label key={item.model} className="fetch-model-item">
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={item.alreadyAdded || busy}
+                onChange={() => toggle(item.model)}
+              />
+              <span className="fetch-model-info">
+                <strong>{item.name}</strong>
+                <span className="mono muted">{item.model}</span>
+              </span>
+              {item.alreadyAdded ? <span className="pill">Added</span> : null}
+            </label>
+          )
+        })}
+      </div>
+      <FormError message={error} />
+      <FormActions className="form-actions-split">
+        <span className="muted">{selected.size} selected · {available.length} available</span>
+        <Button type="submit" variant="primary" disabled={busy || selected.size === 0}>{busy ? 'Importing…' : `Import selected (${selected.size})`}</Button>
+      </FormActions>
+    </form>
   )
 }
 
 export function CreateBindingForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
   const { busy, error, formRef, submit } = useSubmit(onSubmit, true)
   return (
-    <Form ref={formRef} className={cls(styles.form)} onFormSubmit={values => submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
+    <BaseForm formRef={formRef} onSubmit={submit}>
+      <div className="form-grid">
         <TextField name="provider" label="Provider" required placeholder="gitlab" />
         <TextField name="externalId" label="External ID" required placeholder="group/project" />
         <TextField name="tenantId" label="Tenant ID" required placeholder="tenant-acme" />
@@ -485,9 +192,9 @@ export function CreateBindingForm({ onSubmit }: { onSubmit: FormSubmit }): React
         <TextField name="baseRef" label="Base ref" placeholder="main" />
         <CheckboxField name="autoDispatch" label="Auto-dispatch incoming events" />
       </div>
-      <ErrorMessage message={error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={busy}>Add binding</SubmitButton></div>
-    </Form>
+      <FormError message={error} />
+      <FormActions><SubmitButton busy={busy}>Add binding</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
@@ -500,26 +207,23 @@ export function TenantFilters({ onChange, total }: TenantFiltersProps): React.Re
   const [query, setQuery] = React.useState('')
   const [status, setStatus] = React.useState('')
   const update = (nextQuery: string, nextStatus: string): void => {
-    setQuery(nextQuery); setStatus(nextStatus); onChange(nextQuery, nextStatus)
+    setQuery(nextQuery)
+    setStatus(nextStatus)
+    onChange(nextQuery, nextStatus)
   }
-  const statusOptions = [{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]
+  const statusOptions: SelectOption[] = [{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]
   const dirty = query.trim() !== '' || status !== ''
+  const countLabel = `${total} ${total === 1 ? 'tenant' : 'tenants'}`
   return (
-    <form className={cls(styles.tenantFilterForm)} onSubmit={event => event.preventDefault()}>
-      <Field.Root name="tenantQuery" className={cls(styles.tenantSearchField)}>
-        <Field.Label className={cls(styles.tenantFilterLabel)}>Search tenants</Field.Label>
-        <Input className={cls(styles.input)} type="search" value={query} onValueChange={value => update(value, status)} placeholder="Name, ID, or issuer" autoComplete="off" />
+    <div className="toolbar filter-bar">
+      <Field.Root name="tenantQuery" className="filter-field filter-search">
+        <Field.Label className="filter-label">Search tenants</Field.Label>
+        <Input className="input" type="search" value={query} onValueChange={value => update(value, status)} placeholder="Name, ID, or issuer" autoComplete="off" />
       </Field.Root>
-      <Field.Root name="tenantStatus" className={cls(styles.tenantStatusField)}>
-        <Field.Label className={cls(styles.tenantFilterLabel)}>Status</Field.Label>
-        <Select.Root name="tenantStatus" items={Object.fromEntries(statusOptions.map(item => [item.value, item.label]))} value={status} onValueChange={value => update(query, value === null ? '' : String(value))}>
-          <Select.Trigger className={cls(styles.selectTrigger)}><Select.Value /><Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon></Select.Trigger>
-          <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{statusOptions.map(item => <Select.Item key={item.value} value={item.value} className={cls(styles.item)}>{item.label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
-        </Select.Root>
-      </Field.Root>
-      {dirty ? <button className={cls(styles.button)} type="button" onClick={() => update('', '')}>Reset</button> : null}
-      {dirty ? <output id="tenant-count" className={cls(styles.tenantFilterOutput)}>{total} tenants</output> : null}
-    </form>
+      <SelectField name="tenantStatus" label="Status" options={statusOptions} value={status} onValueChange={value => update(query, value)} className="filter-field filter-status" />
+      {dirty ? <Button variant="ghost" onClick={() => update('', '')}>Reset</Button> : null}
+      <output className="filter-output">{countLabel}</output>
+    </div>
   )
 }
 
@@ -532,73 +236,70 @@ export interface TenantInitialValues {
   estimate?: string
 }
 
-
-export { valueOf, numberValue }
-
 export function TenantProfileForm({ initial, onSubmit }: { initial: TenantInitialValues; onSubmit: FormSubmit }): React.ReactElement {
   const form = useSubmit(onSubmit, false)
   return (
-    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+    <BaseForm formRef={form.formRef} onSubmit={form.submit}>
       <TextField name="name" label="Tenant name" defaultValue={initial.name} required />
       <TextField name="idpIssuer" label="IdP issuer" defaultValue={initial.idpIssuer} required />
-      <ErrorMessage message={form.error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save profile</SubmitButton></div>
-    </Form>
+      <FormError message={form.error} />
+      <FormActions><SubmitButton busy={form.busy}>Save profile</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
 export function TenantQuotaForm({ initial, onSubmit }: { initial: TenantInitialValues; onSubmit: FormSubmit }): React.ReactElement {
   const form = useSubmit(onSubmit, false)
   return (
-    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
+    <BaseForm formRef={form.formRef} onSubmit={form.submit}>
+      <div className="form-grid">
         <TextField name="maxUsers" label="Max users" type="number" defaultValue={String(initial.quota.maxUsers)} required />
         <TextField name="maxDevices" label="Max devices" type="number" defaultValue={String(initial.quota.maxDevices)} required />
         <TextField name="maxCloudTicketsPerDay" label="Cloud tickets / day" type="number" defaultValue={String(initial.quota.maxCloudTicketsPerDay)} required />
         <TextField name="maxDeviceTicketsPerDay" label="Device tickets / day" type="number" defaultValue={String(initial.quota.maxDeviceTicketsPerDay)} required />
       </div>
-      <ErrorMessage message={form.error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save quota</SubmitButton></div>
-    </Form>
+      <FormError message={form.error} />
+      <FormActions><SubmitButton busy={form.busy}>Save quota</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
 export function TenantBillingForm({ initial, onSubmit }: { initial: TenantInitialValues; onSubmit: FormSubmit }): React.ReactElement {
   const form = useSubmit(onSubmit, false)
   return (
-    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
+    <BaseForm formRef={form.formRef} onSubmit={form.submit}>
+      <div className="form-grid">
         <TextField name="currency" label="Currency" defaultValue={initial.billing.currency} required />
         <TextField name="cloudTicketCents" label="Cloud ticket cents" type="number" defaultValue={String(initial.billing.cloudTicketCents)} required />
         <TextField name="deviceTicketCents" label="Device ticket cents" type="number" defaultValue={String(initial.billing.deviceTicketCents)} required />
         <TextField name="monthlyBudgetCents" label="Monthly budget cents" type="number" defaultValue={initial.billing.monthlyBudgetCents === null ? '' : String(initial.billing.monthlyBudgetCents)} />
       </div>
-      <ErrorMessage message={form.error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Save billing</SubmitButton></div>
-    </Form>
+      <FormError message={form.error} />
+      <FormActions><SubmitButton busy={form.busy}>Save billing</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
 export function AddTenantUserForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
   const form = useSubmit(onSubmit, true)
   return (
-    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
+    <BaseForm formRef={form.formRef} onSubmit={form.submit}>
+      <div className="form-grid">
         <TextField name="email" label="User email" type="email" required placeholder="user@example.com" />
         <SelectField name="role" label="Role" options={[{ value: 'member', label: 'Member' }, { value: 'admin', label: 'Admin' }]} />
       </div>
-      <ErrorMessage message={form.error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Add user</SubmitButton></div>
-    </Form>
+      <FormError message={form.error} />
+      <FormActions><SubmitButton busy={form.busy}>Add user</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
 export function AddUpstreamForm({ models, onSubmit }: { models: string[]; onSubmit: FormSubmit }): React.ReactElement {
   const form = useSubmit(onSubmit, true)
-  const options = models.length === 0 ? [{ value: '', label: 'Bind a model first' }] : models.map(model => ({ value: model, label: model }))
+  const options: SelectOption[] = models.length === 0 ? [{ value: '', label: 'Enable a model first' }] : models.map(model => ({ value: model, label: model }))
   return (
-    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
-      <div className={cls(styles.formGrid)}>
+    <BaseForm formRef={form.formRef} onSubmit={form.submit}>
+      <div className="form-grid">
         <SelectField name="modelId" label="Model" options={options} disabled={models.length === 0} />
         <TextField name="name" label="Upstream name" required placeholder="openai-primary" />
         <SelectField name="protocol" label="Protocol" options={[{ value: 'chat', label: 'Chat Completions' }, { value: 'responses', label: 'OpenAI Responses' }, { value: 'claude', label: 'Anthropic Messages' }]} />
@@ -608,20 +309,20 @@ export function AddUpstreamForm({ models, onSubmit }: { models: string[]; onSubm
         <TextField name="priority" label="Priority" type="number" defaultValue="0" />
         <CheckboxField name="enabled" label="Enabled" defaultChecked />
       </div>
-      <ErrorMessage message={form.error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Add upstream</SubmitButton></div>
-    </Form>
+      <FormError message={form.error} />
+      <FormActions><SubmitButton busy={form.busy}>Add upstream</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
 export function RequestSupportForm({ onSubmit }: { onSubmit: FormSubmit }): React.ReactElement {
   const form = useSubmit(onSubmit, true)
   return (
-    <Form ref={form.formRef} className={cls(styles.form)} onFormSubmit={values => form.submit(values as Values)}>
+    <BaseForm formRef={form.formRef} onSubmit={form.submit}>
       <TextField name="reason" label="Support reason" required placeholder="Reason" />
-      <ErrorMessage message={form.error} />
-      <div className={cls(styles.actions)}><SubmitButton busy={form.busy}>Request support</SubmitButton></div>
-    </Form>
+      <FormError message={form.error} />
+      <FormActions><SubmitButton busy={form.busy}>Request support</SubmitButton></FormActions>
+    </BaseForm>
   )
 }
 
@@ -647,28 +348,17 @@ export function AuditFilters({ actions, onChange }: AuditFiltersProps): React.Re
     if (next.range !== undefined) setRange(next.range)
     onChange(value)
   }
-  const actionItems = [{ value: '', label: 'All actions' }, ...actions.map(value => ({ value, label: value }))]
+  const actionOptions: SelectOption[] = [{ value: '', label: 'All actions' }, ...actions.map(value => ({ value, label: value }))]
+  const rangeOptions: SelectOption[] = [{ value: 'all', label: 'All time' }, { value: '24h', label: 'Last 24 hours' }, { value: '7d', label: 'Last 7 days' }, { value: '30d', label: 'Last 30 days' }]
   return (
-    <form className={cls(styles.auditFilterForm)} onSubmit={event => event.preventDefault()}>
-      <Field.Root name="auditQuery" className={cls(styles.filterField)}>
-        <Field.Label className={cls(styles.filterLabel)}>Search audit</Field.Label>
-        <Input className={cls(styles.input)} type="search" value={query} onValueChange={value => update({ query: value })} placeholder="Actor, target, or detail" autoComplete="off" />
+    <div className="toolbar audit-filter-bar">
+      <Field.Root name="auditQuery" className="filter-field filter-grow">
+        <Field.Label className="filter-label">Search audit</Field.Label>
+        <Input className="input" type="search" value={query} onValueChange={value => update({ query: value })} placeholder="Actor, target, or detail" autoComplete="off" />
       </Field.Root>
-      <Field.Root name="auditAction" className={cls(styles.filterField)}>
-        <Field.Label className={cls(styles.filterLabel)}>Action</Field.Label>
-        <Select.Root name="auditAction" items={Object.fromEntries(actionItems.map(item => [item.value, item.label]))} value={action} onValueChange={value => update({ action: value === null ? '' : String(value) })}>
-          <Select.Trigger className={cls(styles.selectTrigger)}><Select.Value /><Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon></Select.Trigger>
-          <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{actionItems.map(item => <Select.Item key={item.value} value={item.value} className={cls(styles.item)}>{item.label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
-        </Select.Root>
-      </Field.Root>
-      <Field.Root name="auditRange" className={cls(styles.filterField)}>
-        <Field.Label className={cls(styles.filterLabel)}>Date range</Field.Label>
-        <Select.Root name="auditRange" items={{ all: 'All time', '24h': 'Last 24 hours', '7d': 'Last 7 days', '30d': 'Last 30 days' }} value={range} onValueChange={value => update({ range: value === null ? 'all' : String(value) })}>
-          <Select.Trigger className={cls(styles.selectTrigger)}><Select.Value /><Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon></Select.Trigger>
-          <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{[['all', 'All time'], ['24h', 'Last 24 hours'], ['7d', 'Last 7 days'], ['30d', 'Last 30 days']].map(([value, label]) => <Select.Item key={value} value={value} className={cls(styles.item)}>{label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
-        </Select.Root>
-      </Field.Root>
-      <button className={cls(styles.button)} type="button" onClick={() => update({ query: '', action: '', range: 'all' })}>Reset</button>
-    </form>
+      <SelectField name="auditAction" label="Action" options={actionOptions} value={action} onValueChange={value => update({ action: value })} className="filter-field" />
+      <SelectField name="auditRange" label="Date range" options={rangeOptions} value={range} onValueChange={value => update({ range: value || 'all' })} className="filter-field" />
+      <Button variant="ghost" onClick={() => update({ query: '', action: '', range: 'all' })}>Reset</Button>
+    </div>
   )
 }
