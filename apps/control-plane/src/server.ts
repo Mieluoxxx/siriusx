@@ -27,6 +27,7 @@ export interface ControlPlaneServerOptions {
   readonly secretsKey?: string
   readonly modelRouterConfigPath?: string
   readonly modelRouterKey?: string
+  readonly modelRouterUrl?: string
   readonly adminWebUrl?: string
 }
 
@@ -98,6 +99,7 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
   cacheRefreshTimer?.unref()
   let deviceGateway: DeviceGateway | undefined
   const toolGatewayUrl = options.toolGatewayUrl
+  const modelRouterUrl = options.modelRouterUrl
   const analyticsPath = options.analyticsPath
   const ssoServiceToken = options.ssoServiceToken
   const platformAdminToken = options.platformAdminToken
@@ -397,6 +399,65 @@ export async function startControlPlaneServer(options: ControlPlaneServerOptions
             write(response, 204, {})
             return
           }
+        }
+        if (request.method === 'GET' && parts[2] === 'analytics' && parts[3] === undefined) {
+          const days = url.searchParams.get('days') === null ? 14 : Number(url.searchParams.get('days'))
+          const probe = async (target: string | undefined, healthPath: string): Promise<{ configured: boolean; ok: boolean; latencyMs: number | null; detail?: string }> => {
+            if (target === undefined || target === '') return { configured: false, ok: false, latencyMs: null }
+            const started = Date.now()
+            try {
+              const res = await fetch(`${target.replace(/\/+$/u, '')}${healthPath}`, { signal: AbortSignal.timeout(1500) })
+              await res.body?.cancel()
+              return { configured: true, ok: res.status < 500, latencyMs: Date.now() - started }
+            } catch (err) {
+              return { configured: true, ok: false, latencyMs: Date.now() - started, detail: err instanceof Error ? err.message : String(err) }
+            }
+          }
+          const probeToolGateway = async (): Promise<{ configured: boolean; ok: boolean; latencyMs: number | null; approvalsPending?: number; audits?: number; auditChainValid?: boolean }> => {
+            if (toolGatewayUrl === undefined || toolGatewayUrl === '') return { configured: false, ok: false, latencyMs: null }
+            const started = Date.now()
+            try {
+              const [readyRes, metricsRes] = await Promise.all([
+                fetch(`${toolGatewayUrl.replace(/\/+$/u, '')}/ready`, { signal: AbortSignal.timeout(1500) }),
+                fetch(`${toolGatewayUrl.replace(/\/+$/u, '')}/metrics`, { signal: AbortSignal.timeout(1500) }).catch(() => undefined),
+              ])
+              await readyRes.body?.cancel()
+              const metricsText = metricsRes !== undefined && metricsRes.ok ? await metricsRes.text() : ''
+              const num = (key: string): number | undefined => {
+                const m = metricsText.match(new RegExp(`^${key}\\s+(\\d+)`, 'm'))
+                return m === null ? undefined : Number(m[1])
+              }
+              const approvalsPending = num('siriusx_tool_gateway_approvals_pending')
+              const audits = num('siriusx_tool_gateway_audits')
+              const chainVal = num('siriusx_tool_gateway_audit_chain_valid')
+              return {
+                configured: true,
+                ok: readyRes.ok,
+                latencyMs: Date.now() - started,
+                ...(approvalsPending === undefined ? {} : { approvalsPending }),
+                ...(audits === undefined ? {} : { audits }),
+                ...(chainVal === undefined ? {} : { auditChainValid: chainVal === 1 }),
+              }
+            } catch {
+              return { configured: true, ok: false, latencyMs: Date.now() - started }
+            }
+          }
+          const [analytics, toolGateway, modelRouter] = await Promise.all([
+            control.platformAnalytics(days),
+            probeToolGateway(),
+            probe(modelRouterUrl, '/'),
+          ])
+          let dbOk = true
+          try { control.ready() } catch { dbOk = false }
+          write(response, 200, {
+            ...analytics,
+            services: {
+              controlPlane: { configured: true, ok: dbOk, latencyMs: 0 },
+              toolGateway,
+              modelRouter,
+            },
+          })
+          return
         }
         if (parts[2] === 'tenants' && parts[3] !== undefined && parts[4] === 'audit-summary' && parts[5] === undefined) {
           if (toolGatewayUrl === undefined) { write(response, 200, { total: 0, decisions: {}, unavailable: true }); return }

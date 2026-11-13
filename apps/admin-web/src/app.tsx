@@ -1,7 +1,24 @@
 /** SiriusX platform admin SPA: React surface composed from Base UI primitives. */
 import * as React from 'react'
+import {
+  Activity,
+  BarChart3,
+  CircleHelp,
+  Cpu,
+  KeyRound,
+  LayoutGrid,
+  Link2,
+  Menu,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
+  ShieldCheck,
+  Sun,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { Collapsible } from '@base-ui-components/react/collapsible'
-import { Popover } from '@base-ui-components/react/popover'
 import { Tabs } from '@base-ui-components/react/tabs'
 import { Toast } from '@base-ui-components/react/toast'
 import {
@@ -44,7 +61,7 @@ import {
 
 type Json = Record<string, unknown>
 type TenantStatus = 'active' | 'suspended'
-type View = 'overview' | 'tenants' | 'tenant' | 'upstreams' | 'sources' | 'support' | 'audit'
+type View = 'overview' | 'analytics' | 'tenants' | 'tenant' | 'models' | 'sources' | 'support' | 'audit'
 interface Route { view: View; tenantId?: string }
 
 interface Tenant {
@@ -65,6 +82,70 @@ interface User { userId: string; email: string; role: string }
 interface Quota { maxUsers: number; maxDevices: number; maxCloudTicketsPerDay: number; maxDeviceTicketsPerDay: number }
 interface Billing { currency: string; cloudTicketCents: number; deviceTicketCents: number; monthlyBudgetCents: number | null }
 interface TenantModel { id: string; name: string; provider: string; model: string; isDefault: boolean; upstreamId: string | null; upstreamName: string | null }
+interface ServiceProbe { configured: boolean; ok: boolean; latencyMs: number | null; approvalsPending?: number; audits?: number; auditChainValid?: boolean; detail?: string }
+interface PlatformAnalytics {
+  days: number
+  totals: {
+    tenants: number
+    activeTenants: number
+    users: number
+    devices: number
+    activeDevices: number
+    cloudTicketsTotal: number
+    deviceTicketsTotal: number
+    cloudTicketsToday: number
+    deviceTicketsToday: number
+    models: number
+    upstreams: number
+    sourceEvents: number
+    modelRequests: number
+    modelErrors: number
+  }
+  daily: Array<{ date: string; cloudTickets: number; deviceTickets: number }>
+  tenants: Array<{
+    id: string
+    name: string
+    status: TenantStatus
+    users: number
+    maxUsers: number
+    devices: number
+    maxDevices: number
+    cloudTicketsToday: number
+    maxCloudTicketsPerDay: number
+    deviceTicketsToday: number
+    maxDeviceTicketsPerDay: number
+    periodCloudTickets: number
+    periodDeviceTickets: number
+    estimatedCents: number
+    currency: string
+    monthlyBudgetCents: number | null
+    maxUtilizationPct: number
+  }>
+  models: Array<{
+    id: string
+    name: string
+    upstreamName: string | null
+    tenantCount: number
+    defaultCount: number
+    requests: number
+    errors: number
+    avgLatencyMs: number | null
+  }>
+  recentSourceEvents: Array<{
+    id: string
+    provider: string
+    tenantId: string | null
+    eventType: string
+    status: string
+    ticketId: string | null
+    receivedAt: number
+  }>
+  services: {
+    controlPlane: ServiceProbe
+    toolGateway: ServiceProbe
+    modelRouter: ServiceProbe
+  }
+}
 interface AllData { tenants: Tenant[]; upstreams: PlatformUpstream[]; models: Model[]; bindings: Binding[]; supportRequests: SupportRequest[]; audit: Audit[] }
 interface TenantDetailData {
   users: User[]
@@ -109,14 +190,14 @@ async function api<T>(token: string, path: string, init: RequestInit = {}): Prom
   return value as T
 }
 
-const VIEW_LABELS: Record<View, string> = { overview: 'Overview', tenants: 'Tenants', tenant: 'Tenant detail', upstreams: 'Upstreams & models', sources: 'Sources', support: 'Support', audit: 'Audit' }
-const VIEW_PATHS: Partial<Record<View, string>> = { overview: '/', tenants: '/tenants', upstreams: '/upstreams', sources: '/sources', support: '/support', audit: '/audit' }
+const VIEW_LABELS: Record<View, string> = { overview: 'Overview', analytics: 'Analytics', tenants: 'Tenants', tenant: 'Tenant detail', models: 'Models & upstreams', sources: 'Sources', support: 'Support', audit: 'Audit' }
+const VIEW_PATHS: Partial<Record<View, string>> = { overview: '/', analytics: '/analytics', tenants: '/tenants', models: '/models', sources: '/sources', support: '/support', audit: '/audit' }
 const TENANT_TABS = ['overview', 'users', 'models', 'support', 'usage', 'audit'] as const
 type TenantTab = typeof TENANT_TABS[number]
 
 function routeFromLocation(): Route {
   const path = decodeURIComponent(location.pathname).replace(/\/+$/u, '') || '/'
-  if (path === '/models') return { view: 'upstreams' }
+  if (path === '/upstreams') return { view: 'models' }
   if (path.startsWith('/tenants/')) {
     const tenantId = path.slice('/tenants/'.length)
     return tenantId === '' ? { view: 'tenants' } : { view: 'tenant', tenantId }
@@ -134,18 +215,64 @@ function tabFromLocation(): TenantTab {
   return value !== null && (TENANT_TABS as readonly string[]).includes(value) ? value as TenantTab : 'overview'
 }
 
-function NavIcon({ path }: { path: string }): React.ReactElement {
-  return <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: path }} />
+const NAV_ITEMS: Array<{ view: Exclude<View, 'tenant'>; label: string; icon: LucideIcon; section: 'primary' | 'governance' }> = [
+  { view: 'overview', label: 'Overview', section: 'primary', icon: LayoutGrid },
+  { view: 'analytics', label: 'Analytics', section: 'primary', icon: BarChart3 },
+  { view: 'tenants', label: 'Tenants', section: 'primary', icon: Users },
+  { view: 'models', label: 'Models', section: 'primary', icon: Cpu },
+  { view: 'sources', label: 'Sources', section: 'primary', icon: Link2 },
+  { view: 'support', label: 'Support', section: 'governance', icon: CircleHelp },
+  { view: 'audit', label: 'Audit', section: 'governance', icon: ShieldCheck },
+]
+
+type ColorSchemeOverride = 'light' | 'dark' | null
+
+function readStoredScheme(): ColorSchemeOverride {
+  try {
+    const value = localStorage.getItem('siriusx.colorScheme')
+    return value === 'light' || value === 'dark' ? value : null
+  } catch {
+    return null
+  }
 }
 
-const NAV_ITEMS: Array<{ view: Exclude<View, 'tenant'>; label: string; path: string; group: 'Workspace' | 'Operations' | 'Governance' }> = [
-  { view: 'overview', label: 'Overview', group: 'Workspace', path: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>' },
-  { view: 'tenants', label: 'Tenants', group: 'Workspace', path: '<path d="M4 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/><circle cx="10" cy="7" r="3"/><path d="M17 20v-1a3 3 0 0 0-2-2.8"/><path d="M16 4.2a3 3 0 0 1 0 5.6"/>' },
-  { view: 'upstreams', label: 'Upstreams', group: 'Operations', path: '<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>' },
-  { view: 'sources', label: 'Sources', group: 'Operations', path: '<path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/>' },
-  { view: 'support', label: 'Support', group: 'Governance', path: '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.7 1c0 2-2.9 2.2-2.9 4"/><circle cx="12" cy="17" r=".6" fill="currentColor" stroke="none"/>' },
-  { view: 'audit', label: 'Audit', group: 'Governance', path: '<path d="M12 3 20 6v5.5c0 5-3.4 8-8 9.5-4.6-1.5-8-4.5-8-9.5V6l8-3Z"/><path d="m8.8 12 2.1 2.1 4.4-4.4"/>' },
-]
+function useColorScheme(): { resolvedScheme: 'light' | 'dark'; toggleScheme: () => void } {
+  const [stored, setStored] = React.useState<ColorSchemeOverride>(readStoredScheme)
+  const [systemDark, setSystemDark] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+  React.useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onMediaChange = (event: MediaQueryListEvent): void => setSystemDark(event.matches)
+    const onStorage = (event: StorageEvent): void => {
+      if (event.key === 'siriusx.colorScheme') setStored(readStoredScheme())
+    }
+    media.addEventListener('change', onMediaChange)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      media.removeEventListener('change', onMediaChange)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const meta = document.querySelector('meta[name="color-scheme"]')
+    if (meta !== null) meta.setAttribute('content', stored ?? 'light dark')
+  }, [stored])
+
+  const resolvedScheme: 'light' | 'dark' = stored ?? (systemDark ? 'dark' : 'light')
+  const toggleScheme = React.useCallback((): void => {
+    const target: 'light' | 'dark' = resolvedScheme === 'dark' ? 'light' : 'dark'
+    const systemScheme: 'light' | 'dark' = systemDark ? 'dark' : 'light'
+    const next: ColorSchemeOverride = target === systemScheme ? null : target
+    try {
+      if (next === null) localStorage.removeItem('siriusx.colorScheme')
+      else localStorage.setItem('siriusx.colorScheme', next)
+    } catch { /* ignore storage restrictions */ }
+    setStored(next)
+  }, [resolvedScheme, systemDark])
+
+  return { resolvedScheme, toggleScheme }
+}
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
   'upstream.upsert': 'Upstream saved',
@@ -282,8 +409,9 @@ function AppInner(): React.ReactElement {
   const page = (() => {
     switch (route.view) {
       case 'overview': return <OverviewPage data={data} navigate={navigate} />
+      case 'analytics': return <AnalyticsPage actions={actions} revision={revision} />
       case 'tenants': return <TenantsPage data={data} actions={actions} />
-      case 'upstreams': return <UpstreamsPage data={data} actions={actions} />
+      case 'models': return <UpstreamsPage data={data} actions={actions} />
       case 'sources': return <SourcesPage data={data} actions={actions} />
       case 'support': return <SupportPage data={data} />
       case 'audit': return <AuditPage data={data} actions={actions} />
@@ -293,7 +421,7 @@ function AppInner(): React.ReactElement {
 
   return (
     <>
-      <Shell route={route} tenant={currentTenant} pendingSupport={data.supportRequests.filter(request => request.status === 'pending')} error={error} onDismissError={() => setError('')} onAccess={() => setAccessOpen(true)} onSignOut={signOut} navigate={navigate}>
+      <Shell route={route} tenant={currentTenant} pendingSupport={data.supportRequests.filter(request => request.status === 'pending')} error={error} onDismissError={() => setError('')} onAccess={() => setAccessOpen(true)} navigate={navigate}>
         {page}
       </Shell>
       <DialogShell open={editor !== undefined} title={editor?.title ?? ''} size={editor?.size ?? 'md'} onOpenChange={open => { if (!open) closeEditor() }}>
@@ -327,60 +455,115 @@ function AuthScreen({ onConnect }: { onConnect: (token: string) => Promise<void>
   )
 }
 
-function Shell({ route, tenant, pendingSupport, error, onDismissError, onAccess, onSignOut, navigate, children }: {
+function Shell({ route, tenant, pendingSupport, error, onDismissError, onAccess, navigate, children }: {
   route: Route
   tenant: Tenant | undefined
   pendingSupport: SupportRequest[]
   error: string
   onDismissError: () => void
   onAccess: () => void
-  onSignOut: () => void
   navigate: (view: View, tenantId?: string) => void
   children: React.ReactNode
 }): React.ReactElement {
-  const groups: Array<{ label: string; items: typeof NAV_ITEMS }> = [
-    { label: 'Workspace', items: NAV_ITEMS.filter(item => item.group === 'Workspace') },
-    { label: 'Operations', items: NAV_ITEMS.filter(item => item.group === 'Operations') },
-    { label: 'Governance', items: NAV_ITEMS.filter(item => item.group === 'Governance') },
-  ]
+  const { resolvedScheme, toggleScheme } = useColorScheme()
+  const [collapsed, setCollapsed] = React.useState(() => {
+    try { return localStorage.getItem('siriusx.sidebarCollapsed') === '1' } catch { return false }
+  })
+  const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!mobileOpen) return
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mobileOpen])
+
+  const toggleCollapsed = (): void => {
+    setCollapsed(value => {
+      const next = !value
+      try { localStorage.setItem('siriusx.sidebarCollapsed', next ? '1' : '0') } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  const go = (view: View, tenantId?: string): void => {
+    setMobileOpen(false)
+    navigate(view, tenantId)
+  }
+
+  const primaryItems = NAV_ITEMS.filter(item => item.section === 'primary')
+  const governanceItems = NAV_ITEMS.filter(item => item.section === 'governance')
   const breadcrumb = route.view === 'tenant' ? ['Platform', 'Tenants', tenant?.name ?? route.tenantId ?? 'Tenant'] : ['Platform', VIEW_LABELS[route.view]]
+  const renderNavItem = (item: typeof NAV_ITEMS[number]): React.ReactElement => {
+    const active = (route.view === 'tenant' ? 'tenants' : route.view) === item.view
+    const badgeCount = item.view === 'support' ? pendingSupport.length : 0
+    const Icon = item.icon
+    return (
+      <Button
+        key={item.view}
+        variant="nav"
+        aria-label={item.label}
+        title={collapsed ? item.label : undefined}
+        aria-current={active ? 'page' : undefined}
+        onClick={() => go(item.view)}
+      >
+        <Icon className="nav-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
+        <span className="nav-label">{item.label}</span>
+        {badgeCount > 0 ? <span className="nav-badge" aria-label={`${badgeCount} pending`}>{badgeCount}</span> : null}
+      </Button>
+    )
+  }
+
   return (
-    <div className="app-shell">
+    <div className={cx('app-shell', collapsed && 'sidebar-collapsed', mobileOpen && 'mobile-nav-open')}>
+      {mobileOpen ? <button type="button" className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setMobileOpen(false)} /> : null}
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark" aria-hidden="true">S</span><div><strong>SiriusX</strong><span>Platform</span></div></div>
+        <div className="sidebar-head">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">S</span>
+            <div className="brand-text"><strong>SiriusX</strong><span>Platform</span></div>
+          </div>
+          <Button
+            variant="nav"
+            className="sidebar-toggle"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={toggleCollapsed}
+          >
+            {collapsed ? <PanelLeftOpen className="nav-icon" size={16} strokeWidth={1.8} aria-hidden="true" /> : <PanelLeftClose className="nav-icon" size={16} strokeWidth={1.8} aria-hidden="true" />}
+          </Button>
+        </div>
         <nav className="nav" aria-label="Platform administration">
-          {groups.map(group => (
-            <div className="nav-group" key={group.label}>
-              <span className="nav-group-label">{group.label}</span>
-              {group.items.map(item => (
-                <Button key={item.view} variant="nav" aria-current={(route.view === 'tenant' ? 'tenants' : route.view) === item.view ? 'page' : undefined} onClick={() => navigate(item.view)}>
-                  <NavIcon path={item.path} /><span>{item.label}</span>
-                </Button>
-              ))}
-            </div>
-          ))}
+          <div className="nav-group">{primaryItems.map(renderNavItem)}</div>
+          <div className="nav-divider" role="separator" />
+          <div className="nav-group">{governanceItems.map(renderNavItem)}</div>
         </nav>
-        <div className="sidebar-footer"><span className="status-dot" /><div><strong>Control Plane</strong><span>Connected</span></div></div>
+        <div className="sidebar-footer">
+          <Button
+            variant="nav"
+            aria-label={resolvedScheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={resolvedScheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            onClick={toggleScheme}
+          >
+            {resolvedScheme === 'dark' ? <Moon className="nav-icon" size={16} strokeWidth={1.8} aria-hidden="true" /> : <Sun className="nav-icon" size={16} strokeWidth={1.8} aria-hidden="true" />}
+            <span className="nav-label">{resolvedScheme === 'dark' ? 'Dark' : 'Light'}</span>
+          </Button>
+          <Button variant="nav" aria-label="Access" title={collapsed ? 'Access' : undefined} onClick={() => { setMobileOpen(false); onAccess() }}>
+            <KeyRound className="nav-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
+            <span className="nav-label">Access</span>
+          </Button>
+        </div>
       </aside>
       <div className="main-shell">
         <header className="app-header">
-          <div className="breadcrumb" aria-label="Breadcrumb">{breadcrumb.map((item, index) => <React.Fragment key={`${item}-${index}`}>{index > 0 ? <span className="breadcrumb-sep">/</span> : null}<span>{item}</span></React.Fragment>)}</div>
-          <div className="header-actions">
-            <Popover.Root>
-              <Popover.Trigger className="btn btn-ghost">Support{pendingSupport.length === 0 ? '' : ` (${pendingSupport.length})`}</Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Positioner sideOffset={8} className="popover-positioner">
-                  <Popover.Popup className="popover-popup">
-                    <Popover.Title className="popover-title">Pending support</Popover.Title>
-                    {pendingSupport.length === 0 ? <p className="muted">No pending requests.</p> : pendingSupport.map(request => (
-                      <div className="notification-item" key={request.id}><strong>{request.tenantId}</strong><p>{request.reason}</p><Button variant="ghost" onClick={() => navigate('support')}>View support</Button></div>
-                    ))}
-                  </Popover.Popup>
-                </Popover.Positioner>
-              </Popover.Portal>
-            </Popover.Root>
-            <Button variant="ghost" onClick={onAccess}>Access</Button>
-            <Button variant="ghost" onClick={onSignOut}>Sign out</Button>
+          <div className="header-left">
+            <Button variant="ghost" className="mobile-menu-btn" aria-label="Menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}>
+              <Menu size={16} strokeWidth={1.8} aria-hidden="true" />
+            </Button>
+            <div className="breadcrumb" aria-label="Breadcrumb">{breadcrumb.map((item, index) => <React.Fragment key={`${item}-${index}`}>{index > 0 ? <span className="breadcrumb-sep">/</span> : null}<span>{item}</span></React.Fragment>)}</div>
           </div>
         </header>
         <main className="content">
@@ -403,18 +586,231 @@ function OverviewPage({ data, navigate }: { data: AllData; navigate: (view: View
   const pendingSupport = data.supportRequests.filter(request => request.status === 'pending').length
   return (
     <>
-      <PageHeader title="Overview" actions={<Button variant="primary" onClick={() => navigate('tenants')}>Manage tenants</Button>} />
+      <PageHeader
+        title="Overview"
+        actions={
+          <>
+            <Button variant="default" onClick={() => navigate('analytics')}>Analytics</Button>
+            <Button variant="primary" onClick={() => navigate('tenants')}>Manage tenants</Button>
+          </>
+        }
+      />
       <div className="metric-grid">
         <MetricCard value={String(data.tenants.length)} label="tenants" detail={`${active} active`} accent />
         <MetricCard value={String(totalUsers)} label="users" detail="across tenants" />
         <MetricCard value={String(totalDevices)} label="devices" detail="paired" />
-        <MetricCard value={String(data.models.length)} label="models" detail={`${data.bindings.length} source bindings`} />
+        <MetricCard value={String(data.models.length)} label="models" detail={`${data.upstreams.length} upstreams`} />
         <MetricCard value={String(pendingSupport)} label="pending support" detail={`${data.audit.length} audit events`} />
       </div>
       <Card>
         <SectionHeading title="Recent tenants" actions={<Button variant="ghost" onClick={() => navigate('tenants')}>View all</Button>} />
         <DataTable headers={['Name', 'Tenant', 'Status', 'Users']} empty="No tenants yet." rows={data.tenants.slice(0, 5).map(tenant => [tenant.name, <span className="mono" key="id">{tenant.id}</span>, <StatusPill key="status" status={tenant.status} />, String(tenant.usage.users)])} />
       </Card>
+    </>
+  )
+}
+
+function ServiceHealthItem({ name, probe, extra }: { name: string; probe: ServiceProbe; extra?: string }): React.ReactElement {
+  const status = !probe.configured ? 'Unconfigured' : probe.ok ? 'Healthy' : 'Unreachable'
+  const pillClass = !probe.configured ? 'pill' : probe.ok ? 'pill pill-active' : 'pill pill-suspended'
+  return (
+    <div className="service-card">
+      <div className="service-card-top">
+        <strong>{name}</strong>
+        <span className={pillClass}>{status}</span>
+      </div>
+      <div className="service-card-meta">
+        <span>{probe.latencyMs === null ? '—' : `${probe.latencyMs} ms`}</span>
+        {extra === undefined ? null : <span>{extra}</span>}
+      </div>
+    </div>
+  )
+}
+
+function UsageBarChart({ daily }: { daily: PlatformAnalytics['daily'] }): React.ReactElement {
+  const totalCloud = daily.reduce((sum, item) => sum + item.cloudTickets, 0)
+  const totalDevice = daily.reduce((sum, item) => sum + item.deviceTickets, 0)
+  const hasActivity = totalCloud + totalDevice > 0
+  const peak = Math.max(1, ...daily.map(item => item.cloudTickets + item.deviceTickets))
+  const labelEvery = daily.length <= 7 ? 1 : daily.length <= 14 ? 2 : 5
+  return (
+    <figure className="chart-figure" aria-label={`Daily tickets chart: ${totalCloud} cloud tickets and ${totalDevice} device tickets over ${daily.length} days`}>
+      <div className="chart-head">
+        <div className="chart-legend">
+          <span className="legend-item"><span className="legend-dot legend-cloud" aria-hidden="true" />Cloud tickets ({totalCloud})</span>
+          <span className="legend-item"><span className="legend-dot legend-device" aria-hidden="true" />Device tickets ({totalDevice})</span>
+        </div>
+        <span className="muted">Peak: {hasActivity ? peak : 0}/day</span>
+      </div>
+      <div className={cx('bar-chart', !hasActivity && 'bar-chart-empty')} role="img" aria-label={`Ticket volume over the last ${daily.length} days`}>
+        {hasActivity ? null : <span className="bar-empty-note">No ticket activity in this window</span>}
+        {daily.map((day, index) => {
+          const total = day.cloudTickets + day.deviceTickets
+          const cloudPct = total === 0 ? 0 : Math.round((day.cloudTickets / peak) * 100)
+          const devicePct = total === 0 ? 0 : Math.round((day.deviceTickets / peak) * 100)
+          const showLabel = index % labelEvery === 0 || index === daily.length - 1
+          return (
+            <div className="bar-col" key={day.date} title={`${day.date}: ${day.cloudTickets} cloud, ${day.deviceTickets} device`}>
+              <div className="bar-track">
+                <div className="bar-stack" style={{ height: `${Math.max(total > 0 ? 6 : 0, cloudPct + devicePct)}%` }}>
+                  {day.deviceTickets > 0 ? <span className="bar-seg bar-device" style={{ flexGrow: day.deviceTickets }} /> : null}
+                  {day.cloudTickets > 0 ? <span className="bar-seg bar-cloud" style={{ flexGrow: day.cloudTickets }} /> : null}
+                </div>
+              </div>
+              <span className="bar-label">{showLabel ? day.date.slice(5) : ''}</span>
+            </div>
+          )
+        })}
+      </div>
+    </figure>
+  )
+}
+
+function AnalyticsPage({ actions, revision }: { actions: AdminActions; revision: number }): React.ReactElement {
+  const [days, setDays] = React.useState<7 | 14 | 30>(14)
+  const [analytics, setAnalytics] = React.useState<PlatformAnalytics>()
+  const [loading, setLoading] = React.useState(true)
+  const [localError, setLocalError] = React.useState('')
+
+  const loadAnalytics = React.useCallback(async (windowDays: number): Promise<void> => {
+    setLoading(true)
+    setLocalError('')
+    try {
+      setAnalytics(await api<PlatformAnalytics>(actions.token, `/v1/admin/analytics?days=${windowDays}`))
+    } catch (reason) {
+      setLocalError(errorText(reason))
+    } finally {
+      setLoading(false)
+    }
+  }, [actions.token])
+
+  React.useEffect(() => { void loadAnalytics(days) }, [loadAnalytics, days, revision])
+
+  const toolExtra = analytics?.services.toolGateway.configured
+    ? analytics.services.toolGateway.auditChainValid === false
+      ? 'Audit chain broken'
+      : analytics.services.toolGateway.audits !== undefined
+        ? `${analytics.services.toolGateway.audits} audits · ${analytics.services.toolGateway.approvalsPending ?? 0} pending`
+        : undefined
+    : undefined
+
+  return (
+    <>
+      <PageHeader
+        title="Analytics"
+        actions={
+          <div className="analytics-controls">
+            <div className="segmented" role="group" aria-label="Time range">
+              {([7, 14, 30] as const).map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  className={cx('segmented-btn', days === option && 'is-active')}
+                  onClick={() => setDays(option)}
+                >
+                  {option}d
+                </button>
+              ))}
+            </div>
+            <Button variant="default" disabled={loading} onClick={() => { void loadAnalytics(days) }}>
+              <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
+              <span>{loading ? 'Refreshing…' : 'Refresh'}</span>
+            </Button>
+          </div>
+        }
+      />
+      {localError === '' ? null : <div className="alert" role="alert">{localError}</div>}
+      {analytics === undefined ? (
+        <Card><p className="muted">Loading platform telemetry…</p></Card>
+      ) : (
+        <>
+          <div className="service-grid">
+            <ServiceHealthItem name="Control Plane" probe={analytics.services.controlPlane} extra="SQLite / PG" />
+            <ServiceHealthItem name="Tool Gateway" probe={analytics.services.toolGateway} {...(toolExtra === undefined ? {} : { extra: toolExtra })} />
+            <ServiceHealthItem name="Model Router" probe={analytics.services.modelRouter} />
+          </div>
+
+          <div className="metric-grid">
+            <MetricCard
+              value={String(analytics.totals.cloudTicketsToday + analytics.totals.deviceTicketsToday)}
+              label="tickets today"
+              detail={`${analytics.totals.cloudTicketsToday} cloud · ${analytics.totals.deviceTicketsToday} device`}
+              accent
+            />
+            <MetricCard
+              value={String(analytics.totals.activeDevices)}
+              label="active devices (15m)"
+              detail={`${analytics.totals.devices} paired total`}
+            />
+            <MetricCard
+              value={String(analytics.totals.modelRequests)}
+              label="gateway requests"
+              detail={`${analytics.totals.modelErrors} errors (since boot)`}
+            />
+            <MetricCard
+              value={String(analytics.totals.sourceEvents)}
+              label="source events"
+              detail={`${analytics.totals.activeTenants}/${analytics.totals.tenants} tenants active`}
+            />
+          </div>
+
+          <Card>
+            <SectionHeading title={`Ticket activity (${analytics.days}d)`} />
+            <UsageBarChart daily={analytics.daily} />
+          </Card>
+
+          <div className="analytics-grid">
+            <Card>
+              <SectionHeading title="Tenant quota pressure & 30d estimate" />
+              <DataTable
+                headers={['Tenant', 'Users', 'Today tickets', 'Peak quota', 'Est. 30d']}
+                columnClasses={[undefined, 'col-num', 'col-num', undefined, 'col-num']}
+                empty="No tenants yet."
+                rows={analytics.tenants.map(tenant => [
+                  <button key="name" type="button" className="table-link" onClick={() => actions.navigate('tenant', tenant.id)}>{tenant.name}</button>,
+                  `${tenant.users}/${tenant.maxUsers}`,
+                  `${tenant.cloudTicketsToday + tenant.deviceTicketsToday}/${tenant.maxCloudTicketsPerDay + tenant.maxDeviceTicketsPerDay}`,
+                  <span key="util" className={cx('pill', tenant.maxUtilizationPct >= 80 ? 'pill-suspended' : tenant.maxUtilizationPct >= 50 ? '' : 'pill-active')}>{tenant.maxUtilizationPct}%</span>,
+                  `${(tenant.estimatedCents / 100).toFixed(2)} ${tenant.currency}`,
+                ])}
+              />
+            </Card>
+            <Card>
+              <SectionHeading title="Model adoption & gateway latency" />
+              <DataTable
+                headers={['Model', 'Tenants', 'Requests', 'Avg latency']}
+                columnClasses={[undefined, 'col-num', 'col-num', 'col-num']}
+                empty="No catalog models yet."
+                rows={analytics.models.map(model => [
+                  <div className="cell-identity" key="identity">
+                    <strong>{model.name}</strong>
+                    <span className="mono muted">{model.upstreamName ?? model.id}</span>
+                  </div>,
+                  `${model.tenantCount}${model.defaultCount > 0 ? ` (${model.defaultCount} def)` : ''}`,
+                  `${model.requests}${model.errors > 0 ? ` (${model.errors} err)` : ''}`,
+                  model.avgLatencyMs === null ? '—' : `${model.avgLatencyMs} ms`,
+                ])}
+              />
+            </Card>
+          </div>
+
+          <Card>
+            <SectionHeading title="Recent source webhook events" actions={<Activity size={15} className="muted" aria-hidden="true" />} />
+            <DataTable
+              headers={['Time', 'Provider', 'Tenant', 'Event', 'Status', 'Ticket']}
+              empty="No source webhook events received yet."
+              rows={analytics.recentSourceEvents.map(event => [
+                new Date(event.receivedAt).toLocaleString(),
+                event.provider,
+                event.tenantId ?? '—',
+                event.eventType,
+                <StatusPill key="status" status={event.status === 'dispatched' ? 'active' : event.status} />,
+                event.ticketId === null ? '—' : <span className="mono" key="ticket">{event.ticketId}</span>,
+              ])}
+            />
+          </Card>
+        </>
+      )}
     </>
   )
 }

@@ -1,5 +1,6 @@
 /** Shared Base UI primitives and the single SiriusX admin theme surface. */
 import * as React from 'react'
+import { Check, ChevronDown, X } from 'lucide-react'
 import { Button as BaseButton } from '@base-ui-components/react/button'
 import { Checkbox } from '@base-ui-components/react/checkbox'
 import { Dialog } from '@base-ui-components/react/dialog'
@@ -118,7 +119,7 @@ export function SelectField({ name, label, options, value, defaultValue, disable
         <Select.Trigger className="select-trigger">
           <Select.Value />
           <Select.Icon className="select-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+            <ChevronDown size={14} strokeWidth={2} />
           </Select.Icon>
         </Select.Trigger>
         <Select.Portal>
@@ -139,7 +140,7 @@ export function CheckboxField({ name, label, defaultChecked = false }: { name: s
   return (
     <Field.Root name={name} className="checkbox-field">
       <Checkbox.Root name={name} defaultChecked={defaultChecked} className="checkbox">
-        <Checkbox.Indicator className="checkbox-indicator">✓</Checkbox.Indicator>
+        <Checkbox.Indicator className="checkbox-indicator"><Check size={12} strokeWidth={2.5} aria-hidden="true" /></Checkbox.Indicator>
       </Checkbox.Root>
       <Field.Label className="checkbox-label">{label}</Field.Label>
     </Field.Root>
@@ -208,9 +209,7 @@ export function DialogShell({ open, title, size = 'md', children, onOpenChange }
           <div className="dialog-head">
             <Dialog.Title className="dialog-title">{title}</Dialog.Title>
             <Dialog.Close className="btn btn-ghost dialog-close" aria-label="Close">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
+              <X size={16} strokeWidth={2} aria-hidden="true" />
             </Dialog.Close>
           </div>
           <div ref={bodyRef} className="dialog-body">{children}</div>
@@ -249,7 +248,7 @@ export function ToastHost(): React.ReactElement {
           <Toast.Root key={toast.id} toast={toast} className="toast">
             <Toast.Title className="toast-title" />
             <Toast.Description className="toast-description" />
-            <Toast.Close className="toast-close" aria-label="Dismiss notification">×</Toast.Close>
+            <Toast.Close className="toast-close" aria-label="Dismiss notification"><X size={14} strokeWidth={2} aria-hidden="true" /></Toast.Close>
           </Toast.Root>
         ))}
       </Toast.Viewport>

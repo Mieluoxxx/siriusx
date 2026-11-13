@@ -77,8 +77,10 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         write(response, 400, { error: { message: requestedModel === undefined ? 'tenant has no default model' : `model is not bound to tenant: ${requestedModel}`, code: 'MODEL_NOT_BOUND' } })
         return
       }
+      const startedAt = Date.now()
       const upstreamUrl = options.modelRouterUrl ?? options.upstreamUrl
       if (upstreamUrl === undefined) {
+        options.control.recordModelInvocation(selected.id, false, Date.now() - startedAt)
         write(response, 503, { error: { message: 'tenant model upstream is not configured', code: 'UPSTREAM_NOT_CONFIGURED' } })
         return
       }
@@ -98,14 +100,21 @@ export async function startModelGateway(options: ModelGatewayOptions): Promise<M
         },
         body: new Uint8Array(forwardBody),
       })
-      let upstream = await upstreamRequest()
-      // Some LiteLLM deployments round-robin between pods and a pod may
-      // temporarily return 404 for the Anthropic route. Retry only that
-      // protocol, and never retry an upstream that is already streaming.
-      for (let attempt = 0; attempt < 2 && options.modelRouterUrl !== undefined && url.pathname === '/v1/messages' && upstream.status === 404; attempt += 1) {
-        await upstream.body?.cancel()
+      let upstream: Response
+      try {
         upstream = await upstreamRequest()
+        // Some LiteLLM deployments round-robin between pods and a pod may
+        // temporarily return 404 for the Anthropic route. Retry only that
+        // protocol, and never retry an upstream that is already streaming.
+        for (let attempt = 0; attempt < 2 && options.modelRouterUrl !== undefined && url.pathname === '/v1/messages' && upstream.status === 404; attempt += 1) {
+          await upstream.body?.cancel()
+          upstream = await upstreamRequest()
+        }
+      } catch (error) {
+        options.control.recordModelInvocation(selected.id, false, Date.now() - startedAt)
+        throw error
       }
+      options.control.recordModelInvocation(selected.id, upstream.ok, Date.now() - startedAt)
       response.writeHead(upstream.status, {
         ...CORS,
         'content-type': upstream.headers.get('content-type') ?? 'application/json',

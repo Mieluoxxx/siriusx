@@ -18,4 +18,5 @@ await esbuild.build({
 })
 copyFileSync(join(root, 'public/index.html'), join(out, 'index.html'))
 copyFileSync(join(root, 'public/style.css'), join(out, 'style.css'))
+copyFileSync(join(root, 'public/theme.js'), join(out, 'theme.js'))
 console.log(JSON.stringify({ built: out }))

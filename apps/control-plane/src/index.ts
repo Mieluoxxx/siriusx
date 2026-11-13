@@ -308,6 +308,7 @@ export class ControlPlane {
   readonly #cloudRuns = new Map<string, Promise<void>>()
   #cloud: CloudExecutor | undefined
   readonly #pairingFailures = new Map<string, { count: number; resetAt: number }>()
+  readonly #modelStats = new Map<string, { requests: number; errors: number; totalLatencyMs: number; lastAt: number }>()
 
   constructor(options: ControlPlaneOptions) {
     mkdirSync(options.dataDir, { recursive: true })
@@ -1764,6 +1765,270 @@ export class ControlPlane {
   metrics(): { tenants: number; users: number; devices: number; deviceTickets: number; cloudTickets: number } {
     const count = (table: string): number => (this.#db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number }).count
     return { tenants: count('tenants'), users: count('users'), devices: count('devices'), deviceTickets: count('device_tickets'), cloudTickets: count('cloud_tickets') }
+  }
+
+  recordModelInvocation(modelId: string, ok: boolean, latencyMs: number): void {
+    const current = this.#modelStats.get(modelId) ?? { requests: 0, errors: 0, totalLatencyMs: 0, lastAt: 0 }
+    current.requests += 1
+    if (!ok) current.errors += 1
+    current.totalLatencyMs += Math.max(0, Math.round(latencyMs))
+    current.lastAt = this.#now()
+    this.#modelStats.set(modelId, current)
+  }
+
+  async platformAnalytics(days = 14): Promise<{
+    days: number
+    totals: {
+      tenants: number
+      activeTenants: number
+      users: number
+      devices: number
+      activeDevices: number
+      cloudTicketsTotal: number
+      deviceTicketsTotal: number
+      cloudTicketsToday: number
+      deviceTicketsToday: number
+      models: number
+      upstreams: number
+      sourceEvents: number
+      modelRequests: number
+      modelErrors: number
+    }
+    daily: Array<{ date: string; cloudTickets: number; deviceTickets: number }>
+    tenants: Array<{
+      id: string
+      name: string
+      status: 'active' | 'suspended'
+      users: number
+      maxUsers: number
+      devices: number
+      maxDevices: number
+      cloudTicketsToday: number
+      maxCloudTicketsPerDay: number
+      deviceTicketsToday: number
+      maxDeviceTicketsPerDay: number
+      periodCloudTickets: number
+      periodDeviceTickets: number
+      estimatedCents: number
+      currency: string
+      monthlyBudgetCents: number | null
+      maxUtilizationPct: number
+    }>
+    models: Array<{
+      id: string
+      name: string
+      upstreamName: string | null
+      tenantCount: number
+      defaultCount: number
+      requests: number
+      errors: number
+      avgLatencyMs: number | null
+    }>
+    recentSourceEvents: Array<{
+      id: string
+      provider: string
+      tenantId: string | null
+      eventType: string
+      status: string
+      ticketId: string | null
+      receivedAt: number
+    }>
+  }> {
+    const requested = Math.min(90, Math.max(1, Math.floor(Number.isFinite(days) ? days : 14)))
+    const now = this.#now()
+    const todayStart = now - (now % (24 * 60 * 60 * 1000))
+    const todayKey = new Date(todayStart).toISOString().slice(0, 10)
+    const start = todayStart - (requested - 1) * 24 * 60 * 60 * 1000
+    const billingStart = todayStart - 29 * 24 * 60 * 60 * 1000
+    const queryStart = Math.min(start, billingStart)
+    const queryRows = async <T extends Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> => {
+      if (this.#storage !== undefined) return (await this.#storage.query<T>(sql, params)).rows
+      return this.#db.prepare(sql).all(...params as never[]) as T[]
+    }
+    const [
+      userCounts,
+      deviceCounts,
+      activeDeviceCount,
+      cloudTotalCounts,
+      deviceTotalCounts,
+      cloudPeriodRows,
+      devicePeriodRows,
+      quotaRows,
+      billingRows,
+      tenantModelStats,
+      catalog,
+      upstreams,
+      sourceEventCountRows,
+      recentSourceRows,
+    ] = await Promise.all([
+      queryRows<{ tenant_id: string; count: number | string }>('SELECT tenant_id, COUNT(*) AS count FROM users GROUP BY tenant_id'),
+      queryRows<{ tenant_id: string; count: number | string }>('SELECT tenant_id, COUNT(*) AS count FROM devices WHERE revoked = 0 GROUP BY tenant_id'),
+      queryRows<{ count: number | string }>('SELECT COUNT(*) AS count FROM devices WHERE revoked = 0 AND last_seen_at >= ?', [now - 15 * 60 * 1000]),
+      queryRows<{ tenant_id: string; count: number | string }>('SELECT tenant_id, COUNT(*) AS count FROM cloud_tickets GROUP BY tenant_id'),
+      queryRows<{ tenant_id: string; count: number | string }>('SELECT tenant_id, COUNT(*) AS count FROM device_tickets GROUP BY tenant_id'),
+      queryRows<{ tenant_id: string; created_at: number | string }>('SELECT tenant_id, created_at FROM cloud_tickets WHERE created_at >= ?', [queryStart]),
+      queryRows<{ tenant_id: string; created_at: number | string }>('SELECT tenant_id, created_at FROM device_tickets WHERE created_at >= ?', [queryStart]),
+      queryRows<{ tenant_id: string; max_users: number | string; max_devices: number | string; max_cloud_tickets_per_day: number | string; max_device_tickets_per_day: number | string }>('SELECT * FROM tenant_quotas'),
+      queryRows<{ tenant_id: string; currency: string; cloud_ticket_cents: number | string; device_ticket_cents: number | string; monthly_budget_cents: number | string | null }>('SELECT * FROM tenant_billing'),
+      queryRows<{ model_id: string; tenant_count: number | string; default_count: number | string }>('SELECT model_id, COUNT(*) AS tenant_count, SUM(is_default) AS default_count FROM tenant_models GROUP BY model_id'),
+      this.listModelCatalog(),
+      this.listPlatformUpstreams(),
+      queryRows<{ count: number | string }>('SELECT COUNT(*) AS count FROM source_events'),
+      queryRows<{ id: string; provider: string; tenant_id: string | null; event_type: string; status: string; ticket_id: string | null; received_at: number | string }>('SELECT id, provider, tenant_id, event_type, status, ticket_id, received_at FROM source_events ORDER BY received_at DESC LIMIT 10'),
+    ])
+
+    const toCountMap = (rows: Array<{ tenant_id: string; count: number | string }>): Map<string, number> =>
+      new Map(rows.map(row => [String(row.tenant_id), Number(row.count)]))
+    const usersByTenant = toCountMap(userCounts)
+    const devicesByTenant = toCountMap(deviceCounts)
+    const cloudTotalByTenant = toCountMap(cloudTotalCounts)
+    const deviceTotalByTenant = toCountMap(deviceTotalCounts)
+    const quotaByTenant = new Map(quotaRows.map(row => [String(row.tenant_id), {
+      maxUsers: Number(row.max_users),
+      maxDevices: Number(row.max_devices),
+      maxCloudTicketsPerDay: Number(row.max_cloud_tickets_per_day),
+      maxDeviceTicketsPerDay: Number(row.max_device_tickets_per_day),
+    }]))
+    const billingByTenant = new Map(billingRows.map(row => [String(row.tenant_id), {
+      currency: String(row.currency),
+      cloudTicketCents: Number(row.cloud_ticket_cents),
+      deviceTicketCents: Number(row.device_ticket_cents),
+      monthlyBudgetCents: row.monthly_budget_cents === null ? null : Number(row.monthly_budget_cents),
+    }]))
+
+    const dailyCloud = new Map<string, number>()
+    const dailyDevice = new Map<string, number>()
+    const periodCloudByTenant = new Map<string, number>()
+    const periodDeviceByTenant = new Map<string, number>()
+    const billingCloudByTenant = new Map<string, number>()
+    const billingDeviceByTenant = new Map<string, number>()
+    const todayCloudByTenant = new Map<string, number>()
+    const todayDeviceByTenant = new Map<string, number>()
+
+    for (const row of cloudPeriodRows) {
+      const ts = Number(row.created_at)
+      const tid = String(row.tenant_id)
+      const day = new Date(ts).toISOString().slice(0, 10)
+      if (ts >= start) {
+        dailyCloud.set(day, (dailyCloud.get(day) ?? 0) + 1)
+        periodCloudByTenant.set(tid, (periodCloudByTenant.get(tid) ?? 0) + 1)
+      }
+      if (ts >= billingStart) billingCloudByTenant.set(tid, (billingCloudByTenant.get(tid) ?? 0) + 1)
+      if (day === todayKey) todayCloudByTenant.set(tid, (todayCloudByTenant.get(tid) ?? 0) + 1)
+    }
+    for (const row of devicePeriodRows) {
+      const ts = Number(row.created_at)
+      const tid = String(row.tenant_id)
+      const day = new Date(ts).toISOString().slice(0, 10)
+      if (ts >= start) {
+        dailyDevice.set(day, (dailyDevice.get(day) ?? 0) + 1)
+        periodDeviceByTenant.set(tid, (periodDeviceByTenant.get(tid) ?? 0) + 1)
+      }
+      if (ts >= billingStart) billingDeviceByTenant.set(tid, (billingDeviceByTenant.get(tid) ?? 0) + 1)
+      if (day === todayKey) todayDeviceByTenant.set(tid, (todayDeviceByTenant.get(tid) ?? 0) + 1)
+    }
+
+    const daily: Array<{ date: string; cloudTickets: number; deviceTickets: number }> = []
+    for (let offset = requested - 1; offset >= 0; offset -= 1) {
+      const date = new Date(todayStart - offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      daily.push({ date, cloudTickets: dailyCloud.get(date) ?? 0, deviceTickets: dailyDevice.get(date) ?? 0 })
+    }
+
+    const tenantList = this.listTenants()
+    const tenants = tenantList.map(tenant => {
+      const users = usersByTenant.get(tenant.id) ?? 0
+      const devices = devicesByTenant.get(tenant.id) ?? 0
+      const cloudTicketsToday = todayCloudByTenant.get(tenant.id) ?? 0
+      const deviceTicketsToday = todayDeviceByTenant.get(tenant.id) ?? 0
+      const quota = quotaByTenant.get(tenant.id) ?? { maxUsers: 50, maxDevices: 20, maxCloudTicketsPerDay: 100, maxDeviceTicketsPerDay: 500 }
+      const billing = billingByTenant.get(tenant.id) ?? { currency: 'USD', cloudTicketCents: 0, deviceTicketCents: 0, monthlyBudgetCents: null }
+      const estimatedCents = (billingCloudByTenant.get(tenant.id) ?? 0) * billing.cloudTicketCents + (billingDeviceByTenant.get(tenant.id) ?? 0) * billing.deviceTicketCents
+      const pct = (used: number, limit: number): number => limit <= 0 ? 0 : Math.round((used / limit) * 100)
+      const maxUtilizationPct = Math.max(
+        pct(users, quota.maxUsers),
+        pct(devices, quota.maxDevices),
+        pct(cloudTicketsToday, quota.maxCloudTicketsPerDay),
+        pct(deviceTicketsToday, quota.maxDeviceTicketsPerDay),
+      )
+      return {
+        id: tenant.id,
+        name: tenant.name,
+        status: tenant.status,
+        users,
+        maxUsers: quota.maxUsers,
+        devices,
+        maxDevices: quota.maxDevices,
+        cloudTicketsToday,
+        maxCloudTicketsPerDay: quota.maxCloudTicketsPerDay,
+        deviceTicketsToday,
+        maxDeviceTicketsPerDay: quota.maxDeviceTicketsPerDay,
+        periodCloudTickets: periodCloudByTenant.get(tenant.id) ?? 0,
+        periodDeviceTickets: periodDeviceByTenant.get(tenant.id) ?? 0,
+        estimatedCents,
+        currency: billing.currency,
+        monthlyBudgetCents: billing.monthlyBudgetCents,
+        maxUtilizationPct,
+      }
+    }).sort((left, right) =>
+      (right.periodCloudTickets + right.periodDeviceTickets) - (left.periodCloudTickets + left.periodDeviceTickets)
+      || right.maxUtilizationPct - left.maxUtilizationPct
+      || left.name.localeCompare(right.name),
+    )
+
+    const modelBindings = new Map(tenantModelStats.map(row => [String(row.model_id), { tenantCount: Number(row.tenant_count), defaultCount: Number(row.default_count ?? 0) }]))
+    let modelRequests = 0
+    let modelErrors = 0
+    const models = catalog.map(model => {
+      const bind = modelBindings.get(model.id) ?? { tenantCount: 0, defaultCount: 0 }
+      const stat = this.#modelStats.get(model.id)
+      const requests = stat?.requests ?? 0
+      const errors = stat?.errors ?? 0
+      modelRequests += requests
+      modelErrors += errors
+      return {
+        id: model.id,
+        name: model.name,
+        upstreamName: model.upstreamName,
+        tenantCount: bind.tenantCount,
+        defaultCount: bind.defaultCount,
+        requests,
+        errors,
+        avgLatencyMs: stat !== undefined && stat.requests > 0 ? Math.round(stat.totalLatencyMs / stat.requests) : null,
+      }
+    })
+
+    const sumMap = (map: Map<string, number>): number => [...map.values()].reduce((acc, val) => acc + val, 0)
+    return {
+      days: requested,
+      totals: {
+        tenants: tenantList.length,
+        activeTenants: tenantList.filter(item => item.status === 'active').length,
+        users: sumMap(usersByTenant),
+        devices: sumMap(devicesByTenant),
+        activeDevices: Number(activeDeviceCount[0]?.count ?? 0),
+        cloudTicketsTotal: sumMap(cloudTotalByTenant),
+        deviceTicketsTotal: sumMap(deviceTotalByTenant),
+        cloudTicketsToday: sumMap(todayCloudByTenant),
+        deviceTicketsToday: sumMap(todayDeviceByTenant),
+        models: catalog.length,
+        upstreams: upstreams.length,
+        sourceEvents: Number(sourceEventCountRows[0]?.count ?? 0),
+        modelRequests,
+        modelErrors,
+      },
+      daily,
+      tenants,
+      models,
+      recentSourceEvents: recentSourceRows.map(row => ({
+        id: String(row.id),
+        provider: String(row.provider),
+        tenantId: row.tenant_id === null ? null : String(row.tenant_id),
+        eventType: String(row.event_type),
+        status: String(row.status),
+        ticketId: row.ticket_id === null ? null : String(row.ticket_id),
+        receivedAt: Number(row.received_at),
+      })),
+    }
   }
 
   cloudTicketTarget(tenantId: string, ticketId: string): { ticketId: string } | undefined {

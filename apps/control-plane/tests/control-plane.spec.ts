@@ -688,6 +688,59 @@ describe('control plane', () => {
     }
   })
 
+  it('aggregates platform analytics and service health probes', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'siriusx-analytics-'))
+    roots.push(root)
+    const toolMock = createServer((req, res) => {
+      if (req.url === '/ready') { res.writeHead(200, { 'content-type': 'application/json' }).end('{"ok":true}'); return }
+      if (req.url === '/metrics') {
+        res.writeHead(200, { 'content-type': 'text/plain' }).end('siriusx_tool_gateway_approvals_pending 2\nsiriusx_tool_gateway_audits 15\nsiriusx_tool_gateway_audit_chain_valid 1\n')
+        return
+      }
+      res.writeHead(404).end()
+    })
+    await new Promise<void>(resolve => toolMock.listen(0, '127.0.0.1', resolve))
+    const toolUrl = `http://127.0.0.1:${(toolMock.address() as { port: number }).port}`
+    try {
+      const server = await startControlPlaneServer({
+        dbPath: join(root, 'control.sqlite'),
+        dataDir: join(root, 'data'),
+        port: 0,
+        sessionSecret: 'analytics-sec',
+        platformAdminToken: 'analytics-token',
+        toolGatewayUrl: toolUrl,
+      })
+      servers.push(server)
+      const tenant = await server.control.provisionTenant({ tenantId: 'tenant-obs', name: 'ObsCo', idpIssuer: 'https://idp.example', adminEmail: 'admin@obs.example' })
+      const admin = server.control.findUserByEmail(tenant.id, 'admin@obs.example')!
+      const session = server.control.verifySession(server.control.issueSession({ tenantId: tenant.id, userId: admin.id, role: 'admin' }))
+      server.control.createCloudTicket(session, { repoUrl: 'https://github.com/obs/repo.git', baseRef: 'main', prompt: 'ping' })
+      server.control.recordModelInvocation('tenant-default', true, 42)
+      server.control.recordModelInvocation('tenant-default', false, 18)
+
+      const res = await fetch(`${server.url}/v1/admin/analytics?days=7`, {
+        headers: { 'x-siriusx-platform-token': 'analytics-token' },
+      })
+      expect(res.status).toBe(200)
+      const data = await res.json() as {
+        days: number
+        daily: Array<{ date: string; cloudTickets: number }>
+        totals: { tenants: number; cloudTicketsToday: number; modelRequests: number; modelErrors: number }
+        models: Array<{ id: string; requests: number; errors: number; avgLatencyMs: number | null }>
+        services: { controlPlane: { ok: boolean }; toolGateway: { ok: boolean; approvalsPending?: number; auditChainValid?: boolean }; modelRouter: { configured: boolean } }
+      }
+      expect(data.days).toBe(7)
+      expect(data.daily).toHaveLength(7)
+      expect(data.totals).toMatchObject({ tenants: 1, cloudTicketsToday: 1, modelRequests: 2, modelErrors: 1 })
+      expect(data.models.find(m => m.id === 'tenant-default')).toMatchObject({ requests: 2, errors: 1, avgLatencyMs: 30 })
+      expect(data.services.controlPlane.ok).toBe(true)
+      expect(data.services.toolGateway).toMatchObject({ ok: true, approvalsPending: 2, auditChainValid: true })
+      expect(data.services.modelRouter.configured).toBe(false)
+    } finally {
+      await new Promise<void>(resolve => toolMock.close(() => resolve()))
+    }
+  })
+
 })
 
 const postgresEnabled = process.env.SIRIUSX_POSTGRES_TEST === '1' && process.env.DATABASE_URL !== undefined
