@@ -1,0 +1,9 @@
+{
+  "overviewHasDescription": false,
+  "modelsHasDescription": false,
+  "modelDialog": true,
+  "modelInputs": 4,
+  "sourceDialog": true,
+  "sourceInputs": 6,
+  "errors": []
+}

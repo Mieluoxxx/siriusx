@@ -224,7 +224,7 @@ function renderShell(): void {
       <div class="content">
         <div class="mobile-tools"><button class="button" type="button" popovertarget="admin-nav" aria-controls="admin-nav">Menu</button><button class="button" type="button" id="density-toggle">Density</button></div>
         <section class="view active" data-view="overview" id="view-overview">
-          <div class="page-head"><div><p class="eyebrow">Platform</p><h1>Overview</h1><p class="lede">Tenants, model routing, source integrations, and audit activity in one place.</p></div><button class="button primary" type="button" data-go="tenants">Manage tenants</button></div>
+          <div class="page-head"><div><h1>Overview</h1></div><button class="button primary" type="button" data-go="tenants">Manage tenants</button></div>
           <div class="metric-grid" id="metrics"></div>
           <div class="card"><div class="card-head"><h2>Recent tenants</h2><button class="button small" type="button" data-go="tenants">View all</button></div><div id="overview-tenants"></div></div>
         </section>
@@ -234,21 +234,19 @@ function renderShell(): void {
           <div id="tenants"></div>
         </section>
         <section class="view" data-view="models" id="view-models">
-          <div class="page-head"><div><p class="eyebrow">Routing</p><h1>Models</h1><p class="lede">Catalog models and connect each tenant to one or more upstream providers.</p></div></div>
-          <section class="card form-card"><div class="form-card-head"><h2>Add model</h2><p>Create a catalog entry and client-facing alias.</p></div><div id="create-model-form-root"></div></section>
+          <div class="page-head"><div><h1>Models</h1></div><button id="open-create-model" class="button primary" type="button">+ Add model</button></div>
           <div id="models"></div>
         </section>
         <section class="view" data-view="sources" id="view-sources">
-          <div class="page-head"><div><p class="eyebrow">Integrations</p><h1>Sources</h1><p class="lede">Map Git repositories and messaging channels to tenant workspaces.</p></div></div>
-          <section class="card form-card"><div class="form-card-head"><h2>Add source binding</h2><p>Map a repository or channel to a tenant.</p></div><div id="create-binding-form-root"></div></section>
+          <div class="page-head"><div><h1>Sources</h1></div><button id="open-create-binding" class="button primary" type="button">+ Add source binding</button></div>
           <div id="bindings"></div>
         </section>
         <section class="view" data-view="support" id="view-support">
-          <div class="page-head"><div><p class="eyebrow">Operations</p><h1>Support requests</h1><p class="lede">Tenant-approved emergency access requests.</p></div></div>
+          <div class="page-head"><div><h1>Support requests</h1></div></div>
           <div id="support"></div>
         </section>
         <section class="view" data-view="audit" id="view-audit">
-          <div class="page-head"><div><p class="eyebrow">Governance</p><h1>Platform audit</h1><p class="lede">Administrative changes across tenants, models, sources, and quotas.</p></div><button id="export-audit" class="button" type="button">Export CSV</button></div>
+          <div class="page-head"><div><h1>Platform audit</h1></div><button id="export-audit" class="button" type="button">Export CSV</button></div>
           <div id="audit-filter-root" class="toolbar"></div>
           <div id="audit"></div>
         </section>
@@ -262,8 +260,6 @@ function renderShell(): void {
 }
 
 function mountShellForms(): void {
-  mountShellForm('create-model-form-root', createElement(CreateModelForm, { onSubmit: values => createModel(values) }))
-  mountShellForm('create-binding-form-root', createElement(CreateBindingForm, { onSubmit: values => createBinding(values) }))
   mountShellForm('tenant-filter-root', createElement(TenantFilters, {
     total: tenants.length,
     onChange: (query, status) => { tenantQuery = query; tenantStatus = status; renderTenants(true) },
@@ -357,6 +353,8 @@ function addHandlers(): void {
   document.getElementById('export-audit')!.addEventListener('click', () => { void exportPlatformAudit().catch(showError) })
   document.getElementById('tenant-edit-close')!.addEventListener('click', closeTenantEditor)
   document.getElementById('open-create-tenant')!.addEventListener('click', () => openTenantEditor('Create tenant', createElement(CreateTenantForm, { onSubmit: async values => { await createTenant(values); closeTenantEditor() } })))
+  document.getElementById('open-create-model')!.addEventListener('click', () => openTenantEditor('Add model', createElement(CreateModelForm, { onSubmit: async values => { await createModel(values); closeTenantEditor() } })))
+  document.getElementById('open-create-binding')!.addEventListener('click', () => openTenantEditor('Add source binding', createElement(CreateBindingForm, { onSubmit: async values => { await createBinding(values); closeTenantEditor() } })))
   document.getElementById('tenant-edit-dialog')!.addEventListener('close', () => { tenantEditRoot?.unmount(); tenantEditRoot = undefined })
   for (const item of document.querySelectorAll<HTMLButtonElement>('.nav-button, [data-go]')) {
     item.addEventListener('click', () => showView(item.dataset.view ?? item.dataset.go ?? 'overview'))
@@ -487,12 +485,14 @@ function renderTenantsNow(): void {
 
 function renderModels(): void {
   const host = document.getElementById('models')!
-  host.replaceChildren(table(['ID', 'Name', 'Provider', 'Model', 'Enabled'], models.map(model => [model.id, model.name, model.provider, model.model, String(model.enabled)]), 'Model catalog'))
+  if (models.length === 0) { host.replaceChildren(node('div', 'No models yet.', 'table-empty')); return }
+  host.replaceChildren(table(['ID', 'Name', 'Provider', 'Model', 'Enabled'], models.map(model => [model.id, model.name, model.provider, model.model, String(model.enabled)])))
 }
 
 function renderBindings(): void {
   const host = document.getElementById('bindings')!
-  host.replaceChildren(table(['ID', 'Provider', 'External', 'Tenant', 'Repo', 'Base', 'Auto'], bindings.map(binding => [binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '', String(binding.autoDispatch)]), 'Source bindings'))
+  if (bindings.length === 0) { host.replaceChildren(node('div', 'No source bindings yet.', 'table-empty')); return }
+  host.replaceChildren(table(['ID', 'Provider', 'External', 'Tenant', 'Repo', 'Base', 'Auto'], bindings.map(binding => [binding.id, binding.provider, binding.externalId, binding.tenantId, binding.repoUrl ?? '', binding.baseRef ?? '', String(binding.autoDispatch)])))
 }
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -560,7 +560,7 @@ function renderAudit(): void {
     }
     return [time, event.actor, auditActionLabel(event.action), auditTarget(event.target), detail]
   })
-  const wrapper = table(['Time', 'Actor', 'Action', 'Target', 'Detail'], rows, 'Audit log')
+  const wrapper = table(['Time', 'Actor', 'Action', 'Target', 'Detail'], rows)
   wrapper.classList.add('audit-table-wrap')
   if (filtered.length > visible.length) {
     const more = node('button', `Load more (${filtered.length - visible.length} remaining)`, 'button audit-more')
@@ -586,7 +586,7 @@ function renderMetrics(support: SupportRequest[], audit: Audit[]): void {
     metricCard(String(pendingSupport), 'pending support', `${audit.length} audit events`),
   )
   const overview = document.getElementById('overview-tenants')!
-  overview.replaceChildren(table(['Name', 'Tenant', 'Status', 'Users'], tenants.slice(0, 5).map(tenant => [tenant.name, tenant.id, pill(tenant.status), String(tenant.usage.users)]), 'Recent tenants'))
+  overview.replaceChildren(table(['Name', 'Tenant', 'Status', 'Users'], tenants.slice(0, 5).map(tenant => [tenant.name, tenant.id, pill(tenant.status), String(tenant.usage.users)])))
 }
 
 function metricCard(value: string, label: string, detail: string, accent = false): HTMLElement {
@@ -613,7 +613,8 @@ async function loadAll(): Promise<void> {
   renderModels()
   renderBindings()
   const supportHost = document.getElementById('support')!
-  supportHost.replaceChildren(table(['Tenant', 'Reason', 'Status', 'Requested by'], supportResult.requests.map(request => [request.tenantId, request.reason, request.status, request.requestedBy])))
+  if (supportResult.requests.length === 0) supportHost.replaceChildren(node('div', 'No support requests.', 'table-empty'))
+  else supportHost.replaceChildren(table(['Tenant', 'Reason', 'Status', 'Requested by'], supportResult.requests.map(request => [request.tenantId, request.reason, request.status, request.requestedBy])))
   renderNotifications(supportResult.requests)
   auditEvents = auditResult.audit
   auditPage = 1
