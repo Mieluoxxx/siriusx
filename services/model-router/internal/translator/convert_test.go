@@ -201,3 +201,26 @@ func TestNullSamplingControlsAreNotForwarded(t *testing.T) {
 		}
 	}
 }
+
+// TestClaudeEnabledThinkingWithoutBudget guards the client shape that sends
+// thinking.type=enabled plus output_config.effort and no budget_tokens.
+func TestClaudeEnabledThinkingWithoutBudget(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want string
+	}{
+		{"effort high", `"output_config":{"effort":"high"}`, "high"},
+		{"effort low", `"output_config":{"effort":"low"}`, "low"},
+		{"effort max", `"output_config":{"effort":"max"}`, "max"},
+		{"effort auto", `"output_config":{"effort":"auto"}`, "high"},
+		{"effort absent", ``, "high"},
+	}
+	for _, tc := range cases {
+		in := []byte(`{"model":"deepseek-flash","max_tokens":1024,"thinking":{"type":"enabled"},` + tc.body + `"messages":[{"role":"user","content":"hi"}]}`)
+		out := translator.TranslateRequest(translator.FormatClaude, translator.FormatOpenAI, "deepseek-flash", in, true)
+		if got := gjson.GetBytes(out, "reasoning_effort").String(); got != tc.want {
+			t.Errorf("%s: reasoning_effort = %q, want %q: %s", tc.name, got, tc.want, out)
+		}
+	}
+}

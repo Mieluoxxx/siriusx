@@ -72,10 +72,16 @@ func ConvertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						out, _ = sjson.SetBytes(out, "reasoning_effort", effort)
 					}
 				} else {
-					// No budget_tokens specified, default to "auto" for enabled thinking
-					if effort, ok := thinking.ConvertBudgetToLevel(-1); ok && effort != "" {
-						out, _ = sjson.SetBytes(out, "reasoning_effort", effort)
+					// No budget_tokens: newer clients carry the strength in output_config.effort.
+					// Never emit "auto": OpenAI-compatible upstreams (LiteLLM) reject it.
+					effort := ""
+					if v := root.Get("output_config.effort"); v.Exists() && v.Type == gjson.String {
+						effort = strings.ToLower(strings.TrimSpace(v.String()))
 					}
+					if effort == "" || effort == string(thinking.LevelAuto) {
+						effort = string(thinking.LevelHigh)
+					}
+					out, _ = sjson.SetBytes(out, "reasoning_effort", effort)
 				}
 			case "adaptive", "auto":
 				// Adaptive thinking can carry an explicit effort in output_config.effort (Claude 4.6).
