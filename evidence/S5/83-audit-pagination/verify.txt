@@ -1,0 +1,11 @@
+{
+  "rows1": 20,
+  "info1": "Showing 1–20 of 39",
+  "page1": "1",
+  "rows2": 19,
+  "info2": "Showing 21–39 of 39",
+  "page2": "2",
+  "rows10": 10,
+  "info10": "Showing 1–10 of 39",
+  "errors": []
+}

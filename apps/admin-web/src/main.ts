@@ -27,6 +27,7 @@ let auditFilterRoot: Root | undefined
 let auditEvents: Audit[] = []
 let auditFilter: AuditFilterValue = { query: '', action: '', range: 'all' }
 let auditPage = 1
+let auditPageSize = 20
 let selectedTenant: string | undefined
 let tenantQuery = ''
 let tenantStatus = ''
@@ -545,7 +546,11 @@ function renderAudit(): void {
     .filter(event => (auditFilter.action === '' || event.action === auditFilter.action) && event.createdAt >= since)
     .filter(event => query === '' || `${event.actor} ${event.action} ${event.target} ${event.detail ?? ''}`.toLowerCase().includes(query))
     .sort((left, right) => right.createdAt - left.createdAt)
-  const visible = filtered.slice(0, auditPage * 20)
+  const pageCount = Math.max(1, Math.ceil(filtered.length / auditPageSize))
+  const page = Math.min(Math.max(auditPage, 1), pageCount)
+  auditPage = page
+  const start = (page - 1) * auditPageSize
+  const visible = filtered.slice(start, start + auditPageSize)
   if (visible.length === 0) { host.replaceChildren(node('div', 'No audit events match these filters.', 'table-empty')); return }
   const rows = visible.map(event => {
     const time = node('time', new Date(event.createdAt).toLocaleString(), 'audit-time')
@@ -562,14 +567,36 @@ function renderAudit(): void {
   })
   const wrapper = table(['Time', 'Actor', 'Action', 'Target', 'Detail'], rows)
   wrapper.classList.add('audit-table-wrap')
-  if (filtered.length > visible.length) {
-    const more = node('button', `Load more (${filtered.length - visible.length} remaining)`, 'button audit-more')
-    more.type = 'button'
-    more.addEventListener('click', () => { auditPage += 1; renderAudit() })
-    host.replaceChildren(wrapper, more)
-  } else {
-    host.replaceChildren(wrapper)
+  const pagination = node('nav', undefined, 'audit-pagination')
+  pagination.setAttribute('aria-label', 'Audit pagination')
+  pagination.append(node('span', `Showing ${start + 1}–${Math.min(start + auditPageSize, filtered.length)} of ${filtered.length}`, 'audit-page-info'))
+  const controls = node('div', undefined, 'audit-page-controls')
+  const prev = node('button', 'Previous', 'button audit-page-button')
+  prev.type = 'button'; prev.disabled = page <= 1
+  prev.addEventListener('click', () => { auditPage -= 1; renderAudit() })
+  controls.append(prev)
+  for (let item = 1; item <= pageCount; item += 1) {
+    const pageButton = node('button', String(item), 'button audit-page-button')
+    pageButton.type = 'button'
+    if (item === page) pageButton.setAttribute('aria-current', 'page')
+    pageButton.addEventListener('click', () => { auditPage = item; renderAudit() })
+    controls.append(pageButton)
   }
+  const next = node('button', 'Next', 'button audit-page-button')
+  next.type = 'button'; next.disabled = page >= pageCount
+  next.addEventListener('click', () => { auditPage += 1; renderAudit() })
+  controls.append(next)
+  const sizes = node('div', undefined, 'audit-page-sizes')
+  sizes.setAttribute('role', 'group'); sizes.setAttribute('aria-label', 'Rows per page')
+  for (const size of [10, 20, 50]) {
+    const sizeButton = node('button', String(size), 'button audit-page-size')
+    sizeButton.type = 'button'
+    sizeButton.setAttribute('aria-pressed', String(size === auditPageSize))
+    sizeButton.addEventListener('click', () => { auditPageSize = size; auditPage = 1; renderAudit() })
+    sizes.append(sizeButton)
+  }
+  pagination.append(controls, sizes)
+  host.replaceChildren(wrapper, pagination)
 }
 
 function renderMetrics(support: SupportRequest[], audit: Audit[]): void {
