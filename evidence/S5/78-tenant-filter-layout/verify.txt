@@ -1,0 +1,18 @@
+desktop {
+  text: '0 of 1 tenants',
+  reset: '1 of 1 tenants',
+  overflow: false,
+  errors: []
+}
+tablet {
+  text: '0 of 1 tenants',
+  reset: '1 of 1 tenants',
+  overflow: false,
+  errors: []
+}
+mobile {
+  text: '0 of 1 tenants',
+  reset: '1 of 1 tenants',
+  overflow: false,
+  errors: []
+}

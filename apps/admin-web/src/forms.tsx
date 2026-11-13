@@ -266,14 +266,45 @@ const styles = stylex.create({
     gap: '12px',
     alignItems: 'start',
   },
-  filterForm: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(200px, 1fr) 250px minmax(70px, auto)',
-    gap: '12px',
+  tenantFilterForm: {
+    display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'end',
-    '@media (max-width: 720px)': {
-      gridTemplateColumns: '1fr',
-    },
+    gap: '12px',
+    inlineSize: '100%',
+    maxInlineSize: '1100px',
+  },
+  tenantSearchField: {
+    display: 'grid',
+    gridTemplateColumns: 'auto minmax(0, 1fr)',
+    alignItems: 'center',
+    gap: '8px',
+    flex: '0 1 420px',
+    minInlineSize: 0,
+    '@media (max-width: 720px)': { flexBasis: '100%' },
+  },
+  tenantStatusField: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 160px',
+    alignItems: 'center',
+    gap: '8px',
+    flex: '0 0 auto',
+    '@media (max-width: 720px)': { flexBasis: '100%', gridTemplateColumns: 'auto minmax(0, 1fr)' },
+  },
+  tenantFilterLabel: {
+    color: '#6f6f6a',
+    fontSize: '12px',
+    fontWeight: 500,
+    lineHeight: '20px',
+    whiteSpace: 'nowrap',
+  },
+  tenantFilterOutput: {
+    marginInlineStart: 'auto',
+    alignSelf: 'center',
+    color: '#8a8a85',
+    fontSize: '12px',
+    whiteSpace: 'nowrap',
+    '@media (max-width: 720px)': { marginInlineStart: 0 },
   },
   auditFilterForm: {
     display: 'grid',
@@ -488,14 +519,22 @@ export function TenantFilters({ onChange, total }: TenantFiltersProps): React.Re
   const update = (nextQuery: string, nextStatus: string): void => {
     setQuery(nextQuery); setStatus(nextStatus); onChange(nextQuery, nextStatus)
   }
+  const statusOptions = [{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]
   return (
-    <form className={cls(styles.filterForm)} onSubmit={event => event.preventDefault()}>
-      <Field.Root name="tenantQuery" className={cls(styles.field)}>
-        <Field.Label className={cls(styles.label)}>Search tenants</Field.Label>
+    <form className={cls(styles.tenantFilterForm)} onSubmit={event => event.preventDefault()}>
+      <Field.Root name="tenantQuery" className={cls(styles.tenantSearchField)}>
+        <Field.Label className={cls(styles.tenantFilterLabel)}>Search tenants</Field.Label>
         <Input className={cls(styles.input)} type="search" value={query} onValueChange={value => update(value, status)} placeholder="Name, ID, or issuer" autoComplete="off" />
       </Field.Root>
-      <SelectField name="tenantStatus" label="Status" options={[{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]} defaultValue={status} onValueChange={value => update(query, value)} />
-      <output id="tenant-count" className={cls(styles.output)}>{total} tenants</output>
+      <Field.Root name="tenantStatus" className={cls(styles.tenantStatusField)}>
+        <Field.Label className={cls(styles.tenantFilterLabel)}>Status</Field.Label>
+        <Select.Root name="tenantStatus" items={Object.fromEntries(statusOptions.map(item => [item.value, item.label]))} value={status} onValueChange={value => update(query, value === null ? '' : String(value))}>
+          <Select.Trigger className={cls(styles.selectTrigger)}><Select.Value /><Select.Icon className={cls(styles.selectIcon)}>▾</Select.Icon></Select.Trigger>
+          <Select.Portal><Select.Positioner className={cls(styles.positioner)} sideOffset={6}><Select.Popup className={cls(styles.popup)}><Select.List>{statusOptions.map(item => <Select.Item key={item.value} value={item.value} className={cls(styles.item)}>{item.label}</Select.Item>)}</Select.List></Select.Popup></Select.Positioner></Select.Portal>
+        </Select.Root>
+      </Field.Root>
+      <button className={cls(styles.button)} type="button" onClick={() => update('', '')}>Reset</button>
+      <output id="tenant-count" className={cls(styles.tenantFilterOutput)}>{total} tenants</output>
     </form>
   )
 }
